@@ -8,15 +8,30 @@
   const ENGINE_SAVE_KEY = root.UntilFridayMigration?.ENGINE_SAVE_KEY || "until-friday-save-v2";
   const LEGACY_SAVE_KEY = root.UntilFridayMigration?.LEGACY_SAVE_KEY || "until-friday-save-v1";
   const originalRun = Onboarding.run.bind(Onboarding);
+  let expiryTimer = null;
+
+  function clear() {
+    try { sessionStorage.removeItem(AUTO_KEY); } catch { /* unavailable */ }
+    if (expiryTimer) {
+      window.clearTimeout(expiryTimer);
+      expiryTimer = null;
+    }
+  }
 
   function mark() {
-    try { sessionStorage.setItem(AUTO_KEY, "1"); } catch { /* unavailable */ }
+    try {
+      sessionStorage.setItem(AUTO_KEY, "1");
+      if (expiryTimer) window.clearTimeout(expiryTimer);
+      expiryTimer = window.setTimeout(clear, 5000);
+    } catch {
+      // Automatic continuation is optional.
+    }
   }
 
   function consume() {
     try {
       const active = sessionStorage.getItem(AUTO_KEY) === "1";
-      sessionStorage.removeItem(AUTO_KEY);
+      clear();
       return active;
     } catch {
       return false;
@@ -54,5 +69,5 @@
     if (event.target.closest?.("[data-start-next], [data-recovered-start]")) mark();
   }, true);
 
-  root.UntilFridayAutoContinue = { AUTO_KEY, mark, consume, hasSave };
+  root.UntilFridayAutoContinue = { AUTO_KEY, mark, consume, clear, hasSave };
 })(typeof globalThis !== "undefined" ? globalThis : window);
