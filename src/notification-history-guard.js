@@ -86,15 +86,19 @@
   function queue() {
     if (queued) return;
     queued = true;
-    queueMicrotask(() => {
+    const schedule = typeof root.queueMicrotask === "function"
+      ? root.queueMicrotask.bind(root)
+      : (callback) => Promise.resolve().then(callback);
+    schedule(() => {
       queued = false;
       inspect();
     });
   }
 
-  const observer = new MutationObserver(queue);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
   document.addEventListener("DOMContentLoaded", queue, { once: true });
+  root.addEventListener?.("until-friday-state-change", queue);
+  root.addEventListener?.("until-friday-ui-render", queue);
+  root.addEventListener?.("until-friday-app-ready", queue);
   queue();
 
   root.UntilFridayNotificationHistoryGuard = {
@@ -102,6 +106,8 @@
     readHistory,
     matchInboxItem,
     itemKey,
-    inspectNotification
+    inspectNotification,
+    inspect,
+    queue
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
