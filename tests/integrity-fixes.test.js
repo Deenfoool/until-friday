@@ -76,6 +76,22 @@ for (const [eventId, actionId] of Object.entries(Integrity.BASE_EVENT_ACTION_GUA
 }
 
 {
+  const raw = Engine.createState(Story, { seed: "late-restored-event", truthId: "player" });
+  raw.dayStarted = true;
+  raw.minute = 710;
+  raw.completedActions["mon-report-final"] = { dayIndex: 0, minute: 700 };
+  raw.scheduledEvents = [
+    { eventId: "mon-chief-thanks", dayIndex: 0, minute: 690, sourceAction: "mon-report-final" },
+    { eventId: "mon-chief-thanks", dayIndex: 0, minute: 1500, sourceAction: "mon-report-final" }
+  ];
+  const repaired = Integrity.repairEngineState(Story, raw);
+  const entries = repaired.scheduledEvents.filter((item) => item.eventId === "mon-chief-thanks");
+  assert.equal(entries.length, 1, "one-shot events must not remain scheduled twice");
+  assert.equal(entries[0].minute, 705, "a restored response must occur after its source action");
+  assert.equal(Story.events["mon-chief-thanks"].minute, 705, "mail display time must follow the repaired schedule");
+}
+
+{
   const raw = Engine.createState(Story, { seed: "invalid-events", truthId: "player" });
   raw.dayStarted = true;
   raw.stats.anxiety = 3;
