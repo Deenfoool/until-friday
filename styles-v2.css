@@ -11,6 +11,26 @@
   object-fit: contain;
 }
 
+/*
+ * Desktop assets were generated with their own transparent canvas.
+ * Keep the Start menu compact, but show the original artwork directly
+ * on the desktop without the legacy Windows-style square tile.
+ */
+.desktop-icon .desktop-icon__glyph {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 1px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.desktop-icon .asset-app-icon {
+  width: 57px;
+  height: 57px;
+}
+
 .start-app .asset-app-icon {
   width: 26px;
   height: 26px;
