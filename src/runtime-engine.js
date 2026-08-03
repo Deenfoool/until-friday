@@ -371,13 +371,74 @@
     }
 
     function startDay(...args) {
-      const result = core.startDay(...args);
-      if (result?.ok) {
-        const state = result.state || getState();
-        dispatchStateChange(state, "day-start", { events: result.events || [] });
-        return { ...result, state };
+      const before = getState();
+      let result;
+      try {
+        result = core.startDay(...args);
+      } catch (error) {
+        recreate(before);
+        return {
+          ok: false,
+          reason: "day-start-exception",
+          message: error?.message || String(error),
+          rolledBack: true,
+          events: [],
+          state: getState()
+        };
       }
-      return result;
+
+      if (!result?.ok) return result;
+      const state = result.state || getState();
+      if (result.alreadyStarted) return { ...result, persisted: true, state };
+
+      const saved = persist(state);
+      if (!saved.ok) {
+        return rollbackSaveFailure(
+          before,
+          saved,
+          "Рабочий день не сохранён",
+          "Запуск рабочего дня отменён, потому что браузер не смог записать сохранение.",
+          { events: [] }
+        );
+      }
+
+      dispatchStateChange(state, "day-start", { events: result.events || [] });
+      return { ...result, persisted: true, state };
+    }
+
+    function updateState(updater, reason = "state-update") {
+      const before = getState();
+      const draft = clone(before);
+      try {
+        if (typeof updater === "function") updater(draft);
+        else if (updater && typeof updater === "object") Object.assign(draft, clone(updater));
+        else return { ok: false, reason: "invalid-state-update", state: before };
+      } catch (error) {
+        return {
+          ok: false,
+          reason: "state-update-exception",
+          message: error?.message || String(error),
+          rolledBack: true,
+          state: before
+        };
+      }
+
+      const repairedState = Integrity.repairEngineState(story, draft);
+      recreate(repairedState);
+      const nextState = getState();
+      const saved = persist(nextState);
+      if (!saved.ok) {
+        return rollbackSaveFailure(
+          before,
+          saved,
+          "Изменение не сохранено",
+          "Служебное изменение состояния полностью отменено.",
+          { updateReason: reason }
+        );
+      }
+
+      dispatchStateChange(nextState, reason);
+      return { ok: true, persisted: true, state: nextState };
     }
 
     function resolveEnding(...args) {
@@ -402,6 +463,7 @@
       applyAction,
       advanceTime,
       endDay,
+      updateState,
       resolveEnding,
       conditionPasses: (...args) => core.conditionPasses(...args),
       getState,
