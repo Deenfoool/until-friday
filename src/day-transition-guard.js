@@ -35,8 +35,7 @@
     );
     if (!pending.length) return [];
     const targetMinute = Math.max(...pending.map((item) => Number(item.minute) || state.minute));
-    if (targetMinute <= state.minute) return [];
-    const result = instance.advanceTime(targetMinute - state.minute);
+    const result = instance.advanceTime(Math.max(0, targetMinute - state.minute));
     return result?.events || [];
   }
 
