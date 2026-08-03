@@ -32,6 +32,11 @@
       || null;
   }
 
+  function setText(element, value) {
+    const next = String(value ?? "");
+    if (element && element.textContent !== next) element.textContent = next;
+  }
+
   function actionByLabel(label) {
     return Object.values(Story.actions || {}).find((action) => action.label === String(label || "").trim()) || null;
   }
@@ -81,7 +86,7 @@
       hint.className = "muted context-action-hint";
       container.appendChild(hint);
     }
-    hint.textContent = text;
+    setText(hint, text);
   }
 
   function repairMailActionContext() {
@@ -139,12 +144,12 @@
       const result = currentEngine.canApplyAction(action.id);
       if (result.ok) {
         button.disabled = false;
-        button.textContent = action.label;
+        setText(button, action.label);
         button.removeAttribute("title");
         return;
       }
       button.disabled = true;
-      button.textContent = DISABLED_ACTION_TEXT[result.reason] || "Действие недоступно";
+      setText(button, DISABLED_ACTION_TEXT[result.reason] || "Действие недоступно");
       button.title = result.reason || "Недоступно";
     });
   }
@@ -163,7 +168,7 @@
     if (!state?.endingId || !["voluntary-exit", "fired-clean"].includes(state.endingId)) return;
     const definition = (Story.endings || []).find((item) => item.id === state.endingId);
     const paragraph = document.querySelector(".friday-ending-header > p");
-    if (paragraph && definition?.text) paragraph.textContent = definition.text;
+    if (paragraph && definition?.text) setText(paragraph, definition.text);
   }
 
   function repairWindowPositions() {
@@ -202,7 +207,7 @@
 
     Array.from(document.querySelectorAll(".notification")).slice(-3).forEach((item) => {
       const span = item.querySelector("span");
-      if (span?.textContent.trim() === "Действие недоступно.") span.textContent = replacement;
+      if (span?.textContent.trim() === "Действие недоступно.") setText(span, replacement);
     });
   }
 
@@ -296,6 +301,7 @@
     repairWorkflowSelection,
     repairDocumentActionButtons,
     repairEndingNarrative,
-    repairWindowPositions
+    repairWindowPositions,
+    setText
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
