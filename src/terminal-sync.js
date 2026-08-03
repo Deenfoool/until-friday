@@ -157,7 +157,15 @@
     appendLine(output, `${login()}@office:> ${raw}`);
 
     if (normalized === "endday") {
-      root.UntilFridayDayEndControl?.open?.();
+      const opened = root.UntilFridayDayEndControl?.open?.();
+      if (!opened) {
+        const state = currentEngine.getState();
+        appendLine(output, state.dayIndex === Story.days.length - 1 && !state.ended
+          ? "Пятницу можно завершить только после встречи в переговорной №1."
+          : state.ended
+            ? "Рабочая неделя уже завершена."
+            : "Окно завершения дня сейчас недоступно.", "error");
+      }
       output.scrollTop = output.scrollHeight;
       return;
     }
