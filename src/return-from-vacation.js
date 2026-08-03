@@ -1,0 +1,246 @@
+(function (root) {
+  "use strict";
+
+  const Onboarding = root.UntilFridayOnboarding;
+  if (!Onboarding) return;
+
+  const WELCOME_KEY = Onboarding.WELCOME_KEY;
+  let queued = false;
+  let notificationShown = false;
+
+  function readWelcome() {
+    try {
+      const value = JSON.parse(localStorage.getItem(WELCOME_KEY) || "null");
+      return value && typeof value === "object" ? value : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeWelcome(value) {
+    localStorage.setItem(WELCOME_KEY, JSON.stringify(value));
+    queueDecorate();
+  }
+
+  function playerName() {
+    return Onboarding.readProfile()?.name || "Илья Воронов";
+  }
+
+  function shortName() {
+    return playerName().split(/\s+/)[0] || playerName();
+  }
+
+  function queueDecorate() {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      decorate();
+    });
+  }
+
+  function decorate() {
+    decorateProfile();
+    const state = readWelcome();
+    if (!state?.active) return;
+    decorateUnread(state);
+    decorateWelcomeNotification(state);
+    decorateDimaConversation(state);
+  }
+
+  function decorateProfile() {
+    const profile = Onboarding.readProfile();
+    if (!profile?.name) return;
+
+    const startName = document.querySelector("#start-menu header strong");
+    if (startName && startName.textContent !== profile.name) startName.textContent = profile.name;
+
+    const substitutions = [
+      ["Илья Воронов", profile.name],
+      ["Илью", shortName()],
+      ["Илья", shortName()]
+    ];
+    const roots = document.querySelectorAll(
+      ".mail-view, .document-paper, .message-bubble, .ending-card, .day-transition-card, .terminal-output, .journal-list"
+    );
+    roots.forEach((element) => replaceTextNodes(element, substitutions));
+
+    document.querySelectorAll(".terminal-prompt").forEach((prompt) => {
+      prompt.textContent = `${terminalLogin(profile.name)}@office:>`;
+    });
+  }
+
+  function replaceTextNodes(rootElement, substitutions) {
+    const walker = document.createTreeWalker(rootElement, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach((node) => {
+      let value = node.nodeValue;
+      substitutions.forEach(([from, to]) => { value = value.split(from).join(to); });
+      if (value !== node.nodeValue) node.nodeValue = value;
+    });
+  }
+
+  function terminalLogin(name) {
+    const transliteration = {
+      а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ё: "e", ж: "zh", з: "z", и: "i", й: "y",
+      к: "k", л: "l", м: "m", н: "n", о: "o", п: "p", р: "r", с: "s", т: "t", у: "u", ф: "f",
+      х: "h", ц: "c", ч: "ch", ш: "sh", щ: "sch", ы: "y", э: "e", ю: "yu", я: "ya"
+    };
+    const login = String(name).toLowerCase().split("").map((letter) => transliteration[letter] || letter).join("")
+      .replace(/[^a-z0-9]+/g, ".")
+      .replace(/^\.|\.$/g, "")
+      .slice(0, 20);
+    return login || "employee";
+  }
+
+  function decorateUnread(state) {
+    const unread = !state.read;
+    document.querySelectorAll('.desktop-icon[data-app="chat"]').forEach((button) => button.classList.toggle("return-unread", unread));
+    document.querySelectorAll(".start-app").forEach((button) => {
+      const label = button.querySelector("span:last-child")?.textContent.trim();
+      if (label === "Связь") button.classList.toggle("return-unread", unread);
+    });
+  }
+
+  function decorateWelcomeNotification(state) {
+    const desktop = document.querySelector("#desktop");
+    if (state.read || notificationShown || !desktop || desktop.classList.contains("hidden")) return;
+    const container = document.querySelector("#notifications");
+    if (!container) return;
+
+    notificationShown = true;
+    window.setTimeout(() => {
+      if (readWelcome()?.read) return;
+      const toast = document.createElement("button");
+      toast.type = "button";
+      toast.className = "notification return-welcome-toast";
+      toast.innerHTML = `<strong>Связь</strong><span>Новое сообщение от Димы Орлова</span>`;
+      toast.addEventListener("click", openMessenger);
+      container.appendChild(toast);
+      window.setTimeout(() => toast.remove(), 9000);
+    }, 850);
+  }
+
+  function openMessenger() {
+    const icon = document.querySelector('.desktop-icon[data-app="chat"]');
+    if (icon) icon.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+  }
+
+  function decorateDimaConversation(state) {
+    document.querySelectorAll(".chat-layout").forEach((layout) => {
+      const header = layout.querySelector(".chat-header strong")?.textContent.trim();
+      if (header !== "Дима Орлов") return;
+
+      if (!state.read) {
+        state = { ...state, read: true };
+        writeWelcome(state);
+      }
+
+      const messages = layout.querySelector("[data-messages]");
+      const replyPanel = layout.querySelector("[data-actions]");
+      if (!messages || !replyPanel) return;
+
+      messages.querySelectorAll(".return-guide-message").forEach((message) => message.remove());
+      const existingRumor = Array.from(messages.querySelectorAll(".message")).find((message) =>
+        message.querySelector(".message-bubble")?.textContent.includes("Слышал, в пятницу опять собрание")
+      );
+      if (existingRumor) existingRumor.hidden = !state.choice;
+
+      const welcomeMessages = [
+        `${shortName()}, с возвращением. Рад, что ты наконец вышел из отпуска.`,
+        "Если нужно освежить память, могу быстро напомнить, где что находится."
+      ];
+      welcomeMessages.forEach((text, index) => prependMessage(messages, text, "them", `08:${48 + index}`));
+
+      if (state.choice) renderChoiceMessages(messages, state.choice);
+      renderGuideOptions(replyPanel, state);
+      messages.scrollTop = 0;
+    });
+  }
+
+  function prependMessage(container, text, side, time) {
+    const block = document.createElement("div");
+    block.className = `message ${side} return-guide-message`;
+    block.innerHTML = `<div class="message-bubble"></div><time></time>`;
+    block.querySelector(".message-bubble").textContent = text;
+    block.querySelector("time").textContent = time;
+    container.prepend(block);
+  }
+
+  function appendGuideMessage(container, text, side, time) {
+    const block = document.createElement("div");
+    block.className = `message ${side} return-guide-message`;
+    block.innerHTML = `<div class="message-bubble"></div><time></time>`;
+    block.querySelector(".message-bubble").textContent = text;
+    block.querySelector("time").textContent = time;
+    container.appendChild(block);
+  }
+
+  function renderChoiceMessages(container, choice) {
+    const sets = {
+      refresh: [
+        ["Напомни, где что находится.", "me"],
+        ["Проводник — все рабочие файлы и общий диск. В Почте начальник присылает задания, а в «Задачах» видны сроки.", "them"],
+        ["Через «Связь» пиши людям. Терминал нужен редко, но команда help покажет доступные служебные команды.", "them"],
+        ["И не перепутай финальный отчёт с черновиком. Андрей ждёт его до 11:30.", "them"]
+      ],
+      self: [
+        ["Я сам разберусь.", "me"],
+        ["Хорошо. Тогда не отвлекаю. Только почту проверь, там уже что-то от Андрея.", "them"]
+      ],
+      changed: [
+        ["Что именно поменялось?", "me"],
+        ["Да по мелочи. Людей двигают, обязанности пересматривают. Андрей ходит мрачнее обычного.", "them"],
+        ["Ничего такого. Наверное.", "them"]
+      ]
+    };
+    (sets[choice] || []).forEach(([text, side], index) => appendGuideMessage(container, text, side, `08:${50 + index}`));
+  }
+
+  function renderGuideOptions(replyPanel, state) {
+    replyPanel.querySelector(".return-guide-options")?.remove();
+    replyPanel.querySelector(".return-guide-summary")?.remove();
+
+    if (state.choice) {
+      replyPanel.classList.remove("return-guide-active");
+      const summary = document.createElement("span");
+      summary.className = "return-guide-summary";
+      summary.textContent = state.choice === "refresh" ? "Дима напомнил основы работы." : "Разговор о возвращении завершён.";
+      replyPanel.prepend(summary);
+      return;
+    }
+
+    replyPanel.classList.add("return-guide-active");
+    const options = document.createElement("div");
+    options.className = "return-guide-options";
+    [
+      ["refresh", "Напомни, где что находится."],
+      ["self", "Я сам разберусь."],
+      ["changed", "Что именно поменялось?"]
+    ].forEach(([choice, label]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "return-guide-button";
+      button.textContent = label;
+      button.addEventListener("click", () => {
+        const current = readWelcome() || state;
+        writeWelcome({ ...current, active: true, read: true, choice, chosenAt: Date.now() });
+      });
+      options.appendChild(button);
+    });
+    replyPanel.prepend(options);
+  }
+
+  const observer = new MutationObserver(queueDecorate);
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+  document.addEventListener("DOMContentLoaded", queueDecorate, { once: true });
+  window.addEventListener("until-friday-app-ready", queueDecorate);
+  queueDecorate();
+
+  root.UntilFridayProfile = {
+    playerName,
+    terminalLogin,
+    readWelcome
+  };
+})(typeof globalThis !== "undefined" ? globalThis : window);
