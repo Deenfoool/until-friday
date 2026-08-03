@@ -13,12 +13,15 @@
   let engineInstance = null;
   let timerId = null;
   let lastRealTimestamp = Date.now();
+  let lastDayIndex = null;
   let endOfDayNoticeShown = false;
 
   const originalCreateEngine = Engine.createEngine.bind(Engine);
   Engine.createEngine = function createEngineWithPassiveClock(...args) {
     const instance = originalCreateEngine(...args);
     engineInstance = instance;
+    const state = instance.getState();
+    lastDayIndex = state.dayIndex;
     lastRealTimestamp = Date.now();
     endOfDayNoticeShown = false;
     return instance;
@@ -102,6 +105,14 @@
     }
 
     const state = engineInstance.getState();
+    if (lastDayIndex !== state.dayIndex) {
+      lastDayIndex = state.dayIndex;
+      lastRealTimestamp = now;
+      endOfDayNoticeShown = false;
+      updateClock(state);
+      return { advanced: 0, events: [], dayChanged: true };
+    }
+
     if (shouldPause(state)) {
       lastRealTimestamp = now;
       return { advanced: 0, events: [] };
@@ -152,6 +163,7 @@
 
   function resetDayClock() {
     lastRealTimestamp = Date.now();
+    lastDayIndex = engineInstance?.getState?.().dayIndex ?? null;
     endOfDayNoticeShown = false;
   }
 
