@@ -13,6 +13,7 @@ const scripts = [
   "src/app.js",
   "src/engine.js",
   "src/story-v2.js",
+  "src/rules-extension.js",
   "src/state-migration.js"
 ];
 
@@ -28,10 +29,12 @@ assert.doesNotMatch(html, /<script src="src\/app\.js"><\/script>/, "legacy app m
 
 const enginePosition = html.indexOf("src/engine.js");
 const storyPosition = html.indexOf("src/story-v2.js");
+const rulesPosition = html.indexOf("src/rules-extension.js");
 const migrationPosition = html.indexOf("src/state-migration.js");
 const bootstrapPosition = html.indexOf("src/bootstrap.js");
-assert.ok(enginePosition < storyPosition, "engine must load before story UI bootstrap");
-assert.ok(storyPosition < migrationPosition, "story must load before migration");
+assert.ok(enginePosition < storyPosition, "engine must load before story");
+assert.ok(storyPosition < rulesPosition, "story must load before rule extensions");
+assert.ok(rulesPosition < migrationPosition, "rules must load before save migration and UI creation");
 assert.ok(migrationPosition < bootstrapPosition, "migration must load before bootstrap");
 
 const app = read("src/app-v2.js");
