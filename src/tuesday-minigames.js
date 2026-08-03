@@ -451,14 +451,18 @@
     document.addEventListener("mouseup", () => { drag = null; });
   }
 
-  const observer = new MutationObserver(queueDecorate);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
   document.addEventListener("DOMContentLoaded", queueDecorate, { once: true });
   window.addEventListener("until-friday-app-ready", queueDecorate);
+  window.addEventListener("until-friday-state-change", queueDecorate);
+  window.addEventListener("until-friday-ui-render", (event) => {
+    if (!event.detail?.appId || event.detail.appId === "tasks") queueDecorate();
+  });
   queueDecorate();
 
   root.UntilFridayTuesdayMinigames = {
     openClientCase,
-    openAccountantAudit
+    openAccountantAudit,
+    decorateTaskList,
+    queueDecorate
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
