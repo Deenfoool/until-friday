@@ -1,0 +1,196 @@
+.atlas-icon-holder,
+.folder-sidebar-icon,
+.notification-system-icon,
+.mail-attachment-icon,
+.contact-status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.file-icon-atlas {
+  display: inline-flex;
+  width: 30px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.v2-folders button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.folder-sidebar-icon {
+  width: 25px;
+  height: 25px;
+}
+
+.contact {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contact-status-icon {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  width: 14px;
+  height: 14px;
+}
+
+.notification,
+.toast {
+  position: relative;
+}
+
+.notification-system-icon {
+  float: left;
+  width: 32px;
+  min-height: 32px;
+  margin: 1px 9px 3px 0;
+}
+
+.mail-item {
+  position: relative;
+  padding-right: 35px;
+}
+
+.mail-attachment-icon {
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translateY(-50%);
+  opacity: .88;
+}
+
+.restricted > div {
+  position: relative;
+}
+
+.restricted-access-image {
+  display: block;
+  width: 78px;
+  height: 78px;
+  margin: 0 auto 12px;
+  object-fit: contain;
+}
+
+.asset-viewer-window {
+  width: min(720px, calc(100vw - 42px));
+  height: min(620px, calc(100vh - 86px));
+}
+
+.asset-viewer-content {
+  display: flex;
+  height: calc(100% - 28px);
+  flex-direction: column;
+  overflow: auto;
+  background: #dfe4e7;
+}
+
+.asset-document-stage {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  flex: 1 1 auto;
+  place-items: center;
+  margin: 0;
+  padding: 18px;
+  overflow: auto;
+}
+
+.asset-document-image {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(25, 35, 43, .25);
+}
+
+.asset-document-caption {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 10px 14px;
+  border-top: 1px solid #b9c2c8;
+  background: #f5f7f8;
+  color: #46525a;
+  font-size: 12px;
+}
+
+.asset-overlay {
+  position: absolute;
+  z-index: 2;
+  object-fit: contain;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+.asset-overlay.signature.director {
+  right: 23%;
+  bottom: 19%;
+  width: 29%;
+  max-height: 11%;
+}
+
+.asset-overlay.signature.accountant {
+  right: 20%;
+  bottom: 18%;
+  width: 25%;
+  max-height: 10%;
+}
+
+.asset-overlay.stamp.company {
+  right: 12%;
+  bottom: 9%;
+  width: 20%;
+  max-height: 22%;
+  opacity: .72;
+}
+
+.asset-overlay.stamp.confidential {
+  left: 15%;
+  top: 14%;
+  width: 30%;
+  max-height: 13%;
+  opacity: .67;
+  transform: rotate(-5deg);
+}
+
+.ending-overlay[data-asset-background="true"] {
+  background-image:
+    linear-gradient(rgba(9, 15, 20, .82), rgba(9, 15, 20, .9)),
+    var(--ending-background);
+  background-position: center;
+  background-size: cover;
+}
+
+.asset-viewer-task {
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .asset-viewer-window {
+    width: calc(100vw - 18px);
+    height: calc(100vh - 62px);
+    left: 9px !important;
+    top: 9px !important;
+  }
+
+  .asset-overlay.signature,
+  .asset-overlay.stamp {
+    opacity: .58;
+  }
+}
