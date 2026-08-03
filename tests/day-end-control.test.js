@@ -10,6 +10,7 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const source = read("src/day-end-control.js");
 
 assert.doesNotThrow(() => new Function(source), "day end controller must contain valid JavaScript");
+assert.doesNotMatch(source, /UntilFridayPersistentEngineGuard/, "day end control must use the unified runtime directly");
 
 const story = require("../src/story-v2.js");
 const auditRequirement = story.days[2].requirements.find((item) => item.id === "wednesday-audit");
@@ -18,11 +19,17 @@ const storage = new Map();
 const context = {
   UNTIL_FRIDAY_STORY: story,
   UntilFridayMigration: { ENGINE_SAVE_KEY: "until-friday-save-v2" },
-  UntilFridayPersistentEngineGuard: { getEngine: () => null },
-  UntilFridayDayTransitionGuard: { getEngine: () => null },
-  UntilFridayPassiveClock: { getEngine: () => null, resetDayClock: () => {} },
+  UntilFridayRuntimeEngine: {
+    getEngine: () => null,
+    persist(state) {
+      storage.set("until-friday-save-v2", JSON.stringify(state));
+      return { ok: true };
+    }
+  },
+  UntilFridayPassiveClock: { resetDayClock: () => {} },
   MutationObserver: class MutationObserver { observe() {} },
   requestAnimationFrame: (callback) => callback(),
+  addEventListener() {},
   document: {
     documentElement: {},
     body: { appendChild() {} },
@@ -45,6 +52,7 @@ vm.runInNewContext(source, context, { filename: "day-end-control.js" });
 
 const api = context.UntilFridayDayEndControl;
 assert.ok(api, "day end controller API must be exported");
+assert.equal(api.getEngine(), null, "day end control must resolve the engine only through the runtime");
 assert.equal(api.storageAvailable(), true, "day transition must preflight local storage before mutating the engine");
 
 const completeMonday = {
@@ -111,7 +119,8 @@ for (const text of [
   "Повторить сохранение",
   "state.dayIndex <= before.dayIndex",
   "dataset.locked",
-  "applicableRequirements"
+  "applicableRequirements",
+  "until-friday-state-change"
 ]) {
   assert.match(source, new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `day end controller must contain: ${text}`);
 }
@@ -123,10 +132,11 @@ assert.match(css, /day-end-task-card/, "Tasks fallback card must be styled");
 const html = read("index.html");
 assert.match(html, /day-end-control\.css/, "day end stylesheet must be connected");
 assert.match(html, /src\/day-end-control\.js/, "day end controller must be connected");
+assert.doesNotMatch(html, /persistent-engine-guard\.js/, "obsolete persistence facade must not be loaded");
 assert.ok(
-  html.indexOf("src/persistent-engine-guard.js") < html.indexOf("src/day-end-control.js") &&
+  html.indexOf("src/runtime-engine.js") < html.indexOf("src/day-end-control.js") &&
   html.indexOf("src/day-end-control.js") < html.indexOf("src/bootstrap.js"),
-  "day end controller must load after atomic persistence and before the application"
+  "day end controller must load after the unified runtime and before the application"
 );
 
 console.log("Reliable day end control validation passed.");
