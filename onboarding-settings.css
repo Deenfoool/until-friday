@@ -1,0 +1,27 @@
+:root {
+  --opening-text-duration: 520ms;
+  --opening-dialogue-duration: 420ms;
+}
+
+html[data-text-speed="slow"] {
+  --opening-text-duration: 920ms;
+  --opening-dialogue-duration: 760ms;
+}
+
+html[data-text-speed="normal"] {
+  --opening-text-duration: 520ms;
+  --opening-dialogue-duration: 420ms;
+}
+
+html[data-text-speed="fast"] {
+  --opening-text-duration: 180ms;
+  --opening-dialogue-duration: 150ms;
+}
+
+.prologue-text {
+  transition-duration: var(--opening-text-duration), var(--opening-text-duration);
+}
+
+.heard-dialogue__lines p {
+  transition-duration: var(--opening-dialogue-duration), var(--opening-dialogue-duration);
+}
