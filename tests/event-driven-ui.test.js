@@ -11,7 +11,8 @@ const eventDrivenModules = [
   "src/return-from-vacation.js",
   "src/day-end-control.js",
   "src/ui-runtime-guards.js",
-  "src/friday-scene-guard.js"
+  "src/friday-scene-guard.js",
+  "src/friday-ending-reopen.js"
 ];
 
 for (const file of eventDrivenModules) {
@@ -46,5 +47,9 @@ assert.match(guards, /until-friday-ui-render/, "UI guards must use the render li
 const friday = read("src/friday-scene-guard.js");
 assert.match(friday, /queueAfterInteraction/, "Friday meeting lock must run after the scene-opening click");
 assert.match(friday, /event\.detail\?\.appId === "tasks"/, "Friday recovery cards must react to the Tasks lifecycle");
+
+const ending = read("src/friday-ending-reopen.js");
+assert.match(ending, /queueAfterLifecycle/, "ending restoration must perform a delayed lifecycle inspection");
+assert.match(ending, /inspectEnding/, "ending restoration must handle enhanced and basic overlays");
 
 console.log("Event-driven UI and neutral identity validation passed.");
