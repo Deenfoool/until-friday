@@ -1,133 +1,24 @@
 (function (root) {
   "use strict";
 
-  const Engine = root.UntilFridayEngine;
   const Story = root.UNTIL_FRIDAY_STORY;
-  if (!Engine || !Story || root.UntilFridayDayTransitionGuard) return;
+  const Runtime = root.UntilFridayRuntimeEngine;
+  if (!Story || !Runtime || root.UntilFridayDayTransitionGuard) return;
 
-  const SAVE_KEY = root.UntilFridayMigration?.ENGINE_SAVE_KEY || "until-friday-save-v2";
-  const originalCreateEngine = Engine.createEngine.bind(Engine);
-  let activeEngine = null;
   let pendingTransition = null;
 
   function clone(value) {
     return value == null ? value : JSON.parse(JSON.stringify(value));
   }
 
-  function dedupeEvents(events) {
-    const seen = new Set();
-    return (events || []).filter((event) => {
-      const id = event?.id || `${event?.source || ""}:${event?.title || ""}:${event?.minute || ""}`;
-      if (seen.has(id)) return false;
-      seen.add(id);
-      return true;
-    });
+  function getEngine() {
+    return Runtime.getEngine?.() || null;
   }
-
-  function flushPendingConsequences(instance) {
-    const state = instance.getState();
-    if (!state.dayStarted || state.ended) return [];
-    const delivered = new Set(state.deliveredEvents || []);
-    const pending = (state.scheduledEvents || []).filter((item) =>
-      item.dayIndex === state.dayIndex &&
-      !delivered.has(item.eventId) &&
-      (!item.sourceAction || Boolean(state.completedActions?.[item.sourceAction]))
-    );
-    if (!pending.length) return [];
-    const targetMinute = Math.max(...pending.map((item) => Number(item.minute) || state.minute));
-    const result = instance.advanceTime(Math.max(0, targetMinute - state.minute));
-    return result?.events || [];
-  }
-
-  function normalizeTransition(instance, before, result) {
-    if (!result || typeof result !== "object") {
-      return { ok: false, reason: "empty-transition-result" };
-    }
-
-    if (!result.ok) return result;
-
-    let state = result.state || instance.getState();
-    let events = [...(result.events || [])];
-
-    if (!result.final && !state.dayStarted) {
-      const started = instance.startDay();
-      if (started?.ok) {
-        state = started.state || instance.getState();
-        events.push(...(started.events || []));
-      }
-    }
-
-    const nextDay = result.final
-      ? null
-      : result.nextDay || clone(Story.days?.[state.dayIndex]) || instance.currentDay?.();
-
-    if (!result.final && (!nextDay || state.dayIndex <= before.dayIndex)) {
-      return {
-        ok: false,
-        reason: "transition-did-not-advance",
-        state,
-        beforeDayIndex: before.dayIndex,
-        currentDayIndex: state.dayIndex
-      };
-    }
-
-    return {
-      ...result,
-      ok: true,
-      state,
-      nextDay,
-      events: dedupeEvents(events)
-    };
-  }
-
-  Engine.createEngine = function createEngineWithTransitionGuard(...args) {
-    const instance = originalCreateEngine(...args);
-    const originalEndDay = instance.endDay.bind(instance);
-    const originalStartDay = instance.startDay.bind(instance);
-
-    instance.endDay = function guardedEndDay(...endArgs) {
-      const before = instance.getState();
-      let result;
-      let flushedEvents = [];
-
-      try {
-        if (before.dayStarted) flushedEvents = flushPendingConsequences(instance);
-        result = originalEndDay(...endArgs);
-      } catch (error) {
-        console.error("Ошибка перехода между рабочими днями", error);
-        return {
-          ok: false,
-          reason: "transition-exception",
-          message: error?.message || String(error),
-          state: instance.getState()
-        };
-      }
-
-      if (result?.ok === false && result.reason === "day-not-started" && !before.ended) {
-        const started = originalStartDay();
-        if (started?.ok) {
-          flushedEvents = flushPendingConsequences(instance);
-          result = originalEndDay(...endArgs);
-        }
-      }
-
-      if (result?.ok && flushedEvents.length) {
-        result = { ...result, events: [...flushedEvents, ...(result.events || [])] };
-      }
-      return normalizeTransition(instance, before, result);
-    };
-
-    activeEngine = instance;
-    return instance;
-  };
 
   function saveState(state) {
-    if (!state) return;
-    try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-    } catch (error) {
-      console.warn("Не удалось сохранить восстановленный переход", error);
-    }
+    const saved = Runtime.persist(state);
+    if (!saved.ok) console.warn("Не удалось сохранить восстановленный переход", saved.message);
+    return saved.ok;
   }
 
   function formatDate(dayIndex) {
@@ -143,6 +34,14 @@
       time.textContent = `${Math.floor(minute / 60).toString().padStart(2, "0")}:${(minute % 60).toString().padStart(2, "0")}`;
     }
     if (date) date.textContent = formatDate(state.dayIndex);
+  }
+
+  function normalizeTransition(instance, before, result) {
+    return Runtime.normalizeTransition(instance, before, result);
+  }
+
+  function flushPendingConsequences(instance = getEngine()) {
+    return instance?.flushPendingConsequences?.() || [];
   }
 
   function buildRecoveredTransition(overlay, result, previousTitle) {
@@ -163,7 +62,8 @@
     overlay.querySelector("h2").textContent = nextDay.title || "Следующий день";
     overlay.querySelector("[data-transition-text]").textContent = `${nextDay.dateLabel || ""}. Рабочий сеанс подготовлен.`;
     overlay.querySelector("[data-recovered-start]").addEventListener("click", () => {
-      saveState(activeEngine?.getState?.() || result.state);
+      const engine = getEngine();
+      saveState(engine?.getState?.() || result.state);
       window.location.reload();
     });
   }
@@ -171,13 +71,14 @@
   function recoverFailedTransition() {
     const context = pendingTransition;
     pendingTransition = null;
-    if (!context || !activeEngine) return;
+    const engine = getEngine();
+    if (!context || !engine) return;
 
     const overlay = context.overlay;
     if (!overlay?.isConnected) return;
     if (overlay.querySelector("[data-start-next], [data-recovered-start]")) return;
 
-    let state = activeEngine.getState();
+    let state = engine.getState();
     if (state.ended) return;
 
     if (state.dayIndex > context.beforeDayIndex) {
@@ -194,9 +95,9 @@
       return;
     }
 
-    const retry = activeEngine.endDay();
+    const retry = engine.endDay();
     if (retry?.ok && !retry.final) {
-      state = retry.state || activeEngine.getState();
+      state = retry.state || engine.getState();
       saveState(state);
       updateClock(state);
       buildRecoveredTransition(overlay, retry, context.previousTitle);
@@ -217,8 +118,9 @@
 
   document.addEventListener("click", (event) => {
     const confirm = event.target.closest(".modal-overlay .endday-card [data-confirm]");
-    if (confirm && activeEngine) {
-      const state = activeEngine.getState();
+    const engine = getEngine();
+    if (confirm && engine) {
+      const state = engine.getState();
       pendingTransition = {
         overlay: confirm.closest(".modal-overlay"),
         beforeDayIndex: state.dayIndex,
@@ -233,7 +135,8 @@
       window.setTimeout(() => {
         const overlay = startNext.closest(".modal-overlay");
         if (overlay?.isConnected) overlay.remove();
-        const state = activeEngine?.getState?.();
+        const currentEngine = getEngine();
+        const state = currentEngine?.getState?.();
         if (state) {
           saveState(state);
           updateClock(state);
@@ -248,6 +151,6 @@
     normalizeTransition,
     flushPendingConsequences,
     recoverFailedTransition,
-    getEngine: () => activeEngine
+    getEngine
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
