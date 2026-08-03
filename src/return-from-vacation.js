@@ -52,21 +52,23 @@
     const profile = Onboarding.readProfile();
     if (!profile?.name) return;
 
+    const login = terminalLogin(profile.name);
     const startName = document.querySelector("#start-menu header strong");
     if (startName && startName.textContent !== profile.name) startName.textContent = profile.name;
 
     const substitutions = [
       ["Илья Воронов", profile.name],
-      ["Илью", shortName()],
+      ["ivoronov", login],
+      ["Илью", "сотрудника"],
       ["Илья", shortName()]
     ];
     const roots = document.querySelectorAll(
-      ".mail-view, .document-paper, .message-bubble, .ending-card, .day-transition-card, .terminal-output, .journal-list"
+      ".mail-view, .document-paper, .message-bubble, .ending-card, .day-transition-card, .terminal-output, .journal-list, .work-minigame-content"
     );
     roots.forEach((element) => replaceTextNodes(element, substitutions));
 
     document.querySelectorAll(".terminal-prompt").forEach((prompt) => {
-      prompt.textContent = `${terminalLogin(profile.name)}@office:>`;
+      prompt.textContent = `${login}@office:>`;
     });
   }
 
