@@ -3,6 +3,7 @@
 
   const SNAPSHOT_KEY = "until-friday-ending-snapshot-v1";
   let queued = false;
+  let delayedCheck = null;
 
   function remember(overlay) {
     if (!overlay) return;
@@ -49,20 +50,52 @@
 
   function restoreBasicEnding() {
     const basic = document.querySelector(".ending-overlay");
-    if (!basic) return;
+    if (!basic) return false;
     const snapshot = readSnapshot();
-    if (!snapshot) return;
+    if (!snapshot) return false;
 
     const template = document.createElement("template");
     template.innerHTML = snapshot.trim();
     const restored = template.content.firstElementChild;
-    if (!restored) return;
+    if (!restored) return false;
     restored.removeAttribute("data-reopen-bound");
     basic.replaceWith(restored);
     bindRestored(restored);
+    return true;
+  }
+
+  function inspectEnding() {
+    const enhanced = document.querySelector(".friday-ending-overlay");
+    if (enhanced) {
+      remember(enhanced);
+      if (enhanced.dataset.restoredEnding === "true") bindRestored(enhanced);
+      return true;
+    }
+    return restoreBasicEnding();
+  }
+
+  function queue() {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      inspectEnding();
+    });
+  }
+
+  function queueAfterLifecycle() {
+    queue();
+    if (delayedCheck !== null) window.clearTimeout(delayedCheck);
+    delayedCheck = window.setTimeout(() => {
+      delayedCheck = null;
+      queue();
+      requestAnimationFrame(queue);
+    }, 0);
   }
 
   document.addEventListener("click", (event) => {
+    queueAfterLifecycle();
+
     const overlay = event.target.closest(".friday-ending-overlay");
     if (!overlay) return;
 
@@ -74,25 +107,19 @@
     }
   }, true);
 
-  function queue() {
-    if (queued) return;
-    queued = true;
-    requestAnimationFrame(() => {
-      queued = false;
-      const enhanced = document.querySelector(".friday-ending-overlay");
-      if (enhanced) {
-        remember(enhanced);
-        if (enhanced.dataset.restoredEnding === "true") bindRestored(enhanced);
-      } else {
-        restoreBasicEnding();
-      }
-    });
-  }
+  window.addEventListener("until-friday-state-change", (event) => {
+    if (event.detail?.state?.ended || event.detail?.reason === "game-ended") queueAfterLifecycle();
+  });
+  window.addEventListener("until-friday-ui-render", queueAfterLifecycle);
+  window.addEventListener("until-friday-app-ready", queueAfterLifecycle);
+  document.addEventListener("DOMContentLoaded", queueAfterLifecycle, { once: true });
+  queueAfterLifecycle();
 
-  const observer = new MutationObserver(queue);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-  document.addEventListener("DOMContentLoaded", queue, { once: true });
-  queue();
-
-  window.UntilFridayEndingReopen = { remember, restoreBasicEnding, bindRestored };
+  window.UntilFridayEndingReopen = {
+    remember,
+    restoreBasicEnding,
+    bindRestored,
+    inspectEnding,
+    queue
+  };
 })();
