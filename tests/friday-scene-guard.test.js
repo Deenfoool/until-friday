@@ -8,6 +8,10 @@ const vm = require("node:vm");
 const root = path.resolve(__dirname, "..");
 const source = fs.readFileSync(path.join(root, "src/friday-scene-guard.js"), "utf8");
 assert.doesNotThrow(() => new Function(source), "Friday scene guard must contain valid JavaScript");
+assert.doesNotMatch(source, /new\s+MutationObserver\s*\(/, "Friday recovery must use lifecycle events instead of global DOM observation");
+assert.match(source, /until-friday-state-change/, "meeting lock must react to the committed route state");
+assert.match(source, /until-friday-ui-render/, "recovery cards must react to the Tasks render lifecycle");
+assert.match(source, /queueAfterInteraction/, "meeting overlay creation must be checked after the opening click");
 
 const storage = new Map();
 storage.set("until-friday-save-v2", JSON.stringify({
@@ -31,7 +35,6 @@ const context = {
     getItem: (key) => storage.get(key) || null,
     setItem: (key, value) => storage.set(key, String(value))
   },
-  MutationObserver: class MutationObserver { observe() {} },
   requestAnimationFrame: (callback) => callback(),
   document: {
     documentElement: {},
