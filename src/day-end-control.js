@@ -10,7 +10,8 @@
   let decorateQueued = false;
 
   function getEngine() {
-    return root.UntilFridayDayTransitionGuard?.getEngine?.()
+    return root.UntilFridayPersistentEngineGuard?.getEngine?.()
+      || root.UntilFridayDayTransitionGuard?.getEngine?.()
       || root.UntilFridayPassiveClock?.getEngine?.()
       || null;
   }
@@ -31,9 +32,16 @@
     }
   }
 
-  function missingRequirements(engine, state) {
+  function applicableRequirements(engine, state) {
     const day = currentDay(state);
-    return (day?.requirements || []).filter((requirement) => !conditionPasses(engine, requirement.satisfiedWhen));
+    return (day?.requirements || []).filter((requirement) =>
+      !requirement.appliesWhen || conditionPasses(engine, requirement.appliesWhen)
+    );
+  }
+
+  function missingRequirements(engine, state) {
+    return applicableRequirements(engine, state)
+      .filter((requirement) => !conditionPasses(engine, requirement.satisfiedWhen));
   }
 
   function mondayProgress(state) {
@@ -49,7 +57,7 @@
 
   function dayProgress(engine, state) {
     if (state.dayIndex === 0) return mondayProgress(state);
-    const requirements = currentDay(state)?.requirements || [];
+    const requirements = applicableRequirements(engine, state);
     const done = requirements.filter((item) => conditionPasses(engine, item.satisfiedWhen)).length;
     return {
       done,
@@ -324,6 +332,7 @@
   root.UntilFridayDayEndControl = {
     open: openDayEndDialog,
     progress: dayProgress,
+    applicableRequirements,
     finishDay,
     getEngine,
     storageAvailable
