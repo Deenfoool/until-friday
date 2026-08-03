@@ -10,6 +10,14 @@
   const FRIDAY_SCENE_KEY = "until-friday-friday-scene-v1";
   const ENDING_SNAPSHOT_KEY = "until-friday-ending-snapshot-v1";
   const WORKDAY_END_MINUTE = 18 * 60;
+  const BASE_EVENT_ACTION_GUARDS = {
+    "mon-chief-thanks": "mon-report-final",
+    "mon-chief-angry": "mon-report-old",
+    "tue-friend-rumor": "mon-tell-friend",
+    "tue-admin-question": "mon-request-leadership-access",
+    "tue-accountant-request": "mon-invoice-fix",
+    "tue-chief-invoice": "mon-invoice-report"
+  };
 
   function clone(value) {
     return value == null ? value : JSON.parse(JSON.stringify(value));
@@ -25,6 +33,19 @@
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, Number(value) || 0));
+  }
+
+  function conditionContainsAction(condition, actionId) {
+    if (!condition || typeof condition !== "object") return false;
+    if (Array.isArray(condition)) return condition.some((item) => conditionContainsAction(item, actionId));
+    if (condition.actionDone === actionId) return true;
+    return Object.values(condition).some((value) => conditionContainsAction(value, actionId));
+  }
+
+  function addActionGuard(event, actionId) {
+    if (!event || !actionId || conditionContainsAction(event.requires, actionId)) return;
+    const condition = { actionDone: actionId };
+    event.requires = event.requires ? { all: [condition, event.requires] } : condition;
   }
 
   function patchStoryRules() {
@@ -52,6 +73,10 @@
         ]
       };
     }
+
+    Object.entries(BASE_EVENT_ACTION_GUARDS).forEach(([eventId, actionId]) => {
+      addActionGuard(Story.events?.[eventId], actionId);
+    });
   }
 
   function dedupeObjects(items, keyOf) {
@@ -79,6 +104,39 @@
     return story.fallbackEnding?.id || endings[0]?.id || value || null;
   }
 
+  function reverseEffects(state, effects = {}) {
+    for (const [key, delta] of Object.entries(effects.stats || {})) {
+      state.stats[key] = Number(state.stats[key] || 0) - Number(delta || 0);
+    }
+    for (const [key, delta] of Object.entries(effects.trust || {})) {
+      state.trust[key] = Number(state.trust[key] || 0) - Number(delta || 0);
+    }
+    for (const [key, value] of Object.entries(effects.setFlags || {})) {
+      if (state.flags[key] === value) delete state.flags[key];
+    }
+    if (effects.addAccess) state.access = state.access.filter((item) => !effects.addAccess.includes(item));
+    if (effects.addItems) state.inventory = state.inventory.filter((item) => !effects.addItems.includes(item));
+    if (effects.unlockContent) state.unlockedContent = state.unlockedContent.filter((item) => !effects.unlockContent.includes(item));
+  }
+
+  function repairInvalidConditionalEvents(story, state) {
+    const delivered = new Set(uniqueStrings(state.deliveredEvents));
+    const invalid = new Set();
+
+    Object.entries(BASE_EVENT_ACTION_GUARDS).forEach(([eventId, actionId]) => {
+      if (delivered.has(eventId) && !state.completedActions?.[actionId]) {
+        invalid.add(eventId);
+        reverseEffects(state, story.events?.[eventId]?.effects || {});
+      }
+    });
+
+    if (!invalid.size) return;
+    state.deliveredEvents = state.deliveredEvents.filter((eventId) => !invalid.has(eventId));
+    state.inbox = state.inbox.filter((item) => !invalid.has(item.id));
+    state.scheduledEvents = state.scheduledEvents.filter((item) => !invalid.has(item.eventId));
+    state.journal = state.journal.filter((item) => !invalid.has(item.details?.eventId));
+  }
+
   function repairScheduledEvents(story, state) {
     const delivered = new Set(uniqueStrings(state.deliveredEvents));
     const events = story.events || {};
@@ -87,6 +145,9 @@
 
     function append(item) {
       if (!item || !events[item.eventId] || delivered.has(item.eventId)) return;
+      if (item.sourceAction && !state.completedActions?.[item.sourceAction]) return;
+      const requiredAction = BASE_EVENT_ACTION_GUARDS[item.eventId];
+      if (requiredAction && !state.completedActions?.[requiredAction]) return;
       const dayIndex = clamp(item.dayIndex, 0, Math.max(0, (story.days?.length || 1) - 1));
       if (dayIndex < state.dayIndex) return;
       const minute = Math.max(0, Number(item.minute) || Number(story.days?.[dayIndex]?.startMinute) || 0);
@@ -118,6 +179,20 @@
     return repaired;
   }
 
+  function synchronizeEventTimes(story, state) {
+    for (const item of state.inbox || []) {
+      if (!item?.id || !story.events?.[item.id] || !Number.isFinite(Number(item.minute))) continue;
+      story.events[item.id].minute = Number(item.minute);
+    }
+  }
+
+  function normalizeRepairedStats(state) {
+    state.stats.anxiety = clamp(state.stats.anxiety, 0, 10);
+    state.stats.suspicion = Math.max(0, Number(state.stats.suspicion || 0));
+    state.stats.access = Math.max(0, Number(state.stats.access || 0));
+    state.stats.collateral = Math.max(0, Number(state.stats.collateral || 0));
+  }
+
   function repairEngineState(story, rawState) {
     if (!isObject(rawState)) return rawState;
     const state = clone(rawState);
@@ -126,7 +201,7 @@
     state.seed = String(state.seed || "repaired-save");
     state.truthId = validTruthId(story, state.truthId, state.seed);
     state.dayIndex = clamp(state.dayIndex, 0, lastDayIndex);
-    state.minute = clamp(state.minute || story.days?.[state.dayIndex]?.startMinute || 0, 0, WORKDAY_END_MINUTE);
+    state.minute = clamp(state.minute ?? story.days?.[state.dayIndex]?.startMinute ?? 0, 0, WORKDAY_END_MINUTE);
     state.dayStarted = Boolean(state.dayStarted);
     state.ended = Boolean(state.ended);
     state.endingId = state.ended ? validEndingId(story, state.endingId) : null;
@@ -145,7 +220,12 @@
     state.missedRequirements = Array.isArray(state.missedRequirements) ? state.missedRequirements.filter(isObject) : [];
     state.journal = Array.isArray(state.journal) ? state.journal.filter(isObject) : [];
     state.inbox = dedupeObjects(state.inbox, (item) => item.id || `${item.dayIndex}:${item.minute}:${item.source}:${item.title}`);
+    state.scheduledEvents = Array.isArray(state.scheduledEvents) ? state.scheduledEvents.filter(isObject) : [];
+
+    repairInvalidConditionalEvents(story, state);
     state.scheduledEvents = repairScheduledEvents(story, state);
+    synchronizeEventTimes(story, state);
+    normalizeRepairedStats(state);
 
     return state;
   }
@@ -203,8 +283,10 @@
 
   root.UntilFridayIntegrityFixes = {
     WORKDAY_END_MINUTE,
+    BASE_EVENT_ACTION_GUARDS,
     patchStoryRules,
     repairEngineState,
+    repairInvalidConditionalEvents,
     repairScheduledEvents,
     sanitizeWorkflowStorage
   };
