@@ -1,0 +1,494 @@
+.friday-meeting-launcher {
+  border-left: 4px solid #8f3434;
+}
+
+.friday-meeting-preview {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+
+.friday-meeting-preview span {
+  padding: 5px 9px;
+  border: 1px solid #9aa7b2;
+  background: #edf1f4;
+  font-size: 12px;
+}
+
+.friday-scene-overlay,
+.friday-ending-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 6000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(8, 13, 18, 0.92);
+  font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+.friday-scene-overlay::before,
+.friday-ending-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("assets/image-empty-workplace.png") center / cover no-repeat;
+  opacity: 0.12;
+  filter: grayscale(0.35) contrast(1.08);
+}
+
+.friday-scene,
+.friday-ending-card {
+  position: relative;
+  z-index: 1;
+  width: min(980px, 96vw);
+  max-height: 92vh;
+  overflow: hidden;
+  border: 1px solid #607181;
+  box-shadow: 0 22px 65px rgba(0, 0, 0, 0.65);
+  background: #dbe2e7;
+  color: #18232c;
+}
+
+.friday-scene-header,
+.friday-ending-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 16px;
+  border-bottom: 1px solid #667785;
+  background: linear-gradient(#334b60, #263b4d);
+  color: #f3f6f8;
+}
+
+.friday-scene-header div,
+.friday-ending-header div {
+  display: grid;
+  gap: 2px;
+}
+
+.friday-scene-header span,
+.friday-ending-header span {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #b8c5ce;
+}
+
+.friday-scene-header button {
+  width: 30px;
+  height: 28px;
+  border: 1px solid #8293a0;
+  background: #2b4052;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.friday-room {
+  position: relative;
+  display: grid;
+  grid-template-columns: 150px 1fr 150px;
+  align-items: end;
+  min-height: 190px;
+  padding: 26px 40px 18px;
+  border-bottom: 1px solid #a4afb7;
+  background:
+    linear-gradient(rgba(229, 233, 235, 0.92), rgba(198, 207, 213, 0.94)),
+    url("assets/image-corporativ.jpg") center / cover no-repeat;
+}
+
+.friday-person {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  color: #27333c;
+  font-size: 12px;
+}
+
+.friday-person > span {
+  display: grid;
+  place-items: center;
+  width: 82px;
+  height: 98px;
+  border: 1px solid #758592;
+  border-radius: 44px 44px 12px 12px;
+  background: linear-gradient(#768894 0 58%, #455866 58%);
+  color: rgba(255,255,255,0.88);
+  font-size: 31px;
+  box-shadow: 0 10px 18px rgba(43, 53, 60, 0.25);
+}
+
+.friday-person.hr > span {
+  background: linear-gradient(#87949d 0 58%, #5b6066 58%);
+}
+
+.friday-table {
+  position: relative;
+  height: 72px;
+  margin: 0 28px 5px;
+  border: 1px solid #6e5b4c;
+  background: linear-gradient(#94725a, #73533f);
+  box-shadow: 0 13px 17px rgba(37, 37, 37, 0.24);
+}
+
+.friday-folder {
+  position: absolute;
+  left: 45%;
+  top: 13px;
+  width: 120px;
+  height: 44px;
+  transform: rotate(-2deg);
+  border: 1px solid #9a894a;
+  background: #d7c56f;
+}
+
+.friday-recorder {
+  position: absolute;
+  right: 32px;
+  top: 24px;
+  width: 50px;
+  height: 24px;
+  border: 1px solid #1e272e;
+  background: #394650;
+}
+
+.friday-recorder::after {
+  content: "";
+  position: absolute;
+  right: 7px;
+  top: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #8d3434;
+}
+
+.friday-dialogue {
+  max-height: 310px;
+  overflow: auto;
+  padding: 18px 20px 8px;
+  background: #eef1f3;
+}
+
+.friday-dialogue-line {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 14px;
+  padding: 11px 0;
+  border-bottom: 1px solid #d0d7dc;
+}
+
+.friday-dialogue-line strong {
+  color: #344e61;
+}
+
+.friday-dialogue-line p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.friday-choices {
+  display: grid;
+  gap: 8px;
+  padding: 14px 20px 20px;
+  max-height: 260px;
+  overflow: auto;
+  background: #dbe2e7;
+}
+
+.friday-choice,
+.friday-follow-up,
+.friday-finish-button {
+  width: 100%;
+  border: 1px solid #6d7d89;
+  background: linear-gradient(#f7f9fa, #d8dfe4);
+  color: #1e2a32;
+  text-align: left;
+  padding: 11px 13px;
+  cursor: pointer;
+}
+
+.friday-choice {
+  display: grid;
+  gap: 3px;
+}
+
+.friday-choice strong {
+  font-size: 14px;
+}
+
+.friday-choice span {
+  font-size: 12px;
+  color: #53636e;
+}
+
+.friday-choice:hover,
+.friday-follow-up:hover {
+  border-color: #315e7a;
+  background: #eef5f9;
+}
+
+.friday-choice.route-blackmail,
+.friday-choice.route-resignation {
+  border-left: 4px solid #8f3434;
+}
+
+.friday-truth-card {
+  padding: 13px 15px;
+  border: 1px solid #8a6c52;
+  border-left: 5px solid #8f3434;
+  background: #f1e9df;
+}
+
+.friday-truth-card span,
+.friday-ending-truth span,
+.friday-ending-route span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6c6259;
+}
+
+.friday-truth-card p,
+.friday-ending-truth p {
+  margin: 7px 0 0;
+  line-height: 1.45;
+}
+
+.friday-finish-button {
+  background: linear-gradient(#405e75, #2c475d);
+  color: #fff;
+  text-align: center;
+  font-weight: 600;
+}
+
+.friday-scene-warning {
+  margin: 0;
+  padding: 9px 11px;
+  border: 1px solid #9c6b6b;
+  background: #f1dddd;
+  color: #6d2424;
+}
+
+.friday-ending-card {
+  max-height: 94vh;
+  background: #e6ebee;
+}
+
+.friday-ending-header {
+  align-items: flex-start;
+  padding: 20px 24px;
+}
+
+.friday-ending-header h1 {
+  margin: 2px 0 0;
+  font-size: 26px;
+}
+
+.friday-ending-header > p {
+  max-width: 580px;
+  margin: 0;
+  line-height: 1.5;
+  color: #d8e0e5;
+}
+
+.friday-ending-tabs {
+  display: flex;
+  border-bottom: 1px solid #8c9aa4;
+  background: #cbd4da;
+}
+
+.friday-ending-tabs button {
+  min-width: 120px;
+  padding: 10px 16px;
+  border: 0;
+  border-right: 1px solid #9eabb4;
+  background: transparent;
+  cursor: pointer;
+}
+
+.friday-ending-tabs button.selected {
+  background: #eef1f3;
+  box-shadow: inset 0 -3px #8f3434;
+  font-weight: 600;
+}
+
+.friday-ending-body {
+  min-height: 440px;
+  max-height: 59vh;
+  overflow: auto;
+  padding: 22px 24px;
+  background: #eef1f3;
+}
+
+.friday-ending-truth,
+.friday-ending-route {
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border: 1px solid #a6afb5;
+  background: #fff;
+}
+
+.friday-ending-truth {
+  border-left: 5px solid #8f3434;
+}
+
+.friday-ending-route {
+  border-left: 5px solid #3e657e;
+}
+
+.friday-ending-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.friday-ending-summary > div {
+  display: grid;
+  gap: 4px;
+  padding: 13px;
+  border: 1px solid #acb5bb;
+  background: #dde4e8;
+}
+
+.friday-ending-summary span {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #60717d;
+}
+
+.friday-timeline,
+.friday-consequences {
+  display: grid;
+  gap: 10px;
+}
+
+.friday-timeline article,
+.friday-consequences article {
+  display: grid;
+  grid-template-columns: 155px 1fr;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid #b2bac0;
+  background: #fff;
+}
+
+.friday-timeline time {
+  font-size: 12px;
+  color: #5b6d78;
+}
+
+.friday-timeline p,
+.friday-consequences p {
+  margin: 5px 0 0;
+  line-height: 1.45;
+}
+
+.friday-consequences article {
+  grid-template-columns: 170px 1fr;
+}
+
+.friday-credits {
+  max-width: 560px;
+  margin: 20px auto;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.friday-credits img {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+}
+
+.friday-credits hr {
+  border: 0;
+  border-top: 1px solid #a8b1b7;
+  margin: 20px 0;
+}
+
+.friday-ending-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 13px 20px;
+  border-top: 1px solid #87959f;
+  background: #cbd4da;
+}
+
+.friday-ending-actions button {
+  min-width: 170px;
+  padding: 9px 14px;
+  border: 1px solid #687984;
+  background: linear-gradient(#fff, #d7dfe4);
+  cursor: pointer;
+}
+
+.friday-ending-actions button:last-child {
+  background: linear-gradient(#405e75, #2c475d);
+  color: #fff;
+}
+
+@media (max-width: 760px) {
+  .friday-scene-overlay,
+  .friday-ending-overlay {
+    padding: 8px;
+  }
+
+  .friday-scene,
+  .friday-ending-card {
+    width: 100%;
+    max-height: 98vh;
+  }
+
+  .friday-room {
+    grid-template-columns: 90px 1fr 90px;
+    min-height: 135px;
+    padding: 15px 10px 10px;
+  }
+
+  .friday-person > span {
+    width: 58px;
+    height: 72px;
+    font-size: 23px;
+  }
+
+  .friday-table {
+    margin: 0 8px;
+  }
+
+  .friday-dialogue-line {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .friday-ending-header {
+    display: grid;
+  }
+
+  .friday-ending-tabs {
+    overflow-x: auto;
+  }
+
+  .friday-ending-tabs button {
+    min-width: 105px;
+  }
+
+  .friday-ending-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .friday-timeline article,
+  .friday-consequences article {
+    grid-template-columns: 1fr;
+  }
+
+  .friday-ending-actions {
+    display: grid;
+  }
+}
