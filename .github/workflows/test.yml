@@ -24,8 +24,12 @@ jobs:
         run: node tests/story-validation.test.js
       - name: Test hidden choice rules
         run: node tests/rules-extension.test.js
+      - name: Validate save integrity repairs
+        run: node tests/integrity-fixes.test.js
       - name: Validate browser UI contract
         run: node tests/ui-contract.test.js
+      - name: Validate exclusive app startup
+        run: node tests/bootstrap-guard.test.js
       - name: Validate desktop icon presentation
         run: node tests/desktop-icons.test.js
       - name: Validate passive game clock
@@ -42,5 +46,7 @@ jobs:
         run: node tests/thursday-stage.test.js
       - name: Validate Friday finale stage
         run: node tests/friday-stage.test.js
+      - name: Validate interrupted Friday recovery
+        run: node tests/friday-scene-guard.test.js
       - name: Validate Friday ending reopen
         run: node tests/friday-reopen.test.js
