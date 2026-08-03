@@ -46,11 +46,47 @@ require("../src/runtime-engine.js");
 
 const Engine = globalThis.UntilFridayEngine;
 const story = globalThis.UNTIL_FRIDAY_STORY;
+
+const startEngine = Engine.createEngine(story, null, { seed: "atomic-start", truthId: "player" });
+const beforeFailedStart = startEngine.getState();
+rejectWrites = true;
+let result = startEngine.startDay();
+assert.equal(result.ok, false, "day start must fail atomically when storage rejects the save");
+assert.equal(result.reason, "save-failed");
+assert.equal(result.rolledBack, true);
+assert.deepEqual(comparable(startEngine.getState()), comparable(beforeFailedStart));
+assert.equal(startEngine.getState().dayStarted, false);
+
+rejectWrites = false;
+result = startEngine.startDay();
+assert.equal(result.ok, true);
+assert.equal(result.persisted, true);
+assert.equal(startEngine.getState().dayStarted, true);
+
+const beforeFailedUpdate = startEngine.getState();
+rejectWrites = true;
+result = startEngine.updateState((state) => {
+  state.flags.introCompleted = true;
+}, "intro-completed");
+assert.equal(result.ok, false, "metadata updates must fail atomically when storage rejects the save");
+assert.equal(result.reason, "save-failed");
+assert.equal(result.rolledBack, true);
+assert.deepEqual(comparable(startEngine.getState()), comparable(beforeFailedUpdate));
+assert.equal(Boolean(startEngine.getState().flags.introCompleted), false);
+
+rejectWrites = false;
+result = startEngine.updateState((state) => {
+  state.flags.introCompleted = true;
+}, "intro-completed");
+assert.equal(result.ok, true);
+assert.equal(result.persisted, true);
+assert.equal(startEngine.getState().flags.introCompleted, true);
+
 const engine = Engine.createEngine(story, null, { seed: "atomic-save", truthId: "player" });
-engine.startDay();
+assert.equal(engine.startDay().ok, true);
 
 rejectWrites = true;
-let result = engine.applyAction("mon-report-final");
+result = engine.applyAction("mon-report-final");
 assert.equal(result.ok, false);
 assert.equal(result.reason, "save-failed");
 assert.equal(result.rolledBack, true);
@@ -115,6 +151,8 @@ const runtimeSource = read("src/runtime-engine.js");
 assert.doesNotThrow(() => new Function(runtimeSource));
 assert.match(runtimeSource, /rolledBack: true/);
 assert.match(runtimeSource, /action-exception/);
+assert.match(runtimeSource, /Рабочий день не сохранён/);
+assert.match(runtimeSource, /Служебное изменение состояния полностью отменено/);
 assert.match(runtimeSource, /Время не сохранено/);
 assert.match(runtimeSource, /Переход не сохранён/);
 assert.equal(fs.existsSync(path.join(root, "src/persistent-engine-guard.js")), false, "obsolete persistence facade must be deleted");
