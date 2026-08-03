@@ -4,8 +4,6 @@
   const Story = root.UNTIL_FRIDAY_STORY;
   if (!Story || root.UntilFridayDayEndControl) return;
 
-  const SAVE_KEY = root.UntilFridayMigration?.ENGINE_SAVE_KEY || "until-friday-save-v2";
-  const STORAGE_TEST_KEY = "__until_friday_storage_test__";
   let activeOverlay = null;
   let decorateQueued = false;
 
@@ -65,34 +63,6 @@
       total: requirements.length,
       complete: requirements.length === 0 || done === requirements.length
     };
-  }
-
-  function storageAvailable() {
-    try {
-      localStorage.setItem(STORAGE_TEST_KEY, "1");
-      localStorage.removeItem(STORAGE_TEST_KEY);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  function saveState(state) {
-    const sharedRuntime = runtime();
-    if (sharedRuntime?.persist) {
-      const result = sharedRuntime.persist(state);
-      if (result?.ok) return true;
-      console.error("Не удалось сохранить переход на следующий день", result?.error || result?.message);
-      return false;
-    }
-
-    try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-      return true;
-    } catch (error) {
-      console.error("Не удалось сохранить переход на следующий день", error);
-      return false;
-    }
   }
 
   function removeOverlay() {
@@ -169,7 +139,6 @@
   }
 
   function renderNextDay(overlay, result, endingDay, nextDay) {
-    overlay.__pendingTransition = null;
     overlay.dataset.locked = "true";
     root.UntilFridayPassiveClock?.resetDayClock?.();
     overlay.querySelector(".day-end-control-dialog").innerHTML = `
@@ -189,20 +158,6 @@
     overlay.querySelector("[data-start-next]").focus();
   }
 
-  function retryPendingSave(overlay) {
-    const pending = overlay.__pendingTransition;
-    if (!pending) return false;
-    const confirm = overlay.querySelector("[data-confirm]");
-    if (!saveState(pending.state)) {
-      confirm.disabled = false;
-      confirm.textContent = "Повторить сохранение";
-      setWarning(overlay, "День уже переключён внутри игры, но браузер пока не сохранил его. Освободите место или разрешите локальное хранилище, затем повторите сохранение.");
-      return true;
-    }
-    renderNextDay(overlay, pending.result, pending.endingDay, pending.nextDay);
-    return true;
-  }
-
   function finishDay(engine, overlay, endingDay) {
     const confirm = overlay.querySelector("[data-confirm]");
     const cancel = overlay.querySelector("[data-cancel]");
@@ -210,16 +165,6 @@
     confirm.disabled = true;
     if (cancel) cancel.disabled = true;
     confirm.textContent = "Сохранение...";
-
-    if (retryPendingSave(overlay)) return;
-
-    if (!storageAvailable()) {
-      confirm.disabled = false;
-      if (cancel) cancel.disabled = false;
-      confirm.textContent = "Завершить день";
-      setWarning(overlay, "Браузер не разрешает локальное сохранение. Переход не выполнен, прогресс текущего дня не изменён.");
-      return;
-    }
 
     const before = engine.getState();
     let result;
@@ -233,9 +178,12 @@
       confirm.disabled = false;
       if (cancel) cancel.disabled = false;
       confirm.textContent = "Повторить";
-      setWarning(overlay, result?.final
+      const message = result?.final
         ? "Финальный день завершается через сцену встречи с директором."
-        : `Не удалось завершить день: ${result?.message || result?.reason || "неизвестная ошибка"}.`);
+        : result?.reason === "save-failed"
+          ? "Переход отменён: браузер не смог записать сохранение. Освободите место и повторите."
+          : `Не удалось завершить день: ${result?.message || result?.reason || "неизвестная ошибка"}.`;
+      setWarning(overlay, message);
       return;
     }
 
@@ -246,15 +194,6 @@
       if (cancel) cancel.disabled = false;
       confirm.textContent = "Повторить";
       setWarning(overlay, "Движок не переключил день. Прогресс текущего дня не удалён.");
-      return;
-    }
-
-    if (!saveState(state)) {
-      overlay.dataset.locked = "true";
-      overlay.__pendingTransition = { state, result, nextDay, endingDay };
-      confirm.disabled = false;
-      confirm.textContent = "Повторить сохранение";
-      setWarning(overlay, "День переключён, но запись сохранения не удалась. Повторная кнопка сохранит тот же переход и не перескочит ещё на один день.");
       return;
     }
 
@@ -344,7 +283,6 @@
     progress: dayProgress,
     applicableRequirements,
     finishDay,
-    getEngine,
-    storageAvailable
+    getEngine
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
