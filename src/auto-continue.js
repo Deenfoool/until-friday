@@ -52,7 +52,7 @@
       if (!Onboarding.readProfile?.()) {
         try {
           localStorage.setItem(Onboarding.PROFILE_KEY, JSON.stringify({
-            name: "Илья Воронов",
+            name: "Сотрудник",
             createdAt: Date.now(),
             migrated: true
           }));
