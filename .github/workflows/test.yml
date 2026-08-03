@@ -28,3 +28,5 @@ jobs:
         run: node tests/ui-contract.test.js
       - name: Validate Tuesday gameplay stage
         run: node tests/tuesday-stage.test.js
+      - name: Validate Wednesday gameplay stage
+        run: node tests/wednesday-stage.test.js
