@@ -4,9 +4,10 @@
   const Engine = window.UntilFridayEngine;
   const Story = window.UNTIL_FRIDAY_STORY;
   const Migration = window.UntilFridayMigration;
+  const RuntimeEngine = window.UntilFridayRuntimeEngine;
   const LegacyData = window.GAME_DATA || {};
 
-  if (!Engine || !Story || !Migration) {
+  if (!Engine || !Story || !Migration || !RuntimeEngine) {
     throw new Error("Until Friday engine modules are not loaded.");
   }
 
@@ -73,6 +74,10 @@
     renderDesktopApps();
     bindGlobalControls();
     restoreIntroState();
+    window.addEventListener("until-friday-state-change", (event) => {
+      gameState = event.detail?.state || engine.getState();
+      updateClock();
+    });
 
     if (hasCompletedIntro()) {
       showDesktop();
@@ -94,9 +99,17 @@
 
   function persist(showToast = false) {
     gameState = engine.getState();
-    localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
+    const savedState = RuntimeEngine.persist(gameState);
     updateClock();
-    if (showToast) notify("Система", "Прогресс сохранён на этом компьютере.");
+    if (showToast) {
+      notify(
+        "Система",
+        savedState.ok
+          ? "Прогресс сохранён на этом компьютере."
+          : "Не удалось сохранить прогресс. Освободите место в браузере и повторите."
+      );
+    }
+    return savedState;
   }
 
   function restoreIntroState() {
@@ -144,10 +157,18 @@
       return;
     }
 
+    const updated = engine.updateState((state) => {
+      state.flags ||= {};
+      state.flags.introCompleted = true;
+    }, "intro-completed");
+    if (!updated.ok) {
+      notify("Система", "Не удалось сохранить завершение пролога. Освободите место в браузере и повторите.");
+      return;
+    }
+
+    gameState = updated.state;
     runtime.introIndex = lines.length + 1;
     localStorage.setItem(INTRO_KEY, String(runtime.introIndex));
-    gameState.flags.introCompleted = true;
-    localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
     showDesktop();
     ensureDayStarted();
   }
@@ -162,7 +183,13 @@
     gameState = engine.getState();
     if (!gameState.dayStarted && !gameState.ended) {
       const result = engine.startDay();
-      persist();
+      if (!result.ok) {
+        gameState = result.state || engine.getState();
+        notify("Система", actionErrorText(result.reason));
+        updateClock();
+        return;
+      }
+      gameState = result.state || engine.getState();
       deliverEvents(result.events || []);
       notify("Система", `${result.day?.title || currentDay().title}. Рабочий сеанс открыт.`);
     } else {
@@ -250,7 +277,12 @@
     const app = APP_DEFS.find((item) => item.id === appId);
     if (!app) return;
     const element = createWindowElement(appId, app.name, windowSize(appId));
-    const render = () => renderApp(appId, element);
+    const render = () => {
+      renderApp(appId, element);
+      window.dispatchEvent(new CustomEvent("until-friday-ui-render", {
+        detail: { appId, element }
+      }));
+    };
     runtime.windows.set(appId, { element, render, app });
     ui.windowsLayer.appendChild(element);
     createTaskButton(appId, app.name);
@@ -513,6 +545,9 @@
     bindWindowControls(id, element);
     makeDraggable(element, $(".window-titlebar", element));
     element.addEventListener("mousedown", () => focusWindow(id));
+    window.dispatchEvent(new CustomEvent("until-friday-ui-render", {
+      detail: { appId: id, element }
+    }));
     focusWindow(id);
   }
 
@@ -563,7 +598,7 @@
 
     $("[data-refresh]", content).addEventListener("click", () => {
       const result = advanceTime(2);
-      if (!result.events.length) notify("Почта", "Новых писем нет.");
+      if (result.ok && !result.events.length) notify("Почта", "Новых писем нет.");
       renderMail(element);
     });
     $(".window-status", element).textContent = `${messages.length} писем`;
@@ -691,6 +726,7 @@
 
     const requirements = currentDay().requirements || [];
     requirements.forEach((requirement) => {
+      if (requirement.appliesWhen && !engine.conditionPasses(requirement.appliesWhen)) return;
       const satisfied = engine.conditionPasses(requirement.satisfiedWhen);
       const card = document.createElement("article");
       card.className = `task-card requirement ${satisfied ? "done" : ""}`;
@@ -718,12 +754,12 @@
   function performAction(actionId, sourceWindowId = null) {
     const result = engine.applyAction(actionId);
     if (!result.ok) {
+      gameState = result.state || engine.getState();
       notify("Система", actionErrorText(result.reason));
       return result;
     }
 
-    gameState = result.state;
-    localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
+    gameState = result.state || engine.getState();
     notify("Действие выполнено", result.result || Story.actions[actionId]?.label || actionId);
     deliverEvents(result.events || []);
     refreshOpenWindows();
@@ -736,10 +772,19 @@
     const messages = {
       "game-ended": "Неделя уже завершена.",
       "day-not-started": "Рабочий день ещё не начался.",
+      "day-start-exception": "Не удалось начать рабочий день.",
       "unknown-action": "Действие не найдено.",
       "wrong-day": "Это действие недоступно сегодня.",
       "already-completed": "Это действие уже выполнено.",
-      "requirements-not-met": "Пока не выполнены условия для этого действия."
+      "requirements-not-met": "Пока не выполнены условия для этого действия.",
+      "choice-locked": "Для этой ситуации уже выбран другой вариант.",
+      "focus-exhausted": "На сегодня не осталось времени для ещё одного крупного действия.",
+      "workday-ended": "Рабочий день уже закончился.",
+      "not-enough-time": "До конца рабочего дня недостаточно времени для этого действия.",
+      "save-failed": "Изменение отменено: браузер не смог записать сохранение.",
+      "action-exception": "Действие отменено из-за внутренней ошибки.",
+      "time-exception": "Ход времени отменён из-за внутренней ошибки.",
+      "transition-exception": "Переход на следующий день отменён из-за внутренней ошибки."
     };
     return messages[reason] || "Действие недоступно.";
   }
@@ -831,6 +876,7 @@
   }
 
   function renderTrash(element) {
+    gameState = engine.getState();
     const content = $(".window-content", element);
     const removed = gameState.inventory.filter((item) => item.startsWith("deleted-") || item.startsWith("draft-"));
     content.innerHTML = removed.length
@@ -841,8 +887,13 @@
 
   function advanceTime(minutes) {
     const result = engine.advanceTime(minutes);
+    if (!result.ok) {
+      gameState = result.state || engine.getState();
+      notify("Система", actionErrorText(result.reason));
+      return { ...result, events: result.events || [] };
+    }
+
     gameState = result.state || engine.getState();
-    persist();
     deliverEvents(result.events || []);
     refreshOpenWindows();
     return result;
@@ -857,6 +908,7 @@
   }
 
   function deliverUndisplayedInbox() {
+    gameState = engine.getState();
     gameState.inbox.slice(-4).forEach((item) => {
       const id = item.id || `${item.type}-${item.source}-${item.title}`;
       if (runtime.consumedNotifications.has(id)) return;
@@ -918,7 +970,9 @@
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay";
     const requirements = currentDay().requirements || [];
-    const missing = requirements.filter((item) => !engine.conditionPasses(item.satisfiedWhen));
+    const missing = requirements
+      .filter((item) => !item.appliesWhen || engine.conditionPasses(item.appliesWhen))
+      .filter((item) => !engine.conditionPasses(item.satisfiedWhen));
     overlay.innerHTML = `
       <section class="endday-card">
         <h2>Завершить ${escapeHtml(currentDay().title.toLowerCase())}?</h2>
@@ -937,8 +991,15 @@
   function finishDay(overlay) {
     const endingDay = currentDay();
     const result = engine.endDay();
+    if (!result.ok) {
+      gameState = result.state || engine.getState();
+      runtime.dayTransitionOpen = false;
+      notify("Система", actionErrorText(result.reason));
+      overlay.remove();
+      return;
+    }
+
     gameState = result.state || engine.getState();
-    persist();
     runtime.dayTransitionOpen = false;
 
     if (result.final) {
@@ -963,7 +1024,6 @@
     $("[data-start-next]", overlay).addEventListener("click", () => {
       overlay.remove();
       updateClock();
-      deliverEvents(result.events || []);
       notify("Система", `${currentDay().title}. Рабочий сеанс открыт.`);
     });
   }
