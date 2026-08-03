@@ -39,6 +39,112 @@
   object-fit: cover;
 }
 
+.programmatic-spinner {
+  --spinner-size: 24px;
+  position: relative;
+  display: inline-block;
+  width: var(--spinner-size);
+  height: var(--spinner-size);
+  flex: 0 0 var(--spinner-size);
+  vertical-align: middle;
+}
+
+.programmatic-spinner__segment {
+  position: absolute;
+  inset: 0;
+  transform: rotate(calc(var(--segment-index) * 30deg));
+}
+
+.programmatic-spinner__segment::before {
+  content: "";
+  display: block;
+  width: max(2px, calc(var(--spinner-size) * .11));
+  height: calc(var(--spinner-size) * .28);
+  margin: 0 auto;
+  border-radius: 999px;
+  background: #55758e;
+  opacity: .18;
+  animation: until-friday-spinner-pulse 1s linear infinite;
+  animation-delay: calc(var(--segment-index) * -.083333s);
+}
+
+.programmatic-spinner.compact .programmatic-spinner__segment::before {
+  background: currentColor;
+}
+
+.programmatic-loading-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.programmatic-loading-row.compact {
+  gap: 6px;
+}
+
+.programmatic-loading-row__label {
+  color: #53616b;
+  font-size: 12px;
+}
+
+.system-loading-overlay {
+  position: fixed;
+  z-index: 10000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #1d2b36;
+  opacity: 1;
+  transition: opacity 160ms ease;
+}
+
+.system-loading-overlay.closing {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.system-loading-overlay__panel {
+  display: flex;
+  min-width: 245px;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 1px solid #566977;
+  background: #e8ecef;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, .34);
+  color: #273640;
+  font: 13px Tahoma, Arial, sans-serif;
+}
+
+.system-loading-overlay__label {
+  white-space: nowrap;
+}
+
+.programmatic-button-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.programmatic-button-loading__spinner {
+  margin-left: 2px;
+}
+
+@keyframes until-friday-spinner-pulse {
+  0%, 35%, 100% {
+    opacity: .18;
+  }
+  36%, 48% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .programmatic-spinner__segment::before {
+    animation-duration: 2.4s;
+  }
+}
+
 .day-label {
   margin-left: 10px;
   color: #4c5962;
