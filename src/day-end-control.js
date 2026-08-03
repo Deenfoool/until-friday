@@ -5,6 +5,7 @@
   if (!Story || root.UntilFridayDayEndControl) return;
 
   const SAVE_KEY = root.UntilFridayMigration?.ENGINE_SAVE_KEY || "until-friday-save-v2";
+  const STORAGE_TEST_KEY = "__until_friday_storage_test__";
   let activeOverlay = null;
   let decorateQueued = false;
 
@@ -57,6 +58,16 @@
     };
   }
 
+  function storageAvailable() {
+    try {
+      localStorage.setItem(STORAGE_TEST_KEY, "1");
+      localStorage.removeItem(STORAGE_TEST_KEY);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function saveState(state) {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(state));
@@ -68,8 +79,16 @@
   }
 
   function removeOverlay() {
+    if (activeOverlay?.dataset.locked === "true") return;
     activeOverlay?.remove();
     activeOverlay = null;
+  }
+
+  function setWarning(overlay, text) {
+    const warning = overlay.querySelector("[data-warning]");
+    if (!warning) return;
+    warning.hidden = false;
+    warning.textContent = text;
   }
 
   function openDayEndDialog() {
@@ -80,7 +99,7 @@
     if (!state || state.ended || state.dayIndex >= Story.days.length - 1) return false;
 
     if (activeOverlay?.isConnected) {
-      activeOverlay.querySelector("button")?.focus();
+      activeOverlay.querySelector("button:not([disabled])")?.focus();
       return true;
     }
 
@@ -117,14 +136,12 @@
       : "Часть основных задач ещё не завершена. День всё равно можно закончить, но это повлияет на итог недели.";
 
     if (missing.length) {
-      const warning = overlay.querySelector("[data-warning]");
-      warning.hidden = false;
-      warning.textContent = `Невыполненные обязательства: ${missing.map((item) => item.label || item.id).join("; ")}.`;
+      setWarning(overlay, `Невыполненные обязательства: ${missing.map((item) => item.label || item.id).join("; ")}.`);
     }
 
     overlay.querySelector("[data-cancel]").addEventListener("click", removeOverlay);
     overlay.addEventListener("click", (event) => {
-      if (event.target === overlay) removeOverlay();
+      if (event.target === overlay && overlay.dataset.locked !== "true") removeOverlay();
     });
     overlay.querySelector("[data-confirm]").addEventListener("click", () => finishDay(engine, overlay, day));
 
@@ -134,52 +151,9 @@
     return true;
   }
 
-  function finishDay(engine, overlay, endingDay) {
-    const confirm = overlay.querySelector("[data-confirm]");
-    const cancel = overlay.querySelector("[data-cancel]");
-    const warning = overlay.querySelector("[data-warning]");
-    confirm.disabled = true;
-    cancel.disabled = true;
-    confirm.textContent = "Сохранение...";
-
-    let result;
-    try {
-      result = engine.endDay();
-    } catch (error) {
-      result = { ok: false, reason: "exception", message: error?.message || String(error) };
-    }
-
-    if (!result?.ok || result.final) {
-      confirm.disabled = false;
-      cancel.disabled = false;
-      confirm.textContent = "Повторить";
-      warning.hidden = false;
-      warning.textContent = result?.final
-        ? "Финальный день завершается через сцену встречи с директором."
-        : `Не удалось завершить день: ${result?.message || result?.reason || "неизвестная ошибка"}.`;
-      return;
-    }
-
-    const state = result.state || engine.getState();
-    const nextDay = result.nextDay || clone(Story.days?.[state.dayIndex]);
-    if (!nextDay || state.dayIndex <= Number(endingDay?.dayIndex ?? -1)) {
-      confirm.disabled = false;
-      cancel.disabled = false;
-      confirm.textContent = "Повторить";
-      warning.hidden = false;
-      warning.textContent = "Движок не переключил день. Прогресс текущего дня не удалён.";
-      return;
-    }
-
-    if (!saveState(state)) {
-      confirm.disabled = false;
-      cancel.disabled = false;
-      confirm.textContent = "Повторить";
-      warning.hidden = false;
-      warning.textContent = "Браузер не разрешил сохранить переход. Проверьте доступ к локальному хранилищу.";
-      return;
-    }
-
+  function renderNextDay(overlay, result, endingDay, nextDay) {
+    overlay.__pendingTransition = null;
+    overlay.dataset.locked = "true";
     root.UntilFridayPassiveClock?.resetDayClock?.();
     overlay.querySelector(".day-end-control-dialog").innerHTML = `
       <header>
@@ -198,6 +172,86 @@
     overlay.querySelector("[data-start-next]").focus();
   }
 
+  function retryPendingSave(overlay) {
+    const pending = overlay.__pendingTransition;
+    if (!pending) return false;
+    const confirm = overlay.querySelector("[data-confirm]");
+    if (!saveState(pending.state)) {
+      confirm.disabled = false;
+      confirm.textContent = "Повторить сохранение";
+      setWarning(overlay, "День уже переключён внутри игры, но браузер пока не сохранил его. Освободите место или разрешите локальное хранилище, затем повторите сохранение.");
+      return true;
+    }
+    renderNextDay(overlay, pending.result, pending.endingDay, pending.nextDay);
+    return true;
+  }
+
+  function finishDay(engine, overlay, endingDay) {
+    const confirm = overlay.querySelector("[data-confirm]");
+    const cancel = overlay.querySelector("[data-cancel]");
+
+    confirm.disabled = true;
+    if (cancel) cancel.disabled = true;
+    confirm.textContent = "Сохранение...";
+
+    if (retryPendingSave(overlay)) return;
+
+    if (!storageAvailable()) {
+      confirm.disabled = false;
+      if (cancel) cancel.disabled = false;
+      confirm.textContent = "Завершить день";
+      setWarning(overlay, "Браузер не разрешает локальное сохранение. Переход не выполнен, прогресс текущего дня не изменён.");
+      return;
+    }
+
+    const before = engine.getState();
+    let result;
+    try {
+      result = engine.endDay();
+    } catch (error) {
+      result = { ok: false, reason: "exception", message: error?.message || String(error) };
+    }
+
+    if (!result?.ok || result.final) {
+      confirm.disabled = false;
+      if (cancel) cancel.disabled = false;
+      confirm.textContent = "Повторить";
+      setWarning(overlay, result?.final
+        ? "Финальный день завершается через сцену встречи с директором."
+        : `Не удалось завершить день: ${result?.message || result?.reason || "неизвестная ошибка"}.`);
+      return;
+    }
+
+    const state = result.state || engine.getState();
+    const nextDay = result.nextDay || clone(Story.days?.[state.dayIndex]);
+    if (!nextDay || state.dayIndex <= before.dayIndex) {
+      confirm.disabled = false;
+      if (cancel) cancel.disabled = false;
+      confirm.textContent = "Повторить";
+      setWarning(overlay, "Движок не переключил день. Прогресс текущего дня не удалён.");
+      return;
+    }
+
+    if (!saveState(state)) {
+      overlay.dataset.locked = "true";
+      overlay.__pendingTransition = { state, result, nextDay, endingDay };
+      confirm.disabled = false;
+      confirm.textContent = "Повторить сохранение";
+      setWarning(overlay, "День переключён, но запись сохранения не удалась. Повторная кнопка сохранит тот же переход и не перескочит ещё на один день.");
+      return;
+    }
+
+    renderNextDay(overlay, result, endingDay, nextDay);
+  }
+
+  function updateTaskCard(card, progress) {
+    card.querySelector("[data-day-end-state]").textContent = `${progress.done}/${progress.total}`;
+    card.querySelector("[data-day-end-text]").textContent = progress.complete
+      ? "Основные задачи закрыты. Перейдите к следующему дню."
+      : "День можно завершить досрочно, но незакрытые обязательства повлияют на последствия.";
+    card.classList.toggle("day-end-ready", progress.complete);
+  }
+
   function decorateTaskLists() {
     const engine = getEngine();
     if (!engine) return;
@@ -205,22 +259,21 @@
     if (!state || state.ended || state.dayIndex >= Story.days.length - 1) return;
 
     document.querySelectorAll(".task-list").forEach((list) => {
-      if (list.querySelector("[data-day-end-card]")) return;
       const progress = dayProgress(engine, state);
-      const card = document.createElement("article");
-      card.className = "task-card day-end-task-card";
-      card.dataset.dayEndCard = "true";
-      card.innerHTML = `
-        <header><h3>Завершение рабочего дня</h3><span data-day-end-state></span></header>
-        <div class="task-body">
-          <p data-day-end-text></p>
-          <div class="action-row"><button type="button" class="action-button" data-day-end-control>Завершить рабочий день</button></div>
-        </div>`;
-      card.querySelector("[data-day-end-state]").textContent = `${progress.done}/${progress.total}`;
-      card.querySelector("[data-day-end-text]").textContent = progress.complete
-        ? "Основные задачи закрыты. Перейдите к следующему дню."
-        : "День можно завершить досрочно, но незакрытые обязательства повлияют на последствия.";
-      list.appendChild(card);
+      let card = list.querySelector("[data-day-end-card]");
+      if (!card) {
+        card = document.createElement("article");
+        card.className = "task-card day-end-task-card";
+        card.dataset.dayEndCard = "true";
+        card.innerHTML = `
+          <header><h3>Завершение рабочего дня</h3><span data-day-end-state></span></header>
+          <div class="task-body">
+            <p data-day-end-text></p>
+            <div class="action-row"><button type="button" class="action-button" data-day-end-control>Завершить рабочий день</button></div>
+          </div>`;
+        list.appendChild(card);
+      }
+      updateTaskCard(card, progress);
     });
   }
 
@@ -259,7 +312,7 @@
 
   document.addEventListener("click", handleActivation, true);
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && activeOverlay?.isConnected) removeOverlay();
+    if (event.key === "Escape" && activeOverlay?.isConnected && activeOverlay.dataset.locked !== "true") removeOverlay();
   });
 
   const observer = new MutationObserver(queueDecorate);
@@ -272,6 +325,7 @@
     open: openDayEndDialog,
     progress: dayProgress,
     finishDay,
-    getEngine
+    getEngine,
+    storageAvailable
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
