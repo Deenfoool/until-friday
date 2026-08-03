@@ -12,6 +12,7 @@ const source = read("src/day-end-control.js");
 assert.doesNotThrow(() => new Function(source), "day end controller must contain valid JavaScript");
 assert.doesNotMatch(source, /UntilFridayPersistentEngineGuard/, "day end control must use the unified runtime directly");
 assert.doesNotMatch(source, /localStorage|\.persist\(/, "day end UI must not own persistence");
+assert.doesNotMatch(source, /new\s+MutationObserver\s*\(/, "day end UI must use lifecycle events instead of global DOM observation");
 
 const story = require("../src/story-v2.js");
 const auditRequirement = story.days[2].requirements.find((item) => item.id === "wednesday-audit");
@@ -20,7 +21,6 @@ const context = {
   UNTIL_FRIDAY_STORY: story,
   UntilFridayRuntimeEngine: { getEngine: () => null },
   UntilFridayPassiveClock: { resetDayClock: () => {} },
-  MutationObserver: class MutationObserver { observe() {} },
   requestAnimationFrame: (callback) => callback(),
   addEventListener() {},
   document: {
@@ -108,6 +108,8 @@ for (const text of [
   "dataset.locked",
   "applicableRequirements",
   "until-friday-state-change",
+  "until-friday-ui-render",
+  "removeTaskCards",
   "result?.reason === \"save-failed\""
 ]) {
   assert.match(source, new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `day end controller must contain: ${text}`);
