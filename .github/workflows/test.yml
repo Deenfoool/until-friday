@@ -34,3 +34,5 @@ jobs:
         run: node tests/thursday-stage.test.js
       - name: Validate Friday finale stage
         run: node tests/friday-stage.test.js
+      - name: Validate Friday ending reopen
+        run: node tests/friday-reopen.test.js
