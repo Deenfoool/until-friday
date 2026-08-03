@@ -12,7 +12,8 @@ const eventDrivenModules = [
   "src/day-end-control.js",
   "src/ui-runtime-guards.js",
   "src/friday-scene-guard.js",
-  "src/friday-ending-reopen.js"
+  "src/friday-ending-reopen.js",
+  "src/notification-history-guard.js"
 ];
 
 for (const file of eventDrivenModules) {
@@ -36,6 +37,10 @@ assert.match(profile, /LEGACY_FULL_NAME/, "legacy story identity must be convert
 assert.match(profile, /friday-ending-overlay/, "final screens must receive player identity personalization");
 assert.match(profile, /terminalLogin/, "profile bridge must keep the terminal login personalized");
 
+const autoContinue = read("src/auto-continue.js");
+assert.doesNotMatch(autoContinue, /Илья\s+Воронов|Илью|Ильи/, "legacy continuation must not recreate the former fixed identity");
+assert.match(autoContinue, /name: "Сотрудник"/, "missing legacy profiles must use a neutral employee name");
+
 const dayEnd = read("src/day-end-control.js");
 assert.match(dayEnd, /removeTaskCards/, "day-end UI must remove stale task cards");
 assert.match(dayEnd, /event\.detail\?\.appId === "tasks"/, "day-end UI must react specifically to the Tasks render lifecycle");
@@ -51,5 +56,9 @@ assert.match(friday, /event\.detail\?\.appId === "tasks"/, "Friday recovery card
 const ending = read("src/friday-ending-reopen.js");
 assert.match(ending, /queueAfterLifecycle/, "ending restoration must perform a delayed lifecycle inspection");
 assert.match(ending, /inspectEnding/, "ending restoration must handle enhanced and basic overlays");
+
+const history = read("src/notification-history-guard.js");
+assert.match(history, /until-friday-app-ready/, "restored inbox toasts must be inspected after application startup");
+assert.match(history, /queueMicrotask/, "notification inspection must occur after the current state-change stack finishes");
 
 console.log("Event-driven UI and neutral identity validation passed.");
