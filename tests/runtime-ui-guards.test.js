@@ -17,21 +17,28 @@ for (const text of [
   "tue-answer-admin-honest",
   "Роман Белов",
   "data-workflow-file-id",
+  "repairDocumentActionButtons",
+  "repairEndingNarrative",
+  "repairWindowPositions",
   "choice-locked",
   "focus-exhausted",
   "workday-ended",
   "pointerType !== \"touch\"",
-  "friday-ending-overlay"
+  "friday-ending-overlay",
+  "setText"
 ]) {
   assert.match(ui, new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `UI guard must cover: ${text}`);
 }
 
 const terminal = read("src/terminal-sync.js");
 assert.doesNotThrow(() => new Function(terminal), "terminal synchronization must contain valid JavaScript");
-for (const command of ["status", "day", "tasks", "actions", "logs"]) {
+for (const command of ["status", "day", "tasks", "actions", "logs", "run", "endday"]) {
   assert.match(terminal, new RegExp(`\\"${command}\\"`), `terminal synchronization must intercept ${command}`);
 }
 assert.match(terminal, /getEngine/, "terminal must read the live engine");
+assert.match(terminal, /UntilFridayDayEndControl/, "terminal endday must use the reliable transition controller");
+assert.match(terminal, /action\.channel !== "terminal"/, "terminal run must reject actions from other applications");
+assert.match(terminal, /storageWritable/, "terminal actions must verify local persistence first");
 assert.match(terminal, /event\.stopImmediatePropagation\(\)/, "old stale command handler must be bypassed");
 assert.match(terminal, /UntilFridayProfile/, "terminal output must use the current player profile");
 
@@ -41,7 +48,14 @@ assert.match(auto, /until-friday-auto-continue-v1/);
 assert.match(auto, /data-start-next/);
 assert.match(auto, /data-recovered-start/);
 assert.match(auto, /continue-after-transition/);
+assert.match(auto, /window\.setTimeout\(clear, 5000\)/, "unused continuation markers must expire");
 assert.match(auto, /sessionStorage\.removeItem/, "one-time continuation marker must be consumed");
+
+const css = read("styles-v2.css");
+assert.match(css, /@media \(max-width: 760px\)/, "window layout must contain a narrow-screen breakpoint");
+assert.match(css, /width: calc\(100vw - 12px\) !important/, "application windows must fit narrow viewports");
+assert.match(css, /height: calc\(100vh - var\(--taskbar-height\) - 12px\) !important/, "application windows must remain above the taskbar");
+assert.match(css, /@media \(max-width: 430px\)/, "very narrow screens must receive an additional layout adjustment");
 
 const html = read("index.html");
 for (const file of ["src/auto-continue.js", "src/terminal-sync.js", "src/ui-runtime-guards.js"]) {
