@@ -37,7 +37,6 @@ require("../src/rules-extension.js");
 require("../src/integrity-fixes.js");
 require("../src/time-boundary-guard.js");
 require("../src/runtime-engine.js");
-require("../src/persistent-engine-guard.js");
 
 const Engine = globalThis.UntilFridayEngine;
 const story = globalThis.UNTIL_FRIDAY_STORY;
@@ -60,19 +59,17 @@ assert.ok(engine.getState().completedActions["mon-report-final"]);
 assert.equal(engine.getState().stats.work, 2);
 assert.ok(storage.has("until-friday-save-v2"), "successful action must be written immediately");
 assert.equal(
-  globalThis.UntilFridayPersistentEngineGuard.getEngine(),
+  globalThis.UntilFridayRuntimeEngine.getEngine(),
   engine,
-  "compatibility controllers must receive the shared runtime engine"
+  "the persistence layer must expose the same shared runtime engine"
 );
 
 const runtimeSource = read("src/runtime-engine.js");
-const persistentSource = read("src/persistent-engine-guard.js");
 assert.doesNotThrow(() => new Function(runtimeSource));
-assert.doesNotThrow(() => new Function(persistentSource));
 assert.match(runtimeSource, /rolledBack: true/);
 assert.match(runtimeSource, /action-exception/);
 assert.match(runtimeSource, /save-failed/);
-assert.doesNotMatch(persistentSource, /Engine\.createEngine\s*=/, "persistence compatibility must not wrap the factory");
+assert.equal(fs.existsSync(path.join(root, "src/persistent-engine-guard.js")), false, "obsolete persistence facade must be deleted");
 
 const notices = [];
 const workflowContext = {
@@ -106,10 +103,10 @@ assert.equal(notices.length, 1, "workflow storage errors must be visible to the 
 assert.equal(workflowContext.UntilFridayStorageErrorGuard.isStorageError(new Error("Quota exceeded")), true);
 
 const html = read("index.html");
+assert.doesNotMatch(html, /persistent-engine-guard\.js/, "obsolete persistence facade must not be connected");
 assert.ok(
-  html.indexOf("src/runtime-engine.js") < html.indexOf("src/persistent-engine-guard.js") &&
-  html.indexOf("src/persistent-engine-guard.js") < html.indexOf("src/day-end-control.js"),
-  "persistence facade must load after the single runtime and before day-end controls"
+  html.indexOf("src/runtime-engine.js") < html.indexOf("src/day-end-control.js"),
+  "the unified runtime must load before day-end controls"
 );
 assert.ok(
   html.indexOf("src/workflow-extension.js") < html.indexOf("src/storage-error-guard.js") &&
