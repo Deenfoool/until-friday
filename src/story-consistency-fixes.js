@@ -9,6 +9,9 @@
   }
 
   function patchRequirements() {
+    const monday = Story.days?.[0]?.requirements?.find((item) => item.id === "monday-core-work");
+    if (monday) monday.label = "Не выполнена хотя бы одна из двух основных рабочих задач";
+
     const wednesday = Story.days?.[2]?.requirements?.find((item) => item.id === "wednesday-audit");
     if (wednesday) {
       wednesday.appliesWhen = { eventDelivered: "wed-security-audit" };
@@ -59,9 +62,66 @@
       voluntary.text = "Заявление подано до объявления решения. Причину встречи сотрудник всё же услышал, но окончательный шаг сделал сам.";
     }
 
+    const savedByWork = ending("saved-by-work");
+    if (savedByWork) {
+      savedByWork.requires = {
+        all: [
+          { truthIs: "player" },
+          { actionDone: "fri-meeting-work" },
+          { statGte: ["work", 8] },
+          { trustGte: ["chief", 1] },
+          { statLt: ["suspicion", 5] },
+          { notFlag: "chiefFramed" },
+          { notFlag: "tamperedLogs" }
+        ]
+      };
+    }
+
     const firedClean = ending("fired-clean");
     if (firedClean) {
       firedClean.text = "Кадровое решение было утверждено заранее. Рабочую неделю учтут отдельно, но теперь остаётся передать дела и получить документы.";
+      firedClean.requires = {
+        all: [
+          { truthIs: "player" },
+          {
+            any: [
+              { actionDone: "fri-meeting-calm" },
+              { actionDone: "fri-meeting-work" }
+            ]
+          },
+          { statLt: ["suspicion", 5] }
+        ]
+      };
+    }
+
+    const firedForCause = ending("fired-for-cause");
+    if (firedForCause) {
+      firedForCause.requires = {
+        all: [
+          { truthIs: "player" },
+          {
+            any: [
+              { statGte: ["suspicion", 5] },
+              { flag: "attemptedBlackmail" },
+              { flag: "chiefFramed" },
+              { flag: "tamperedLogs" },
+              { flag: "blamedFriend" }
+            ]
+          }
+        ]
+      };
+    }
+
+    const blackmailDeal = ending("blackmail-deal");
+    if (blackmailDeal) {
+      blackmailDeal.requires = {
+        all: [
+          { actionDone: "fri-meeting-blackmail" },
+          { statGte: ["evidence", 5] },
+          { statLt: ["suspicion", 8] },
+          { notFlag: "chiefFramed" }
+        ]
+      };
     }
 
     const falseAlarmClean = ending("false-alarm-clean");
