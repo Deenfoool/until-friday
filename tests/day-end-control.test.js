@@ -12,6 +12,7 @@ const source = read("src/day-end-control.js");
 assert.doesNotThrow(() => new Function(source), "day end controller must contain valid JavaScript");
 
 const story = require("../src/story-v2.js");
+const storage = new Map();
 const context = {
   UNTIL_FRIDAY_STORY: story,
   UntilFridayMigration: { ENGINE_SAVE_KEY: "until-friday-save-v2" },
@@ -30,7 +31,9 @@ const context = {
     location: { reload() {} }
   },
   localStorage: {
-    setItem() {}
+    setItem: (key, value) => storage.set(key, String(value)),
+    getItem: (key) => storage.get(key) || null,
+    removeItem: (key) => storage.delete(key)
   },
   console
 };
@@ -39,6 +42,7 @@ vm.runInNewContext(source, context, { filename: "day-end-control.js" });
 
 const api = context.UntilFridayDayEndControl;
 assert.ok(api, "day end controller API must be exported");
+assert.equal(api.storageAvailable(), true, "day transition must preflight local storage before mutating the engine");
 
 const completeMonday = {
   dayIndex: 0,
@@ -72,7 +76,11 @@ for (const text of [
   "Завершить рабочий день",
   "Начать следующий день",
   "window.location.reload()",
-  "event.stopImmediatePropagation()"
+  "event.stopImmediatePropagation()",
+  "__pendingTransition",
+  "Повторить сохранение",
+  "state.dayIndex <= before.dayIndex",
+  "dataset.locked"
 ]) {
   assert.match(source, new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `day end controller must contain: ${text}`);
 }
