@@ -11,6 +11,7 @@ const ui = read("src/ui-runtime-guards.js");
 assert.doesNotThrow(() => new Function(ui), "runtime UI guards must contain valid JavaScript");
 assert.match(ui, /UntilFridayRuntimeEngine/, "UI guards must obtain the shared runtime directly");
 assert.doesNotMatch(ui, /UntilFridayDayTransitionGuard\?\.getEngine|UntilFridayPassiveClock\?\.getEngine/, "UI guards must not use fallback engine access");
+assert.doesNotMatch(ui, /new\s+MutationObserver\s*\(/, "UI guards must use explicit lifecycle events instead of watching the entire DOM");
 for (const text of [
   "wed-audit-explain",
   "Запрос пояснений",
@@ -27,6 +28,8 @@ for (const text of [
   "workday-ended",
   "not-enough-time",
   "until-friday-state-change",
+  "until-friday-ui-render",
+  "queueAfterInteraction",
   "pointerType !== \"touch\"",
   "friday-ending-overlay",
   "setText"
@@ -79,7 +82,7 @@ assert.ok(
 assert.ok(
   html.indexOf("src/friday-ending-reopen.js") < html.indexOf("src/ui-runtime-guards.js") &&
   html.indexOf("src/ui-runtime-guards.js") < html.indexOf("src/bootstrap.js"),
-  "UI guards must observe the fully extended interface before app startup"
+  "UI guards must subscribe after the extended interface and before app startup"
 );
 
 console.log("Runtime UI guard validation passed.");
