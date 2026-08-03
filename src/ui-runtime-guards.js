@@ -19,6 +19,7 @@
     "choice-locked": "Другой вариант уже выбран",
     "focus-exhausted": "Не хватает времени сегодня",
     "workday-ended": "Рабочий день завершён",
+    "not-enough-time": "Не хватает времени до конца дня",
     "requirements-not-met": "Условия не выполнены",
     "already-completed": "Уже выполнено"
   };
@@ -26,10 +27,12 @@
   let queued = false;
   let lastActionAttempt = null;
 
+  function runtime() {
+    return root.UntilFridayRuntimeEngine || null;
+  }
+
   function engine() {
-    return root.UntilFridayDayTransitionGuard?.getEngine?.()
-      || root.UntilFridayPassiveClock?.getEngine?.()
-      || null;
+    return runtime()?.getEngine?.() || null;
   }
 
   function setText(element, value) {
@@ -52,6 +55,11 @@
   }
 
   function notify(title, text) {
+    if (runtime()?.notify) {
+      runtime().notify(title, text);
+      return;
+    }
+
     const container = document.querySelector("#notifications");
     if (!container) return;
     const item = document.createElement("button");
@@ -199,6 +207,7 @@
       "choice-locked": "Для этой ситуации уже выбран другой вариант.",
       "focus-exhausted": "На сегодня не осталось времени для ещё одного крупного действия.",
       "workday-ended": "Рабочий день уже закончился. Завершите его через часы или приложение «Задачи».",
+      "not-enough-time": "До конца рабочего дня недостаточно времени для этого действия.",
       "requirements-not-met": "Сначала выполните условия, необходимые для этого решения.",
       "already-completed": "Это действие уже выполнено."
     };
@@ -286,6 +295,7 @@
 
   const observer = new MutationObserver(queue);
   observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+  root.addEventListener?.("until-friday-state-change", queue);
   document.addEventListener("DOMContentLoaded", queue, { once: true });
   window.addEventListener("until-friday-app-ready", queue);
   window.addEventListener("resize", queue);
@@ -302,6 +312,7 @@
     repairDocumentActionButtons,
     repairEndingNarrative,
     repairWindowPositions,
-    setText
+    setText,
+    engine
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
