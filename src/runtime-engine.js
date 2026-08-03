@@ -14,6 +14,7 @@
   const baseCreateEngine = Engine.createEngine.bind(Engine);
   let activeEngine = null;
   let lastNoticeAt = 0;
+  let lastNoticeKey = "";
 
   function clone(value) {
     return value == null ? value : JSON.parse(JSON.stringify(value));
@@ -31,7 +32,9 @@
 
   function notify(title, text) {
     const now = Date.now();
-    if (now - lastNoticeAt < 800) return;
+    const noticeKey = `${String(title || "")}\n${String(text || "")}`;
+    if (noticeKey === lastNoticeKey && now - lastNoticeAt < 800) return;
+    lastNoticeKey = noticeKey;
     lastNoticeAt = now;
     const doc = root.document;
     const container = doc?.querySelector?.("#notifications");
