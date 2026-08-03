@@ -125,6 +125,19 @@
       return core.getState();
     }
 
+    function rollbackSaveFailure(before, saved, title, text, extra = {}) {
+      recreate(before);
+      notify(title, text);
+      return {
+        ok: false,
+        reason: saved.reason || "save-failed",
+        message: saved.message,
+        rolledBack: true,
+        state: getState(),
+        ...extra
+      };
+    }
+
     function canApplyAction(actionId, payload = {}) {
       const state = getState();
       const ruleResult = Rules.ruleCheck(story, core, state, actionId);
@@ -179,16 +192,13 @@
       const saved = persist(nextState);
 
       if (!saved.ok) {
-        recreate(before);
-        notify("Действие не сохранено", "Изменение полностью отменено. Освободите место в браузере и повторите действие.");
-        return {
-          ok: false,
-          reason: saved.reason,
-          message: saved.message,
-          rolledBack: true,
-          action: result.action || action || null,
-          state: getState()
-        };
+        return rollbackSaveFailure(
+          before,
+          saved,
+          "Действие не сохранено",
+          "Изменение полностью отменено. Освободите место в браузере и повторите действие.",
+          { action: result.action || action || null }
+        );
       }
 
       dispatchStateChange(nextState, "action", { actionId, events: result.events || [] });
@@ -204,15 +214,42 @@
     }
 
     function advanceTime(minutes) {
-      const state = getState();
-      const allowed = Time.clampAdvance(state, minutes);
-      const result = core.advanceTime(allowed);
+      const before = getState();
+      const allowed = Time.clampAdvance(before, minutes);
+      let result;
+
+      try {
+        result = core.advanceTime(allowed);
+      } catch (error) {
+        recreate(before);
+        return {
+          ok: false,
+          reason: "time-exception",
+          message: error?.message || String(error),
+          rolledBack: true,
+          events: [],
+          state: getState()
+        };
+      }
+
+      if (!result?.ok) return result;
       const nextState = result.state || getState();
+      const saved = persist(nextState);
+      if (!saved.ok) {
+        return rollbackSaveFailure(
+          before,
+          saved,
+          "Время не сохранено",
+          "Ход времени отменён, потому что браузер не смог записать сохранение.",
+          { events: [], advancedMinutes: 0 }
+        );
+      }
+
       dispatchStateChange(nextState, "time", { minutes: allowed, events: result.events || [] });
-      return { ...result, advancedMinutes: allowed, state: nextState };
+      return { ...result, persisted: true, advancedMinutes: allowed, state: nextState };
     }
 
-    function flushPendingConsequences() {
+    function flushPendingConsequencesInternal() {
       const state = getState();
       if (!state.dayStarted || state.ended) return [];
       const delivered = new Set(state.deliveredEvents || []);
@@ -223,7 +260,31 @@
       );
       if (!pending.length) return [];
       const targetMinute = Math.max(...pending.map((item) => Number(item.minute) || state.minute));
-      return advanceTime(Math.max(0, targetMinute - state.minute)).events || [];
+      return core.advanceTime(Math.max(0, targetMinute - state.minute)).events || [];
+    }
+
+    function flushPendingConsequences() {
+      const before = getState();
+      let events;
+      try {
+        events = flushPendingConsequencesInternal();
+      } catch (error) {
+        recreate(before);
+        return { ok: false, reason: "time-exception", message: error?.message || String(error), events: [], state: getState() };
+      }
+      const nextState = getState();
+      const saved = persist(nextState);
+      if (!saved.ok) {
+        return rollbackSaveFailure(
+          before,
+          saved,
+          "Последствия не сохранены",
+          "Доставка отложенных событий отменена из-за ошибки сохранения.",
+          { events: [] }
+        );
+      }
+      dispatchStateChange(nextState, "event-flush", { events });
+      return { ok: true, persisted: true, events, state: nextState };
     }
 
     function endDay(...args) {
@@ -232,7 +293,7 @@
       let result;
 
       try {
-        if (before.dayStarted) flushedEvents = flushPendingConsequences();
+        if (before.dayStarted) flushedEvents = flushPendingConsequencesInternal();
 
         if (Rules.shouldSkipAuditRequirement(getState())) {
           const temporaryState = clone(getState());
@@ -264,6 +325,7 @@
           ok: false,
           reason: "transition-exception",
           message: error?.message || String(error),
+          rolledBack: true,
           state: getState()
         };
       }
@@ -271,7 +333,7 @@
       if (result?.ok === false && result.reason === "day-not-started" && !before.ended) {
         const started = core.startDay();
         if (started?.ok) {
-          flushedEvents = flushPendingConsequences();
+          flushedEvents = flushPendingConsequencesInternal();
           result = core.endDay(...args);
         }
       }
@@ -281,14 +343,28 @@
       }
 
       const normalized = normalizeTransition(core, before, result);
-      if (normalized.ok && normalized.state) {
-        recreate(normalized.state);
-        normalized.state = getState();
-        dispatchStateChange(normalized.state, normalized.final ? "game-ended" : "day-transition", {
-          events: normalized.events || []
-        });
+      if (!normalized.ok || !normalized.state) {
+        recreate(before);
+        return { ...normalized, rolledBack: true, state: getState() };
       }
-      return normalized;
+
+      recreate(normalized.state);
+      normalized.state = getState();
+      const saved = persist(normalized.state);
+      if (!saved.ok) {
+        return rollbackSaveFailure(
+          before,
+          saved,
+          "Переход не сохранён",
+          "Завершение дня полностью отменено. Освободите место в браузере и повторите переход.",
+          { final: false, events: [] }
+        );
+      }
+
+      dispatchStateChange(normalized.state, normalized.final ? "game-ended" : "day-transition", {
+        events: normalized.events || []
+      });
+      return { ...normalized, persisted: true };
     }
 
     function startDay(...args) {
