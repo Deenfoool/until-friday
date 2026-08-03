@@ -208,11 +208,18 @@
     card.classList.toggle("day-end-ready", progress.complete);
   }
 
+  function removeTaskCards() {
+    document.querySelectorAll("[data-day-end-card]").forEach((card) => card.remove());
+  }
+
   function decorateTaskLists() {
     const engine = getEngine();
     if (!engine) return;
     const state = engine.getState();
-    if (!state || state.ended || state.dayIndex >= Story.days.length - 1) return;
+    if (!state || state.ended || state.dayIndex >= Story.days.length - 1) {
+      removeTaskCards();
+      return;
+    }
 
     document.querySelectorAll(".task-list").forEach((list) => {
       const progress = dayProgress(engine, state);
@@ -270,12 +277,12 @@
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && activeOverlay?.isConnected && activeOverlay.dataset.locked !== "true") removeOverlay();
   });
-
-  const observer = new MutationObserver(queueDecorate);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-  root.addEventListener?.("until-friday-state-change", queueDecorate);
-  window.addEventListener("until-friday-app-ready", queueDecorate);
   document.addEventListener("DOMContentLoaded", queueDecorate, { once: true });
+  window.addEventListener("until-friday-app-ready", queueDecorate);
+  window.addEventListener("until-friday-state-change", queueDecorate);
+  window.addEventListener("until-friday-ui-render", (event) => {
+    if (!event.detail?.appId || event.detail.appId === "tasks") queueDecorate();
+  });
   queueDecorate();
 
   root.UntilFridayDayEndControl = {
@@ -283,6 +290,8 @@
     progress: dayProgress,
     applicableRequirements,
     finishDay,
-    getEngine
+    getEngine,
+    decorateTaskLists,
+    removeTaskCards
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
