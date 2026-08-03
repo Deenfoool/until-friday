@@ -9,10 +9,12 @@ const root = path.resolve(__dirname, "..");
 const source = fs.readFileSync(path.join(root, "src/passive-clock.js"), "utf8");
 assert.doesNotThrow(() => new Function(source), "passive clock module must contain valid JavaScript");
 assert.doesNotMatch(source, /Engine\.createEngine\s*=/, "passive clock must not wrap the engine factory");
+assert.doesNotMatch(source, /Runtime\.persist|replaceState/, "passive clock must not own persistence or rollback");
 
 let now = 100000;
 let modalOpen = false;
 let dayEndOpen = false;
+let failNextAdvance = false;
 const notifications = [];
 const clockTime = { textContent: "" };
 const clockDate = { textContent: "" };
@@ -26,18 +28,32 @@ const state = {
 
 const engineInstance = {
   getState: () => JSON.parse(JSON.stringify(state)),
-  replaceState(next) { Object.assign(state, JSON.parse(JSON.stringify(next))); },
   advanceTime(minutes) {
+    if (failNextAdvance) {
+      failNextAdvance = false;
+      return {
+        ok: false,
+        reason: "save-failed",
+        rolledBack: true,
+        events: [],
+        state: JSON.parse(JSON.stringify(state))
+      };
+    }
     const before = state.minute;
     state.minute += minutes;
     const events = before < 530 && state.minute >= 530
       ? [{ id: "test-event", source: "Система", title: "Проверка", text: "Событие доставлено" }]
       : [];
-    return { ok: true, events, state: JSON.parse(JSON.stringify(state)) };
+    return {
+      ok: true,
+      persisted: true,
+      advancedMinutes: minutes,
+      events,
+      state: JSON.parse(JSON.stringify(state))
+    };
   }
 };
 
-const storage = new Map();
 const documentStub = {
   hidden: false,
   querySelector(selector) {
@@ -54,10 +70,6 @@ const documentStub = {
 
 const runtime = {
   getEngine: () => engineInstance,
-  persist(nextState) {
-    storage.set("until-friday-save-v2", JSON.stringify(nextState));
-    return { ok: true };
-  },
   notify(title, text) { notifications.push({ title, text }); }
 };
 
@@ -80,7 +92,7 @@ vm.runInNewContext(source, context, { filename: "passive-clock.js" });
 
 const api = context.UntilFridayPassiveClock;
 assert.ok(api, "passive clock API must be exported");
-assert.equal(api.getEngine(), engineInstance, "passive clock must obtain the shared runtime instance");
+assert.equal(api.getEngine, undefined, "passive clock must not expose an alternate engine accessor");
 assert.equal(api.REAL_MS_PER_GAME_MINUTE, 3000, "one game minute must equal three real seconds");
 assert.equal(api.WORKDAY_END_MINUTE, 1080, "passive clock must stop at 18:00");
 api.resetDayClock();
@@ -91,7 +103,13 @@ assert.equal(result.advanced, 10, "thirty real seconds must advance ten game min
 assert.equal(state.minute, 537);
 assert.equal(clockTime.textContent, "08:57");
 assert.equal(notifications.length, 1, "events crossed by passive time must produce a notification");
-assert.ok(storage.has("until-friday-save-v2"), "passive time must persist the updated state");
+
+failNextAdvance = true;
+now += 30000;
+result = api.tick(now);
+assert.equal(result.advanced, 0, "a failed atomic time update must not advance the visible clock");
+assert.equal(result.rolledBack, true);
+assert.equal(state.minute, 537);
 
 modalOpen = true;
 now += 30000;
