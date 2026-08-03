@@ -30,6 +30,15 @@
   object-fit: cover;
 }
 
+.contact-avatar {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border: 1px solid #aeb8bf;
+  border-radius: 2px;
+  object-fit: cover;
+}
+
 .day-label {
   margin-left: 10px;
   color: #4c5962;
