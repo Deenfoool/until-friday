@@ -42,6 +42,7 @@ context.globalThis = context;
 for (const file of [
   "src/rules-extension.js",
   "src/integrity-fixes.js",
+  "src/story-consistency-fixes.js",
   "src/tuesday-minigames.js",
   "src/tuesday-event-guards.js",
   "src/wednesday-minigames.js",
@@ -69,6 +70,10 @@ function containsAction(condition, actionId) {
   if (Array.isArray(condition)) return condition.some((item) => containsAction(item, actionId));
   if (condition.actionDone === actionId) return true;
   return Object.values(condition).some((value) => containsAction(value, actionId));
+}
+
+function evaluate(condition, state) {
+  return Engine.conditionPasses(condition, state);
 }
 
 const channels = new Set(["explorer", "mail", "chat", "tasks", "terminal", "meeting"]);
@@ -104,9 +109,61 @@ for (const [id, event] of Object.entries(story.events)) {
 
 const mondayRequirement = story.days[0].requirements.find((item) => item.id === "monday-core-work");
 assert.ok(mondayRequirement.satisfiedWhen.all, "expanded story must retain the corrected two-task Monday requirement");
+
+const wednesdayRequirement = story.days[2].requirements.find((item) => item.id === "wednesday-audit");
+const cleanWednesday = Engine.createState(story, { seed: "clean-wednesday", truthId: "player" });
+cleanWednesday.dayIndex = 2;
+cleanWednesday.dayStarted = true;
+assert.equal(
+  evaluate(wednesdayRequirement.satisfiedWhen, cleanWednesday),
+  true,
+  "a clean Wednesday without a security audit must not report a missed audit"
+);
+cleanWednesday.deliveredEvents.push("wed-security-audit");
+assert.equal(
+  evaluate(wednesdayRequirement.satisfiedWhen, cleanWednesday),
+  false,
+  "a delivered audit must require an actual response"
+);
+
+const thursdayRequirement = story.days[3].requirements.find((item) => item.id === "thursday-choice");
+const complaintThursday = Engine.createState(story, { seed: "complaint-thursday", truthId: "player" });
+complaintThursday.dayIndex = 3;
+complaintThursday.dayStarted = true;
+complaintThursday.completedActions["thu-frame-chief"] = { dayIndex: 3, minute: 700 };
+assert.equal(
+  evaluate(thursdayRequirement.satisfiedWhen, complaintThursday),
+  true,
+  "the complaint route must count as a prepared Thursday position"
+);
+
+const normalWednesday = story.events["wed-normal-morning"];
+const paymentState = Engine.createState(story, { seed: "payment-audit", truthId: "player" });
+paymentState.dayIndex = 2;
+paymentState.dayStarted = true;
+paymentState.inventory.push("payment-list");
+assert.equal(
+  evaluate(normalWednesday.requires, paymentState),
+  false,
+  "the normal Wednesday mail cannot appear together with the payment-list security audit"
+);
+
 assert.equal(story.actions["wed-audit-delete"].channel, "mail");
 assert.equal(story.actions["wed-copy-hr-draft"].channel, "tasks");
 assert.ok(story.actions["fri-wait-meeting"], "Friday wait action must exist in the expanded story");
 assert.ok(story.days[4].focusLimit >= 2, "Friday must have enough focus for waiting and one meeting choice");
+
+const contractorDamage = Engine.createState(story, {
+  seed: "contractor-blackmail",
+  truthId: "contractor",
+  stats: { suspicion: 1, collateral: 0 }
+});
+contractorDamage.dayIndex = 4;
+contractorDamage.dayStarted = true;
+contractorDamage.flags.attemptedBlackmail = true;
+const cleanEnding = story.endings.find((item) => item.id === "false-alarm-clean");
+const damagedEnding = story.endings.find((item) => item.id === "false-alarm-damage");
+assert.equal(evaluate(cleanEnding.requires, contractorDamage), false);
+assert.equal(evaluate(damagedEnding.requires, contractorDamage), true);
 
 console.log(`Expanded story validated: ${Object.keys(story.actions).length} actions, ${Object.keys(story.events).length} events.`);
