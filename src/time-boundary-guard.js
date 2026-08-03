@@ -28,20 +28,23 @@
       const dayIndex = Number(schedule.dayIndex ?? action.dayIndex ?? state.dayIndex);
       if (dayIndex !== state.dayIndex) continue;
       const originalMinute = Number(schedule.minute ?? state.minute);
+      const event = story.events?.[schedule.eventId] || null;
+      const originalEventMinute = event ? Number(event.minute) : null;
       const adjustedMinute = Math.min(
         WORKDAY_END_MINUTE,
         Math.max(originalMinute, completionMinute + 5)
       );
-      changes.push({ schedule, originalMinute });
+      changes.push({ schedule, originalMinute, event, originalEventMinute });
       schedule.minute = adjustedMinute;
-      if (story.events?.[schedule.eventId]) story.events[schedule.eventId].minute = adjustedMinute;
+      if (event) event.minute = adjustedMinute;
     }
     return changes;
   }
 
-  function restoreSchedules(changes) {
-    changes.forEach(({ schedule, originalMinute }) => {
+  function restoreSchedules(changes, restoreEventTime = false) {
+    changes.forEach(({ schedule, originalMinute, event, originalEventMinute }) => {
       schedule.minute = originalMinute;
+      if (restoreEventTime && event && Number.isFinite(originalEventMinute)) event.minute = originalEventMinute;
     });
   }
 
@@ -54,10 +57,28 @@
 
     function canApplyAction(actionId) {
       const state = getState();
+      const action = story.actions?.[actionId] || null;
       if (state.dayIndex < story.days.length - 1 && state.minute >= WORKDAY_END_MINUTE) {
-        return { ok: false, reason: "workday-ended", action: story.actions?.[actionId] || null };
+        return { ok: false, reason: "workday-ended", action };
       }
-      return core.canApplyAction(actionId);
+
+      const base = core.canApplyAction(actionId);
+      if (!base.ok) return base;
+
+      if (state.dayIndex < story.days.length - 1) {
+        const requested = adjustedActionMinutes(story, state, actionId);
+        const remaining = Math.max(0, WORKDAY_END_MINUTE - state.minute);
+        if (requested > remaining) {
+          return {
+            ok: false,
+            reason: "not-enough-time",
+            requested,
+            remaining,
+            action
+          };
+        }
+      }
+      return base;
     }
 
     function applyAction(actionId, payload = {}) {
@@ -66,16 +87,29 @@
 
       const state = getState();
       const requested = adjustedActionMinutes(story, state, actionId, payload);
-      const allowed = Math.max(0, Math.min(requested, WORKDAY_END_MINUTE - state.minute));
+      const remaining = Math.max(0, WORKDAY_END_MINUTE - state.minute);
+      if (state.dayIndex < story.days.length - 1 && requested > remaining) {
+        return {
+          ok: false,
+          reason: "not-enough-time",
+          requested,
+          remaining,
+          action: story.actions?.[actionId] || null
+        };
+      }
+
+      const allowed = Math.max(0, Math.min(requested, remaining));
       const action = story.actions?.[actionId];
       const scheduleChanges = prepareSchedules(story, action, state, allowed);
       let result;
 
       try {
         result = core.applyAction(actionId, { ...payload, minutes: allowed });
-      } finally {
-        restoreSchedules(scheduleChanges);
+      } catch (error) {
+        restoreSchedules(scheduleChanges, true);
+        throw error;
       }
+      restoreSchedules(scheduleChanges, !result?.ok);
 
       if (!result?.ok) return result;
       const next = result.state || core.getState();
@@ -103,7 +137,7 @@
     function listActions(channel = null) {
       const state = getState();
       if (state.dayIndex < story.days.length - 1 && state.minute >= WORKDAY_END_MINUTE) return [];
-      return core.listActions(channel);
+      return core.listActions(channel).filter((action) => canApplyAction(action.id).ok);
     }
 
     return {
