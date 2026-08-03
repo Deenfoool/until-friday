@@ -7,6 +7,26 @@
   const SAVE_KEY = root.UntilFridayMigration?.ENGINE_SAVE_KEY || "until-friday-save-v2";
   const originalCreateEngine = Engine.createEngine.bind(Engine);
   let activeEngine = null;
+  let lastNoticeAt = 0;
+
+  function notify(title, text) {
+    const now = Date.now();
+    if (now - lastNoticeAt < 800) return;
+    lastNoticeAt = now;
+    const container = document.querySelector?.("#notifications");
+    if (!container || !document.createElement) return;
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "notification atomic-save-notification";
+    const strong = document.createElement("strong");
+    const span = document.createElement("span");
+    strong.textContent = title;
+    span.textContent = text;
+    item.append(strong, span);
+    item.addEventListener("click", () => item.remove());
+    container.appendChild(item);
+    root.setTimeout?.(() => item.remove(), 7500);
+  }
 
   function persist(state) {
     try {
@@ -35,11 +55,14 @@
       try {
         result = core.applyAction(actionId, payload);
       } catch (error) {
+        core = originalCreateEngine(story, before, options);
+        notify("Действие отменено", "Произошла внутренняя ошибка. Состояние восстановлено до клика.");
         return {
           ok: false,
           reason: "action-exception",
           message: error?.message || String(error),
-          state: before
+          rolledBack: true,
+          state: getState()
         };
       }
       if (!result?.ok) return result;
@@ -49,6 +72,7 @@
       if (saved.ok) return { ...result, persisted: true, state: nextState };
 
       core = originalCreateEngine(story, before, options);
+      notify("Действие не сохранено", "Изменение полностью отменено. Освободите место в браузере и повторите действие.");
       return {
         ok: false,
         reason: saved.reason,
@@ -85,6 +109,7 @@
   root.UntilFridayPersistentEngineGuard = {
     SAVE_KEY,
     persist,
+    notify,
     getEngine: () => activeEngine
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
