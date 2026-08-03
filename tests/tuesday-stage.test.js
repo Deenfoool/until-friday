@@ -9,7 +9,9 @@ const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
 const source = read("src/tuesday-minigames.js");
+const guardSource = read("src/tuesday-event-guards.js");
 assert.doesNotThrow(() => new Function(source), "Tuesday minigame module must contain valid JavaScript");
+assert.doesNotThrow(() => new Function(guardSource), "Tuesday event guard must contain valid JavaScript");
 
 const story = {
   actions: {
@@ -36,6 +38,7 @@ const context = {
 };
 context.globalThis = context;
 vm.runInNewContext(source, context, { filename: "tuesday-minigames.js" });
+vm.runInNewContext(guardSource, context, { filename: "tuesday-event-guards.js" });
 
 assert.ok(context.UntilFridayTuesdayMinigames, "Tuesday minigame API must be exported");
 assert.ok(story.events["tue-client-thanks"], "successful client response must schedule feedback");
@@ -45,6 +48,21 @@ assert.equal(
   story.actions["tue-client-confirm"].effects.schedule[0].eventId,
   "tue-client-thanks",
   "client confirmation must connect to the thank-you event"
+);
+assert.equal(
+  story.events["tue-client-thanks"].requires.actionDone,
+  "tue-client-confirm",
+  "client thank-you must not appear without confirmation"
+);
+assert.equal(
+  story.events["tue-client-escalation"].requires.actionDone,
+  "tue-client-delay",
+  "escalation must only appear after delaying the response"
+);
+assert.equal(
+  story.events["tue-accountant-thanks"].requires.actionDone,
+  "tue-help-accountant",
+  "accountant feedback must only appear after the audit"
 );
 assert.match(story.actions["tue-help-accountant"].result, /устаревшие реквизиты/, "accountant result must describe all discrepancies");
 
@@ -66,9 +84,14 @@ assert.match(css, /@media \(max-width: 720px\)/, "Tuesday tasks must adapt to sm
 const html = read("index.html");
 assert.match(html, /tuesday-minigames\.css/, "Tuesday task stylesheet must be connected");
 assert.match(html, /src\/tuesday-minigames\.js/, "Tuesday task script must be connected");
+assert.match(html, /src\/tuesday-event-guards\.js/, "Tuesday event guard must be connected");
 assert.ok(
-  html.indexOf("src/tuesday-minigames.js") < html.indexOf("src/bootstrap.js"),
-  "Tuesday story events must be registered before the game engine is created"
+  html.indexOf("src/tuesday-minigames.js") < html.indexOf("src/tuesday-event-guards.js"),
+  "Tuesday events must exist before their conditions are attached"
+);
+assert.ok(
+  html.indexOf("src/tuesday-event-guards.js") < html.indexOf("src/bootstrap.js"),
+  "Tuesday event conditions must exist before the game engine is created"
 );
 
 const rules = read("src/rules-extension.js");
