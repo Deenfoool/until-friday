@@ -10,7 +10,25 @@
 
   function patchRequirements() {
     const monday = Story.days?.[0]?.requirements?.find((item) => item.id === "monday-core-work");
-    if (monday) monday.label = "Не выполнена хотя бы одна из двух основных рабочих задач";
+    if (monday) {
+      monday.label = "Не выполнена хотя бы одна из двух основных рабочих задач";
+      monday.satisfiedWhen = {
+        all: [
+          {
+            any: [
+              { actionDone: "mon-report-final" },
+              { actionDone: "mon-report-old" }
+            ]
+          },
+          {
+            any: [
+              { actionDone: "mon-invoice-fix" },
+              { actionDone: "mon-invoice-report" }
+            ]
+          }
+        ]
+      };
+    }
 
     const wednesday = Story.days?.[2]?.requirements?.find((item) => item.id === "wednesday-audit");
     if (wednesday) {
