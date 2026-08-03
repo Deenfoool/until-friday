@@ -5,6 +5,10 @@
   if (!Onboarding) return;
 
   const WELCOME_KEY = Onboarding.WELCOME_KEY;
+  const LEGACY_FULL_NAME = "\u0418\u043b\u044c\u044f \u0412\u043e\u0440\u043e\u043d\u043e\u0432";
+  const LEGACY_FIRST_NAME = "\u0418\u043b\u044c\u044f";
+  const LEGACY_ACCUSATIVE = "\u0418\u043b\u044c\u044e";
+  const LEGACY_GENITIVE = "\u0418\u043b\u044c\u0438";
   let queued = false;
   let notificationShown = false;
 
@@ -71,10 +75,17 @@
     const avatarText = initials(profile.name);
     if (avatar && avatar.textContent !== avatarText) avatar.textContent = avatarText;
 
+    const substitutions = [
+      [LEGACY_FULL_NAME, profile.name],
+      [LEGACY_ACCUSATIVE, "сотрудника"],
+      [LEGACY_GENITIVE, "сотрудника"],
+      [LEGACY_FIRST_NAME, shortName()],
+      ["ivoronov", login]
+    ];
     const roots = document.querySelectorAll(
-      ".mail-view, .document-paper, .message-bubble, .ending-card, .day-transition-card, .terminal-output, .journal-list, .work-minigame-content"
+      ".mail-view, .document-paper, .message-bubble, .ending-card, .friday-ending-overlay, .day-transition-card, .terminal-output, .journal-list, .work-minigame-content"
     );
-    roots.forEach((element) => replaceTextNodes(element, [["ivoronov", login]]));
+    roots.forEach((element) => replaceTextNodes(element, substitutions));
 
     document.querySelectorAll(".terminal-prompt").forEach((prompt) => {
       const value = `${login}@office:>`;
@@ -263,6 +274,7 @@
     terminalLogin,
     initials,
     readWelcome,
-    decorate
+    decorate,
+    replaceTextNodes
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
