@@ -141,7 +141,13 @@
     });
   }
 
+  function queueAfterInteraction() {
+    window.setTimeout(queue, 0);
+  }
+
   document.addEventListener("click", (event) => {
+    queueAfterInteraction();
+
     const close = event.target.closest?.(".friday-scene-overlay [data-close]");
     if (!close || !committedContext()) return;
     event.preventDefault();
@@ -149,16 +155,20 @@
     event.stopImmediatePropagation();
   }, true);
 
-  const observer = new MutationObserver(queue);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
   document.addEventListener("DOMContentLoaded", queue, { once: true });
   window.addEventListener("until-friday-app-ready", queue);
+  window.addEventListener("until-friday-state-change", queue);
+  window.addEventListener("until-friday-ui-render", (event) => {
+    if (!event.detail?.appId || event.detail.appId === "tasks") queue();
+  });
   queue();
 
   root.UntilFridayFridaySceneGuard = {
     committedContext,
     lockActiveMeeting,
     openRecovery,
-    finishRecoveredMeeting
+    finishRecoveredMeeting,
+    decorateRecoveryCards,
+    queue
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
