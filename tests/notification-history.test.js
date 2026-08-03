@@ -8,6 +8,10 @@ const vm = require("node:vm");
 const root = path.resolve(__dirname, "..");
 const source = fs.readFileSync(path.join(root, "src/notification-history-guard.js"), "utf8");
 assert.doesNotThrow(() => new Function(source), "notification history guard must contain valid JavaScript");
+assert.doesNotMatch(source, /new\s+MutationObserver\s*\(/, "notification history must use state and startup lifecycle events");
+assert.match(source, /until-friday-state-change/, "new inbox events must trigger duplicate inspection");
+assert.match(source, /until-friday-app-ready/, "restored inbox notifications must be inspected after startup");
+assert.match(source, /until-friday-ui-render/, "notification inspection must follow completed UI rendering");
 
 const storage = new Map();
 storage.set("until-friday-save-v2", JSON.stringify({
@@ -16,6 +20,7 @@ storage.set("until-friday-save-v2", JSON.stringify({
 }));
 
 const notifications = [];
+const listeners = new Map();
 const documentStub = {
   documentElement: {},
   addEventListener() {},
@@ -28,16 +33,19 @@ const context = {
     setItem: (key, value) => storage.set(key, String(value)),
     removeItem: (key) => storage.delete(key)
   },
-  MutationObserver: class MutationObserver { observe() {} },
   document: documentStub,
   queueMicrotask: (callback) => callback(),
-  console
+  addEventListener(type, callback) { listeners.set(type, callback); },
+  console,
+  Promise
 };
 context.globalThis = context;
 vm.runInNewContext(source, context, { filename: "notification-history-guard.js" });
 
 const api = context.UntilFridayNotificationHistoryGuard;
 assert.ok(api, "notification history API must be exported");
+assert.ok(listeners.has("until-friday-state-change"), "state lifecycle listener must be registered");
+assert.ok(listeners.has("until-friday-app-ready"), "startup lifecycle listener must be registered");
 
 function notification(sourceText, bodyText) {
   return {
@@ -77,12 +85,17 @@ const unrelated = notification("Система", "Прогресс сохран�
 api.inspectNotification(unrelated);
 assert.equal(unrelated.removed, false, "ordinary system toasts must not be mistaken for inbox events");
 
+const queued = notification("Дима Орлов", "Сообщение уже показано.");
+notifications.push(queued);
+listeners.get("until-friday-state-change")();
+assert.equal(queued.removed, true, "state lifecycle inspection must suppress an already seen inbox toast");
+
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 assert.match(html, /src\/notification-history-guard\.js/);
 assert.ok(
   html.indexOf("src/storage-error-guard.js") < html.indexOf("src/notification-history-guard.js") &&
   html.indexOf("src/notification-history-guard.js") < html.indexOf("src/bootstrap.js"),
-  "notification history must observe the UI before application startup"
+  "notification history must subscribe before application startup"
 );
 
 console.log("Notification history validation passed.");
