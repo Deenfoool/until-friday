@@ -8,6 +8,7 @@ const vm = require("node:vm");
 const root = path.resolve(__dirname, "..");
 const source = fs.readFileSync(path.join(root, "src/passive-clock.js"), "utf8");
 assert.doesNotThrow(() => new Function(source), "passive clock module must contain valid JavaScript");
+assert.doesNotMatch(source, /Engine\.createEngine\s*=/, "passive clock must not wrap the engine factory");
 
 let now = 100000;
 let modalOpen = false;
@@ -15,20 +16,6 @@ let dayEndOpen = false;
 const notifications = [];
 const clockTime = { textContent: "" };
 const clockDate = { textContent: "" };
-const notificationContainer = { appendChild: (node) => notifications.push(node) };
-
-function createElement() {
-  return {
-    type: "",
-    className: "",
-    textContent: "",
-    children: [],
-    append(...nodes) { this.children.push(...nodes); },
-    appendChild(node) { this.children.push(node); },
-    addEventListener() {},
-    remove() {}
-  };
-}
 
 const state = {
   dayIndex: 0,
@@ -39,6 +26,7 @@ const state = {
 
 const engineInstance = {
   getState: () => JSON.parse(JSON.stringify(state)),
+  replaceState(next) { Object.assign(state, JSON.parse(JSON.stringify(next))); },
   advanceTime(minutes) {
     const before = state.minute;
     state.minute += minutes;
@@ -47,10 +35,6 @@ const engineInstance = {
       : [];
     return { ok: true, events, state: JSON.parse(JSON.stringify(state)) };
   }
-};
-
-const engineApi = {
-  createEngine: () => engineInstance
 };
 
 const storage = new Map();
@@ -62,22 +46,24 @@ const documentStub = {
     if (selector === ".day-end-control-overlay") return dayEndOpen ? {} : null;
     if (selector === "#clock-time") return clockTime;
     if (selector === "#clock-date") return clockDate;
-    if (selector === "#notifications") return notificationContainer;
     return null;
   },
   querySelectorAll: () => [],
-  createElement,
   addEventListener() {}
 };
 
-const context = {
-  UntilFridayEngine: engineApi,
-  UntilFridayMigration: { ENGINE_SAVE_KEY: "until-friday-save-v2" },
-  Date: class FakeDate extends Date { static now() { return now; } },
-  localStorage: {
-    setItem: (key, value) => storage.set(key, value),
-    getItem: (key) => storage.get(key) || null
+const runtime = {
+  getEngine: () => engineInstance,
+  persist(nextState) {
+    storage.set("until-friday-save-v2", JSON.stringify(nextState));
+    return { ok: true };
   },
+  notify(title, text) { notifications.push({ title, text }); }
+};
+
+const context = {
+  UntilFridayRuntimeEngine: runtime,
+  Date: class FakeDate extends Date { static now() { return now; } },
   document: documentStub,
   window: {
     addEventListener() {},
@@ -92,10 +78,9 @@ const context = {
 context.globalThis = context;
 vm.runInNewContext(source, context, { filename: "passive-clock.js" });
 
-const capturedEngine = context.UntilFridayEngine.createEngine();
-assert.equal(capturedEngine, engineInstance, "passive clock must preserve the original engine instance");
 const api = context.UntilFridayPassiveClock;
 assert.ok(api, "passive clock API must be exported");
+assert.equal(api.getEngine(), engineInstance, "passive clock must obtain the shared runtime instance");
 assert.equal(api.REAL_MS_PER_GAME_MINUTE, 3000, "one game minute must equal three real seconds");
 assert.equal(api.WORKDAY_END_MINUTE, 1080, "passive clock must stop at 18:00");
 
@@ -152,9 +137,9 @@ assert.equal(state.minute, 1080);
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 assert.match(html, /src\/passive-clock\.js/, "passive clock script must be connected");
 assert.ok(
-  html.indexOf("src/integrity-fixes.js") < html.indexOf("src/passive-clock.js") &&
+  html.indexOf("src/runtime-engine.js") < html.indexOf("src/passive-clock.js") &&
   html.indexOf("src/passive-clock.js") < html.indexOf("src/bootstrap.js"),
-  "passive clock must wrap the repaired engine before app bootstrap"
+  "passive clock must subscribe after the unified runtime and before app bootstrap"
 );
 
-console.log("Passive clock validation passed.");
+console.log("Passive clock runtime validation passed.");
