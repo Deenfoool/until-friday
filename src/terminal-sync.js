@@ -9,7 +9,8 @@
   const INTERCEPTED = new Set(["status", "day", "tasks", "actions", "logs", "run", "endday"]);
 
   function engine() {
-    return root.UntilFridayDayTransitionGuard?.getEngine?.()
+    return root.UntilFridayPersistentEngineGuard?.getEngine?.()
+      || root.UntilFridayDayTransitionGuard?.getEngine?.()
       || root.UntilFridayPassiveClock?.getEngine?.()
       || null;
   }
@@ -56,7 +57,9 @@
       "requirements-not-met": "Не выполнены условия этого действия.",
       "choice-locked": "Для этой ситуации уже выбран другой вариант.",
       "focus-exhausted": "На сегодня не осталось времени для ещё одного крупного действия.",
-      "workday-ended": "Рабочий день уже закончился. Введите endday."
+      "workday-ended": "Рабочий день уже закончился. Введите endday.",
+      "save-failed": "Действие отменено: браузер не смог записать сохранение.",
+      "action-exception": "Действие отменено из-за внутренней ошибки. Состояние не изменено."
     };
     return messages[reason] || "Действие недоступно.";
   }
