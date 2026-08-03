@@ -29,12 +29,6 @@
     return false;
   }
 
-  function persist(state) {
-    const result = Runtime.persist(state);
-    if (!result.ok) console.warn("Не удалось сохранить пассивное течение времени", result.message);
-    return result.ok;
-  }
-
   function formatTime(totalMinutes) {
     const value = Math.max(0, Number(totalMinutes) || 0);
     const hours = Math.floor(value / 60).toString().padStart(2, "0");
@@ -119,14 +113,19 @@
     const minutesToAdvance = Math.min(elapsedMinutes, WORKDAY_END_MINUTE - state.minute);
     lastRealTimestamp += minutesToAdvance * REAL_MS_PER_GAME_MINUTE;
     const result = engine.advanceTime(minutesToAdvance);
-    const nextState = result.state || engine.getState();
 
-    if (!persist(nextState)) {
-      engine.replaceState?.(state, "passive-clock-rollback");
+    if (!result?.ok) {
       lastRealTimestamp = now;
-      return { advanced: 0, events: [], rolledBack: true, state };
+      return {
+        advanced: 0,
+        events: [],
+        rolledBack: Boolean(result?.rolledBack),
+        reason: result?.reason || "time-failed",
+        state: result?.state || state
+      };
     }
 
+    const nextState = result.state || engine.getState();
     updateClock(nextState);
     deliverEvents(result.events || []);
     if (result.events?.length) refreshOpenWindows();
@@ -136,7 +135,11 @@
       notify("Система", "18:00. Рабочий день завершён. Нажмите на часы, чтобы перейти дальше.");
     }
 
-    return { advanced: minutesToAdvance, events: result.events || [], state: nextState };
+    return {
+      advanced: Number(result.advancedMinutes ?? minutesToAdvance),
+      events: result.events || [],
+      state: nextState
+    };
   }
 
   function start() {
@@ -183,7 +186,6 @@
     start,
     stop,
     tick,
-    resetDayClock,
-    getEngine
+    resetDayClock
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
