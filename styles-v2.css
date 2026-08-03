@@ -1,0 +1,145 @@
+.day-label {
+  margin-left: 10px;
+  color: #4c5962;
+  font-size: 12px;
+}
+
+.v2-explorer {
+  display: grid;
+  grid-template-columns: 178px minmax(0, 1fr);
+  height: calc(100% - 34px);
+}
+
+.v2-folders {
+  overflow: auto;
+}
+
+.v2-folders button {
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.v2-folders button.selected {
+  background: #dbe9f4;
+}
+
+.document-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 18px 18px;
+  border-top: 1px solid #cbd2d7;
+  background: #eef1f3;
+}
+
+.empty-state {
+  display: grid;
+  min-height: 180px;
+  place-items: center;
+  padding: 24px;
+  color: #68747d;
+  text-align: center;
+}
+
+.muted {
+  color: #68747d;
+  font-size: 12px;
+}
+
+.task-card.requirement {
+  border-left: 4px solid #a67820;
+}
+
+.task-card.requirement.done {
+  border-left-color: #4e7b55;
+  opacity: .78;
+}
+
+.journal-list {
+  height: calc(100% - 34px);
+  overflow: auto;
+  background: #eef1f3;
+  padding: 12px;
+}
+
+.journal-entry {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 9px 11px;
+  margin-bottom: 6px;
+  border: 1px solid #c7ced3;
+  background: #fff;
+  font-size: 12px;
+}
+
+.journal-entry time,
+.journal-entry small {
+  color: #6a747b;
+}
+
+.trash-list {
+  padding: 14px;
+}
+
+.trash-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid #d0d5d8;
+}
+
+.day-transition-card,
+.ending-card {
+  max-width: 590px;
+}
+
+.transition-kicker {
+  margin: 0 0 4px;
+  color: #69747c;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.transition-warning {
+  padding: 9px 11px;
+  border: 1px solid #d7bc7c;
+  background: #fff7df;
+}
+
+.ending-overlay {
+  background: rgba(10, 17, 22, .88);
+}
+
+.ending-summary {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 18px 0;
+}
+
+.ending-summary span {
+  padding: 6px 9px;
+  border: 1px solid #c8cfd4;
+  background: #edf1f3;
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .v2-explorer {
+    grid-template-columns: 125px minmax(0, 1fr);
+  }
+
+  .journal-entry {
+    grid-template-columns: 72px 1fr;
+  }
+
+  .journal-entry small {
+    display: none;
+  }
+}
