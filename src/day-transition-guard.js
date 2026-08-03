@@ -24,6 +24,22 @@
     });
   }
 
+  function flushPendingConsequences(instance) {
+    const state = instance.getState();
+    if (!state.dayStarted || state.ended) return [];
+    const delivered = new Set(state.deliveredEvents || []);
+    const pending = (state.scheduledEvents || []).filter((item) =>
+      item.dayIndex === state.dayIndex &&
+      !delivered.has(item.eventId) &&
+      (!item.sourceAction || Boolean(state.completedActions?.[item.sourceAction]))
+    );
+    if (!pending.length) return [];
+    const targetMinute = Math.max(...pending.map((item) => Number(item.minute) || state.minute));
+    if (targetMinute <= state.minute) return [];
+    const result = instance.advanceTime(targetMinute - state.minute);
+    return result?.events || [];
+  }
+
   function normalizeTransition(instance, before, result) {
     if (!result || typeof result !== "object") {
       return { ok: false, reason: "empty-transition-result" };
@@ -73,8 +89,10 @@
     instance.endDay = function guardedEndDay(...endArgs) {
       const before = instance.getState();
       let result;
+      let flushedEvents = [];
 
       try {
+        if (before.dayStarted) flushedEvents = flushPendingConsequences(instance);
         result = originalEndDay(...endArgs);
       } catch (error) {
         console.error("Ошибка перехода между рабочими днями", error);
@@ -88,9 +106,15 @@
 
       if (result?.ok === false && result.reason === "day-not-started" && !before.ended) {
         const started = originalStartDay();
-        if (started?.ok) result = originalEndDay(...endArgs);
+        if (started?.ok) {
+          flushedEvents = flushPendingConsequences(instance);
+          result = originalEndDay(...endArgs);
+        }
       }
 
+      if (result?.ok && flushedEvents.length) {
+        result = { ...result, events: [...flushedEvents, ...(result.events || [])] };
+      }
       return normalizeTransition(instance, before, result);
     };
 
@@ -223,6 +247,7 @@
 
   root.UntilFridayDayTransitionGuard = {
     normalizeTransition,
+    flushPendingConsequences,
     recoverFailedTransition,
     getEngine: () => activeEngine
   };
