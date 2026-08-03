@@ -14,10 +14,7 @@
   let lastNoticeAt = 0;
 
   function engine() {
-    return root.UntilFridayPersistentEngineGuard?.getEngine?.()
-      || root.UntilFridayDayTransitionGuard?.getEngine?.()
-      || root.UntilFridayPassiveClock?.getEngine?.()
-      || null;
+    return root.UntilFridayRuntimeEngine?.getEngine?.() || null;
   }
 
   function readScene() {
@@ -41,6 +38,12 @@
     const now = Date.now();
     if (now - lastNoticeAt < 1000) return;
     lastNoticeAt = now;
+
+    if (root.UntilFridayRuntimeEngine?.notify) {
+      root.UntilFridayRuntimeEngine.notify("Пятница", "Сначала завершите встречу в переговорной №1.");
+      return;
+    }
+
     const container = document.querySelector("#notifications");
     if (!container) return;
     const item = document.createElement("button");
@@ -76,6 +79,7 @@
     MEETING_ACTIONS,
     meetingActionCompleted,
     canFinishFriday,
-    readScene
+    readScene,
+    engine
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
