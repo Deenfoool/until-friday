@@ -9,6 +9,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
 const ui = read("src/ui-runtime-guards.js");
 assert.doesNotThrow(() => new Function(ui), "runtime UI guards must contain valid JavaScript");
+assert.match(ui, /UntilFridayRuntimeEngine/, "UI guards must obtain the shared runtime directly");
+assert.doesNotMatch(ui, /UntilFridayDayTransitionGuard\?\.getEngine|UntilFridayPassiveClock\?\.getEngine/, "UI guards must not use fallback engine access");
 for (const text of [
   "wed-audit-explain",
   "Запрос пояснений",
@@ -23,6 +25,8 @@ for (const text of [
   "choice-locked",
   "focus-exhausted",
   "workday-ended",
+  "not-enough-time",
+  "until-friday-state-change",
   "pointerType !== \"touch\"",
   "friday-ending-overlay",
   "setText"
@@ -35,12 +39,13 @@ assert.doesNotThrow(() => new Function(terminal), "terminal synchronization must
 for (const command of ["status", "day", "tasks", "actions", "logs", "run", "endday"]) {
   assert.match(terminal, new RegExp(`\\"${command}\\"`), `terminal synchronization must intercept ${command}`);
 }
-assert.match(terminal, /getEngine/, "terminal must read the live engine");
+assert.match(terminal, /UntilFridayRuntimeEngine/, "terminal must read the shared runtime");
 assert.match(terminal, /UntilFridayDayEndControl/, "terminal endday must use the reliable transition controller");
 assert.match(terminal, /action\.channel !== "terminal"/, "terminal run must reject actions from other applications");
-assert.match(terminal, /storageWritable/, "terminal actions must verify local persistence first");
+assert.doesNotMatch(terminal, /storageWritable|localStorage\.setItem|\.persist\(/, "terminal must not own storage or repeat runtime persistence");
 assert.match(terminal, /event\.stopImmediatePropagation\(\)/, "old stale command handler must be bypassed");
 assert.match(terminal, /UntilFridayProfile/, "terminal output must use the current player profile");
+assert.match(terminal, /result\?\.ok/, "terminal time commands must respect atomic runtime failures");
 
 const auto = read("src/auto-continue.js");
 assert.doesNotThrow(() => new Function(auto), "automatic day continuation must contain valid JavaScript");
