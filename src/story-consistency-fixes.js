@@ -38,6 +38,18 @@
     }
   }
 
+  function patchActionRequirements() {
+    const complaint = Story.actions?.["thu-frame-chief"];
+    if (complaint) {
+      complaint.requires = {
+        all: [
+          { hasItem: "payment-list" },
+          { statGte: ["access", 1] }
+        ]
+      };
+    }
+  }
+
   function patchEvents() {
     const wrongReport = Story.events?.["mon-chief-angry"];
     if (wrongReport) {
@@ -156,11 +168,13 @@
   }
 
   patchRequirements();
+  patchActionRequirements();
   patchEvents();
   patchEndings();
 
   root.UntilFridayStoryConsistencyFixes = {
     patchRequirements,
+    patchActionRequirements,
     patchEvents,
     patchEndings
   };
