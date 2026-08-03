@@ -22,3 +22,5 @@ jobs:
         run: node tests/engine.test.js
       - name: Validate story graph
         run: node tests/story-validation.test.js
+      - name: Validate browser UI contract
+        run: node tests/ui-contract.test.js
