@@ -56,6 +56,20 @@
     return state.metadata.dailyFocus;
   }
 
+  function calculateUsedFocus(story, state, dayIndex) {
+    return Object.keys(state.completedActions || {}).reduce((sum, actionId) => {
+      const action = story.actions?.[actionId];
+      if (!action || Number(action.dayIndex) !== Number(dayIndex)) return sum;
+      return sum + Math.max(0, Number(action.focusCost || 1));
+    }, 0);
+  }
+
+  function usedFocus(story, state, dayIndex) {
+    const usage = ensureUsage(state);
+    if (usage[dayIndex] === undefined) usage[dayIndex] = calculateUsedFocus(story, state, dayIndex);
+    return Number(usage[dayIndex] || 0);
+  }
+
   function completedGroupAction(story, state, group) {
     return Object.keys(state.completedActions || {}).find((id) => story.actions?.[id]?.choiceGroup === group) || null;
   }
@@ -82,8 +96,7 @@
         }
       }
 
-      const usage = ensureUsage(state);
-      const used = Number(usage[state.dayIndex] || 0);
+      const used = usedFocus(story, state, state.dayIndex);
       const cost = Math.max(0, Number(action.focusCost || 1));
       const limit = Number(story.days?.[state.dayIndex]?.focusLimit || 4);
       if (used + cost > limit) {
@@ -101,7 +114,7 @@
 
       const nextState = result.state;
       const usage = ensureUsage(nextState);
-      usage[nextState.dayIndex] = Number(usage[nextState.dayIndex] || 0) + check.cost;
+      usage[nextState.dayIndex] = check.used + check.cost;
       core = originalCreateEngine(story, nextState);
       return { ...result, state: core.getState(), focus: { used: usage[nextState.dayIndex], limit: check.limit } };
     }
