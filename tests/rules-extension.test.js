@@ -2,12 +2,34 @@
 
 const assert = require("node:assert/strict");
 
+const storage = new Map();
+globalThis.localStorage = {
+  getItem: (key) => storage.get(key) || null,
+  setItem: (key, value) => storage.set(key, String(value)),
+  removeItem: (key) => storage.delete(key)
+};
+globalThis.sessionStorage = { getItem: () => null, setItem() {}, removeItem() {} };
+globalThis.document = { querySelector: () => null, createElement: () => null };
+globalThis.addEventListener = () => {};
+globalThis.dispatchEvent = () => {};
+globalThis.CustomEvent = class CustomEvent {
+  constructor(type, options) { this.type = type; this.detail = options?.detail; }
+};
+
 globalThis.UntilFridayEngine = require("../src/engine.js");
 globalThis.UNTIL_FRIDAY_STORY = require("../src/story-v2.js");
+globalThis.UntilFridayMigration = { ENGINE_SAVE_KEY: "until-friday-save-v2" };
 require("../src/rules-extension.js");
+require("../src/integrity-fixes.js");
+require("../src/time-boundary-guard.js");
+require("../src/runtime-engine.js");
 
 const Engine = globalThis.UntilFridayEngine;
 const Story = globalThis.UNTIL_FRIDAY_STORY;
+
+assert.ok(globalThis.UntilFridayRules, "rules must be exported as pure helpers");
+assert.ok(globalThis.UntilFridayRuntimeEngine, "unified runtime must be installed");
+assert.equal(Engine.__runtimeInstalled, true, "engine factory must be owned by the unified runtime");
 
 {
   const engine = Engine.createEngine(Story, null, { seed: "rules-choice-test", truthId: "player" });
@@ -49,4 +71,4 @@ const Story = globalThis.UNTIL_FRIDAY_STORY;
   }
 }
 
-console.log("Rules extension tests passed.");
+console.log("Unified runtime rule tests passed.");
