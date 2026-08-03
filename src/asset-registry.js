@@ -101,7 +101,7 @@
     });
 
     document.querySelectorAll(".start-app").forEach((button) => {
-      const label = button.textContent.trim().toLowerCase();
+      const label = button.querySelector("span:last-child")?.textContent.trim().toLowerCase() || "";
       const appId = {
         "проводник": "explorer",
         "почта": "mail",
@@ -112,6 +112,30 @@
         "корзина": "trash"
       }[label];
       if (appId && assets.apps[appId]) decorateImage(button.querySelector(".desktop-icon__glyph"), assets.apps[appId], "asset-app-icon");
+    });
+  }
+
+  function decorateContacts() {
+    const avatarByName = {
+      "Дима Орлов": assets.avatars.friend,
+      "Олег Казанцев": assets.avatars.gossip,
+      "Роман Белов": assets.avatars.admin,
+      "Андрей Соколов": assets.avatars.chief,
+      "Марина Лебедева": assets.avatars.accountant
+    };
+
+    document.querySelectorAll(".contact").forEach((button) => {
+      if (button.querySelector(".contact-avatar")) return;
+      const name = button.querySelector("strong")?.textContent.trim();
+      const url = avatarByName[name] || assets.avatars.default;
+      probe(url).then((exists) => {
+        if (!exists || !button.isConnected || button.querySelector(".contact-avatar")) return;
+        const image = document.createElement("img");
+        image.src = url;
+        image.alt = "";
+        image.className = "contact-avatar";
+        button.prepend(image);
+      });
     });
   }
 
@@ -136,6 +160,7 @@
   function decorate() {
     decorateShell();
     decorateApps();
+    decorateContacts();
   }
 
   const observer = new MutationObserver(decorate);
