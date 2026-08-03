@@ -54,13 +54,15 @@ const Guard = globalThis.UntilFridayDayTransitionGuard;
     seed: "monday-transition-complete",
     truthId: "player"
   });
-  assert.equal(Guard.getEngine(), engine, "transition UI must use the shared runtime engine");
+  assert.equal(globalThis.UntilFridayRuntimeEngine.getEngine(), engine, "transition UI must use the shared runtime engine");
+  assert.equal(Guard.getEngine, undefined, "transition guard must not expose an alternate engine accessor");
   assert.equal(engine.startDay().ok, true);
   assert.equal(engine.applyAction("mon-report-final").ok, true);
   assert.equal(engine.applyAction("mon-invoice-fix").ok, true);
 
   const transition = engine.endDay();
   assert.equal(transition.ok, true, "completed Monday must end without an error");
+  assert.equal(transition.persisted, true, "the runtime must persist the transition before UI recovery");
   assert.equal(transition.final, false);
   assert.equal(transition.nextDay.id, "tuesday", "Monday must transition to Tuesday");
   assert.equal(transition.state.dayIndex, 1);
@@ -101,6 +103,7 @@ const Guard = globalThis.UntilFridayDayTransitionGuard;
   const engine = Engine.createEngine(Story, brokenSave);
   const transition = engine.endDay();
   assert.equal(transition.ok, true, "runtime must recover a save with dayStarted=false");
+  assert.equal(transition.persisted, true);
   assert.equal(transition.nextDay.id, "tuesday");
   assert.equal(transition.state.dayIndex, 1);
   assert.equal(transition.state.dayStarted, true);
@@ -109,11 +112,15 @@ const Guard = globalThis.UntilFridayDayTransitionGuard;
 const fs = require("node:fs");
 const path = require("node:path");
 const source = fs.readFileSync(path.resolve(__dirname, "../src/day-transition-guard.js"), "utf8");
+const runtimeSource = fs.readFileSync(path.resolve(__dirname, "../src/runtime-engine.js"), "utf8");
 assert.doesNotMatch(source, /Engine\.createEngine\s*=/, "transition UI must not wrap the engine factory");
+assert.doesNotMatch(source, /Runtime\.persist|localStorage/, "transition UI must not save state independently");
 assert.match(source, /UntilFridayRuntimeEngine/, "transition UI must obtain the shared runtime");
-assert.match(source, /flushPendingConsequences/, "earned same-day consequences must be delivered before the day changes");
+assert.match(source, /flushPendingConsequences/, "transition UI may request the runtime to flush consequences");
 assert.match(source, /data-recovered-start/, "the UI must offer a recovery button after a rendering failure");
 assert.match(source, /window\.location\.reload\(\)/, "recovered transition must reload the synchronized save");
+assert.match(runtimeSource, /transition-exception/, "transition exceptions must be handled inside the runtime");
+assert.match(runtimeSource, /transition-did-not-advance/, "invalid day transitions must be rejected inside the runtime");
 
 const html = fs.readFileSync(path.resolve(__dirname, "../index.html"), "utf8");
 assert.match(html, /src\/day-transition-guard\.js/, "day transition guard must be connected");
