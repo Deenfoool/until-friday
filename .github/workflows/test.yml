@@ -28,6 +28,8 @@ jobs:
         run: node tests/ui-contract.test.js
       - name: Validate desktop icon presentation
         run: node tests/desktop-icons.test.js
+      - name: Validate passive game clock
+        run: node tests/passive-clock.test.js
       - name: Validate Tuesday gameplay stage
         run: node tests/tuesday-stage.test.js
       - name: Validate Wednesday gameplay stage
