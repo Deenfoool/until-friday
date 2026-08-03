@@ -1,0 +1,122 @@
+(function (root) {
+  "use strict";
+
+  const Story = root.UNTIL_FRIDAY_STORY;
+  if (!Story || root.UntilFridayTerminalSync) return;
+
+  const SAVE_KEY = root.UntilFridayMigration?.ENGINE_SAVE_KEY || "until-friday-save-v2";
+  const INTERCEPTED = new Set(["status", "day", "tasks", "actions", "logs"]);
+
+  function engine() {
+    return root.UntilFridayDayTransitionGuard?.getEngine?.()
+      || root.UntilFridayPassiveClock?.getEngine?.()
+      || null;
+  }
+
+  function formatTime(totalMinutes) {
+    const value = Math.max(0, Number(totalMinutes) || 0);
+    return `${Math.floor(value / 60).toString().padStart(2, "0")}:${(value % 60).toString().padStart(2, "0")}`;
+  }
+
+  function playerName() {
+    return root.UntilFridayProfile?.playerName?.() || "Сотрудник";
+  }
+
+  function login() {
+    return root.UntilFridayProfile?.terminalLogin?.(playerName()) || "employee";
+  }
+
+  function commandResult(command, currentEngine, state) {
+    const day = Story.days?.[state.dayIndex] || Story.days?.[0] || { title: "Рабочий день", dateLabel: "" };
+    if (command === "status") {
+      return `Пользователь: ${playerName()}\nДень: ${day.title}\nВремя: ${formatTime(state.minute)}\nСеть: OFFICE-LAN\nАудит: включён`;
+    }
+    if (command === "day") return `${day.title}, ${day.dateLabel}`;
+    if (command === "tasks") {
+      const actions = [...currentEngine.listActions("tasks"), ...currentEngine.listActions("meeting")];
+      return actions.map((action) => `${action.id} — ${action.label}`).join("\n") || "Нет доступных задач.";
+    }
+    if (command === "actions") {
+      return currentEngine.listActions().map((action) => `${action.id} [${action.channel}] — ${action.label}`).join("\n") || "Нет доступных действий.";
+    }
+    if (command === "logs") {
+      return state.journal.slice(-12).map((item) => `${formatTime(item.minute)} ${item.text}`).join("\n") || "Журнал пуст.";
+    }
+    return "";
+  }
+
+  function appendLine(output, text, className = "") {
+    const line = document.createElement("div");
+    line.className = className;
+    line.textContent = text;
+    output.appendChild(line);
+  }
+
+  function notify(event) {
+    const container = document.querySelector("#notifications");
+    if (!container || !event) return;
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "notification terminal-sync-notification";
+    const strong = document.createElement("strong");
+    const span = document.createElement("span");
+    strong.textContent = event.source || event.title || "Система";
+    span.textContent = event.text || event.title || "Новое событие";
+    item.append(strong, span);
+    item.addEventListener("click", () => item.remove());
+    container.appendChild(item);
+    window.setTimeout(() => item.remove(), 6500);
+  }
+
+  function persist(state) {
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    } catch (error) {
+      console.warn("Терминал не смог сохранить прошедшую минуту", error);
+    }
+  }
+
+  function updateClock(state) {
+    const time = document.querySelector("#clock-time");
+    const date = document.querySelector("#clock-date");
+    const dayShort = ["ПН", "ВТ", "СР", "ЧТ", "ПТ"];
+    if (time) time.textContent = formatTime(state.minute);
+    if (date) date.textContent = `${dayShort[state.dayIndex] || ""}, ${3 + state.dayIndex} АВГ`;
+  }
+
+  document.addEventListener("keydown", (event) => {
+    const input = event.target.closest?.(".terminal-input");
+    if (!input || event.key !== "Enter" || event.isComposing) return;
+    const raw = input.value.trim();
+    const command = raw.split(/\s+/)[0]?.toLowerCase() || "";
+    if (!INTERCEPTED.has(command)) return;
+
+    const currentEngine = engine();
+    const output = input.closest(".terminal")?.querySelector(".terminal-output");
+    if (!currentEngine || !output) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    input.value = "";
+
+    const before = currentEngine.getState();
+    appendLine(output, `${login()}@office:> ${raw}`);
+    appendLine(output, commandResult(command, currentEngine, before), command === "logs" ? "dim" : "");
+
+    const minutes = command === "actions" ? 3 : 1;
+    const result = currentEngine.advanceTime(minutes);
+    const after = result.state || currentEngine.getState();
+    persist(after);
+    updateClock(after);
+    (result.events || []).forEach(notify);
+    output.scrollTop = output.scrollHeight;
+  }, true);
+
+  root.UntilFridayTerminalSync = {
+    INTERCEPTED,
+    commandResult,
+    formatTime,
+    engine
+  };
+})(typeof globalThis !== "undefined" ? globalThis : window);
