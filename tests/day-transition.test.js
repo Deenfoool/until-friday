@@ -8,6 +8,11 @@ globalThis.localStorage = {
   setItem: (key, value) => storage.set(key, String(value)),
   removeItem: (key) => storage.delete(key)
 };
+globalThis.sessionStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {}
+};
 globalThis.document = {
   addEventListener: () => {},
   querySelector: () => null,
@@ -36,6 +41,9 @@ globalThis.UntilFridayEngine = require("../src/engine.js");
 globalThis.UNTIL_FRIDAY_STORY = require("../src/story-v2.js");
 globalThis.UntilFridayMigration = { ENGINE_SAVE_KEY: "until-friday-save-v2" };
 require("../src/rules-extension.js");
+require("../src/integrity-fixes.js");
+require("../src/story-consistency-fixes.js");
+require("../src/time-boundary-guard.js");
 require("../src/day-transition-guard.js");
 
 const Engine = globalThis.UntilFridayEngine;
@@ -57,6 +65,18 @@ const Story = globalThis.UNTIL_FRIDAY_STORY;
   assert.equal(transition.state.dayIndex, 1);
   assert.equal(transition.state.dayStarted, true, "Tuesday session must already be started");
   assert.equal(engine.getState().dayIndex, 1);
+  assert.ok(
+    transition.events.some((event) => event.id === "mon-chief-thanks"),
+    "an earned same-day reaction must be delivered before Monday closes"
+  );
+  assert.ok(
+    !transition.events.some((event) => event.id === "mon-chief-angry"),
+    "the opposite report reaction must never be delivered"
+  );
+  assert.ok(
+    transition.state.deliveredEvents.includes("mon-chief-thanks"),
+    "the flushed reaction must remain recorded in the transitioned save"
+  );
 }
 
 {
@@ -88,6 +108,7 @@ const Story = globalThis.UNTIL_FRIDAY_STORY;
 const source = require("node:fs").readFileSync(require("node:path").resolve(__dirname, "../src/day-transition-guard.js"), "utf8");
 assert.match(source, /transition-exception/, "transition exceptions must be converted to recoverable results");
 assert.match(source, /transition-did-not-advance/, "a transition that stays on the same day must be detected");
+assert.match(source, /flushPendingConsequences/, "earned same-day consequences must be delivered before the day changes");
 assert.match(source, /data-recovered-start/, "the UI must offer a recovery button after a rendering failure");
 assert.match(source, /window\.location\.reload\(\)/, "recovered transition must reload the synchronized save");
 
