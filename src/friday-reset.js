@@ -1,34 +1,27 @@
-(function () {
+(function (root) {
   "use strict";
 
   const SCENE_KEY = "until-friday-friday-scene-v1";
   const SNAPSHOT_KEY = "until-friday-ending-snapshot-v1";
-  const ENGINE_SAVE_KEY = "until-friday-save-v2";
-  const LEGACY_SAVE_KEY = "until-friday-save-v1";
-  let resetRequested = false;
+  const NOTIFICATION_HISTORY_KEY = "until-friday-notification-history-v1";
+  const AUTO_CONTINUE_KEY = "until-friday-auto-continue-v1";
 
   function clearFinaleData() {
-    localStorage.removeItem(SCENE_KEY);
+    try { localStorage.removeItem(SCENE_KEY); } catch { /* unavailable */ }
+    try { localStorage.removeItem(NOTIFICATION_HISTORY_KEY); } catch { /* unavailable */ }
     try { sessionStorage.removeItem(SNAPSHOT_KEY); } catch { /* unavailable */ }
+    try { sessionStorage.removeItem(AUTO_CONTINUE_KEY); } catch { /* unavailable */ }
   }
 
   document.addEventListener("click", (event) => {
-    if (event.target.closest("[data-new-game]")) {
-      window.setTimeout(() => {
-        const saveExists = localStorage.getItem(ENGINE_SAVE_KEY) || localStorage.getItem(LEGACY_SAVE_KEY);
-        if (!saveExists) clearFinaleData();
-      }, 0);
-    }
-
-    if (event.target.closest("#reset-button")) {
-      resetRequested = true;
-      window.setTimeout(() => { resetRequested = false; }, 0);
-    }
+    if (event.target.closest?.("[data-new-game]")) clearFinaleData();
   }, true);
 
-  window.addEventListener("beforeunload", () => {
-    if (resetRequested) clearFinaleData();
-  });
-
-  window.UntilFridayFridayReset = { SCENE_KEY, SNAPSHOT_KEY, clearFinaleData };
-})();
+  root.UntilFridayFridayReset = {
+    SCENE_KEY,
+    SNAPSHOT_KEY,
+    NOTIFICATION_HISTORY_KEY,
+    AUTO_CONTINUE_KEY,
+    clearFinaleData
+  };
+})(typeof globalThis !== "undefined" ? globalThis : window);
