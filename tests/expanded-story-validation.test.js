@@ -137,6 +137,28 @@ assert.equal(
   "the complaint route must count as a prepared Thursday position"
 );
 
+const reachableComplaint = Engine.createState(story, { seed: "reachable-complaint", truthId: "contractor" });
+reachableComplaint.dayIndex = 3;
+reachableComplaint.dayStarted = true;
+reachableComplaint.inventory.push("payment-list");
+reachableComplaint.stats.access = 1;
+assert.equal(
+  evaluate(story.actions["thu-frame-chief"].requires, reachableComplaint),
+  true,
+  "the complaint route must be reachable with the access level granted by the accountant story"
+);
+reachableComplaint.stats.access = 0;
+assert.equal(
+  evaluate(story.actions["thu-frame-chief"].requires, reachableComplaint),
+  false,
+  "the complaint route must still require actual service access"
+);
+assert.equal(
+  story.actions["thu-frame-chief"].requires.all[1].statGte[1],
+  1,
+  "the complaint route must not require the unreachable access level two"
+);
+
 const normalWednesday = story.events["wed-normal-morning"];
 const paymentState = Engine.createState(story, { seed: "payment-audit", truthId: "player" });
 paymentState.dayIndex = 2;
