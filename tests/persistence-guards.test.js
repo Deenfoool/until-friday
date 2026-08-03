@@ -22,14 +22,25 @@ globalThis.localStorage = {
   },
   removeItem: (key) => storage.delete(key)
 };
+globalThis.sessionStorage = { getItem: () => null, setItem() {}, removeItem() {} };
+globalThis.document = { querySelector: () => null, createElement: () => null };
+globalThis.addEventListener = () => {};
+globalThis.dispatchEvent = () => {};
+globalThis.CustomEvent = class CustomEvent {
+  constructor(type, options) { this.type = type; this.detail = options?.detail; }
+};
 
 globalThis.UntilFridayEngine = require("../src/engine.js");
+globalThis.UNTIL_FRIDAY_STORY = require("../src/story-v2.js");
 globalThis.UntilFridayMigration = { ENGINE_SAVE_KEY: "until-friday-save-v2" };
-globalThis.UntilFridayDayTransitionGuard = { getEngine: () => null };
+require("../src/rules-extension.js");
+require("../src/integrity-fixes.js");
+require("../src/time-boundary-guard.js");
+require("../src/runtime-engine.js");
 require("../src/persistent-engine-guard.js");
 
 const Engine = globalThis.UntilFridayEngine;
-const story = require("../src/story-v2.js");
+const story = globalThis.UNTIL_FRIDAY_STORY;
 const engine = Engine.createEngine(story, null, { seed: "atomic-save", truthId: "player" });
 engine.startDay();
 
@@ -49,16 +60,19 @@ assert.ok(engine.getState().completedActions["mon-report-final"]);
 assert.equal(engine.getState().stats.work, 2);
 assert.ok(storage.has("until-friday-save-v2"), "successful action must be written immediately");
 assert.equal(
-  globalThis.UntilFridayDayTransitionGuard.getEngine(),
+  globalThis.UntilFridayPersistentEngineGuard.getEngine(),
   engine,
-  "other runtime controllers must receive the atomic engine wrapper"
+  "compatibility controllers must receive the shared runtime engine"
 );
 
+const runtimeSource = read("src/runtime-engine.js");
 const persistentSource = read("src/persistent-engine-guard.js");
+assert.doesNotThrow(() => new Function(runtimeSource));
 assert.doesNotThrow(() => new Function(persistentSource));
-assert.match(persistentSource, /rolledBack: true/);
-assert.match(persistentSource, /action-exception/);
-assert.match(persistentSource, /save-failed/);
+assert.match(runtimeSource, /rolledBack: true/);
+assert.match(runtimeSource, /action-exception/);
+assert.match(runtimeSource, /save-failed/);
+assert.doesNotMatch(persistentSource, /Engine\.createEngine\s*=/, "persistence compatibility must not wrap the factory");
 
 const notices = [];
 const workflowContext = {
@@ -93,9 +107,9 @@ assert.equal(workflowContext.UntilFridayStorageErrorGuard.isStorageError(new Err
 
 const html = read("index.html");
 assert.ok(
-  html.indexOf("src/day-transition-guard.js") < html.indexOf("src/persistent-engine-guard.js") &&
+  html.indexOf("src/runtime-engine.js") < html.indexOf("src/persistent-engine-guard.js") &&
   html.indexOf("src/persistent-engine-guard.js") < html.indexOf("src/day-end-control.js"),
-  "atomic persistence must wrap the transition engine before day-end controls"
+  "persistence facade must load after the single runtime and before day-end controls"
 );
 assert.ok(
   html.indexOf("src/workflow-extension.js") < html.indexOf("src/storage-error-guard.js") &&
@@ -103,4 +117,4 @@ assert.ok(
   "workflow storage errors must be guarded immediately after workflow setup"
 );
 
-console.log("Persistence guard validation passed.");
+console.log("Unified persistence runtime validation passed.");
