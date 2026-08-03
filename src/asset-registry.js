@@ -3,65 +3,65 @@
 
   const assets = {
     brand: {
-      companyLogo: "assets/brand/company-logo.png",
-      gameIcon: "assets/brand/game-icon.png"
+      companyLogo: "assets/logo.png",
+      gameIcon: "assets/icon-until-friday.png"
     },
     backgrounds: {
-      desktop: "assets/backgrounds/desktop-wallpaper.png",
-      lockscreen: "assets/backgrounds/lockscreen-background.png",
-      error: "assets/backgrounds/error-background.png"
+      desktop: "assets/wallpaper-desktop.png",
+      lockscreen: "assets/image-lock-pc.png",
+      error: "assets/image-background-system-error.png"
     },
     apps: {
-      explorer: "assets/icons/apps/explorer.png",
-      mail: "assets/icons/apps/mail.png",
-      chat: "assets/icons/apps/chat.png",
-      tasks: "assets/icons/apps/tasks.png",
-      terminal: "assets/icons/apps/terminal.png",
-      finance: "assets/icons/apps/finance.png",
-      journal: "assets/icons/system/system-log.png",
-      trash: "assets/icons/system/trash-empty.png"
+      explorer: "assets/icon-explorer.png",
+      mail: "assets/icon-mail.png",
+      chat: "assets/icon-messenger.png",
+      tasks: "assets/icno-task.png",
+      terminal: "assets/icon-console.png",
+      finance: "assets/icon-finance.png",
+      journal: "assets/icon-log-entry.png",
+      trash: "assets/icon-trash-can-empty.png"
     },
     system: {
-      trashEmpty: "assets/icons/system/trash-empty.png",
-      trashFull: "assets/icons/system/trash-full.png",
-      lockedAccess: "assets/icons/system/locked-access.png",
-      systemLog: "assets/icons/system/system-log.png"
+      trashEmpty: "assets/icon-trash-can-empty.png",
+      trashFull: "assets/icon-trash-can-full.png",
+      lockedAccess: "assets/icon-private-access.png",
+      systemLog: "assets/icon-log-entry.png"
     },
     avatars: {
-      player: "assets/avatars/player.png",
-      friend: "assets/avatars/friend.png",
-      gossip: "assets/avatars/gossip.png",
-      secretary: "assets/avatars/secretary.png",
-      chief: "assets/avatars/chief.png",
-      accountant: "assets/avatars/accountant.png",
-      admin: "assets/avatars/admin.png",
-      hr: "assets/avatars/hr.png",
-      newcomer: "assets/avatars/newcomer.png",
-      default: "assets/avatars/default.png"
+      player: "assets/avatar-main-character.png",
+      friend: "assets/avatar-friend.png",
+      gossip: "assets/avatar-tattler.png",
+      secretary: "assets/avatar-secretary.png",
+      chief: "assets/avatar-director.png",
+      accountant: "assets/avatar-accountant.png",
+      admin: "assets/avatar-sysadmin.png",
+      hr: "assets/avatar-hr-men.png",
+      newcomer: "assets/avatar-young-boy.png",
+      default: "assets/avatar-default-user.png"
     },
     photos: {
-      party: "assets/photos/office-party.jpg",
-      emptyDesk: "assets/photos/empty-desk.jpg",
-      boxes: "assets/photos/boxes-corridor.jpg"
+      party: "assets/image-corporativ.jpg",
+      emptyDesk: "assets/image-empty-workplace.png",
+      boxes: "assets/image-boxes-hallway.png"
     },
     documents: {
-      contract: "assets/documents/contract-scan.png",
-      memo: "assets/documents/memo-scan.png"
+      contract: "assets/image-old-agreement.png",
+      memo: "assets/image-office-memo.png"
     },
     stamps: {
-      confidential: "assets/stamps/confidential.png",
-      company: "assets/stamps/company.png"
+      confidential: "assets/image-red-seal-confidential.png",
+      company: "assets/image-blue-round-seal-company.png"
     },
     signatures: {
-      director: "assets/signatures/director.png",
-      accountant: "assets/signatures/accountant.png"
+      director: "assets/image-director-signature.png",
+      accountant: "assets/image-accountant-signature.png"
     },
     sprites: {
-      systemStatus: "assets/sprites/system-status.png",
-      fileTypes: "assets/sprites/file-types.png",
-      folders: "assets/sprites/folders.png",
-      employeeStatuses: "assets/sprites/employee-statuses.png",
-      attachments: "assets/sprites/attachments.png"
+      systemStatus: "assets/assets-system-icons.png",
+      fileTypes: "assets/assets-file-icons.png",
+      folders: "assets/assets-folder.png",
+      employeeStatuses: "assets/assets-employee-statuses.png",
+      attachments: "assets/assets-email-attachments.png"
     }
   };
 
