@@ -1,0 +1,302 @@
+.tuesday-minigame-card {
+  border-left: 3px solid #4e738d;
+}
+
+.tuesday-minigame-window {
+  width: min(860px, calc(100vw - 48px));
+  height: min(610px, calc(100vh - 84px));
+  left: max(24px, calc(50vw - 430px));
+  top: 54px;
+}
+
+.tuesday-minigame-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+  background: #e8edf1;
+}
+
+.tuesday-task-heading {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #aab6bf;
+  background: linear-gradient(#f8fafb, #e5eaee);
+}
+
+.tuesday-task-heading strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #23394a;
+  font-size: 17px;
+}
+
+.tuesday-task-heading p {
+  margin: 0;
+  color: #52636f;
+  line-height: 1.45;
+}
+
+.client-case-layout,
+.accountant-audit-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+
+.client-evidence-list,
+.accountant-invoice-list {
+  overflow: auto;
+  padding: 10px;
+  border-right: 1px solid #aab6bf;
+  background: #dbe2e7;
+}
+
+.client-evidence-button,
+.accountant-invoice-button {
+  display: block;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 11px 12px;
+  border: 1px solid #9aa9b4;
+  border-radius: 3px;
+  background: #f7f9fa;
+  color: #23333f;
+  text-align: left;
+  cursor: pointer;
+}
+
+.client-evidence-button:hover,
+.accountant-invoice-button:hover {
+  background: #fff;
+}
+
+.client-evidence-button.selected,
+.accountant-invoice-button.selected {
+  border-color: #356c91;
+  box-shadow: inset 3px 0 #356c91;
+  background: #edf6fb;
+}
+
+.client-evidence-button strong,
+.client-evidence-button span,
+.client-evidence-button small,
+.accountant-invoice-button strong,
+.accountant-invoice-button span {
+  display: block;
+}
+
+.client-evidence-button span,
+.accountant-invoice-button span {
+  margin-top: 4px;
+  color: #5b6973;
+  font-size: 12px;
+}
+
+.client-evidence-button small {
+  margin-top: 8px;
+  color: #8a5c22;
+}
+
+.client-evidence-button.viewed small,
+.accountant-invoice-button.resolved span {
+  color: #2d7045;
+}
+
+.client-evidence-view,
+.accountant-invoice-view {
+  overflow: auto;
+  padding: 20px;
+  background: #f4f6f7;
+}
+
+.client-evidence-view header,
+.accountant-invoice-view > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #c2cbd1;
+}
+
+.client-evidence-view h3,
+.accountant-invoice-view h3 {
+  margin: 0;
+  color: #203746;
+  font-size: 18px;
+}
+
+.client-evidence-view header span,
+.accountant-invoice-view header span {
+  color: #6c7a84;
+  font-size: 12px;
+}
+
+.client-evidence-view article {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid #c0c8ce;
+  background: #fff;
+  color: #263640;
+  line-height: 1.65;
+  white-space: pre-line;
+}
+
+.tuesday-empty-state {
+  display: grid;
+  min-height: 100%;
+  place-items: center;
+  color: #71808a;
+}
+
+.client-case-progress {
+  padding: 9px 20px;
+  border-top: 1px solid #aab6bf;
+  background: #e1e7eb;
+  color: #4f606c;
+  font-size: 13px;
+}
+
+.client-case-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid #b7c1c8;
+  background: #f4f6f7;
+}
+
+.client-case-actions .secondary {
+  background: #d8dee2;
+  color: #2f414e;
+}
+
+.accountant-reference {
+  margin: 15px 0;
+  padding: 13px 15px;
+  border-left: 4px solid #738b9d;
+  background: #e3e9ed;
+}
+
+.accountant-reference strong {
+  color: #304857;
+}
+
+.accountant-reference p {
+  margin: 5px 0 0;
+  color: #495c68;
+  line-height: 1.45;
+}
+
+.accountant-rows {
+  display: grid;
+  gap: 8px;
+}
+
+.accountant-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 15px;
+  border: 1px solid #adb9c1;
+  border-radius: 3px;
+  background: #fff;
+  color: #263b49;
+  text-align: left;
+  cursor: pointer;
+}
+
+.accountant-row:hover:not(:disabled) {
+  border-color: #527b98;
+  background: #f2f8fb;
+}
+
+.accountant-row:disabled {
+  cursor: default;
+  opacity: .68;
+}
+
+.accountant-row.wrong {
+  animation: tuesday-wrong-row .3s ease;
+}
+
+.accountant-result {
+  min-height: 42px;
+  margin-top: 14px;
+  padding: 11px 13px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+}
+
+.accountant-result:empty {
+  display: none;
+}
+
+.accountant-result.error {
+  border-color: #c78b87;
+  background: #f7e7e5;
+  color: #7a302a;
+}
+
+.accountant-result.success {
+  border-color: #84ad91;
+  background: #e7f3ea;
+  color: #285f39;
+}
+
+.accountant-audit-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 18px;
+  border-top: 1px solid #aab6bf;
+  background: #eef2f4;
+}
+
+.accountant-audit-footer span {
+  color: #4f606c;
+}
+
+@keyframes tuesday-wrong-row {
+  0%, 100% { transform: translateX(0); }
+  30% { transform: translateX(-5px); }
+  70% { transform: translateX(5px); }
+}
+
+@media (max-width: 720px) {
+  .tuesday-minigame-window {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 58px);
+    left: 8px;
+    top: 8px;
+  }
+
+  .client-case-layout,
+  .accountant-audit-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .client-evidence-list,
+  .accountant-invoice-list {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid #aab6bf;
+  }
+
+  .client-evidence-button,
+  .accountant-invoice-button {
+    min-width: 210px;
+    margin-bottom: 0;
+  }
+
+  .client-case-actions,
+  .accountant-audit-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
