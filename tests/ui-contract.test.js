@@ -16,6 +16,8 @@ const scripts = [
   "src/rules-extension.js",
   "src/state-migration.js",
   "src/asset-registry.js",
+  "src/sprite-atlas.js",
+  "src/asset-ui.js",
   "src/loading-indicator.js"
 ];
 
@@ -26,8 +28,11 @@ for (const file of scripts) {
 
 const html = read("index.html");
 assert.match(html, /styles-v2\.css/, "v2 styles must be connected");
+assert.match(html, /asset-ui\.css/, "asset integration styles must be connected");
 assert.match(html, /src\/bootstrap\.js/, "v2 bootstrap must be connected");
 assert.match(html, /src\/asset-registry\.js/, "asset registry must be connected");
+assert.match(html, /src\/sprite-atlas\.js/, "sprite atlas must be connected");
+assert.match(html, /src\/asset-ui\.js/, "asset UI layer must be connected");
 assert.match(html, /src\/loading-indicator\.js/, "programmatic loading indicator must be connected");
 assert.doesNotMatch(html, /<script src="src\/app\.js"><\/script>/, "legacy app must not boot in parallel");
 
@@ -36,13 +41,17 @@ const storyPosition = html.indexOf("src/story-v2.js");
 const rulesPosition = html.indexOf("src/rules-extension.js");
 const migrationPosition = html.indexOf("src/state-migration.js");
 const assetsPosition = html.indexOf("src/asset-registry.js");
+const atlasPosition = html.indexOf("src/sprite-atlas.js");
+const assetUiPosition = html.indexOf("src/asset-ui.js");
 const loadingPosition = html.indexOf("src/loading-indicator.js");
 const bootstrapPosition = html.indexOf("src/bootstrap.js");
 assert.ok(enginePosition < storyPosition, "engine must load before story");
 assert.ok(storyPosition < rulesPosition, "story must load before rule extensions");
 assert.ok(rulesPosition < migrationPosition, "rules must load before save migration and UI creation");
 assert.ok(migrationPosition < assetsPosition, "migration must load before asset decoration");
-assert.ok(assetsPosition < loadingPosition, "asset registry must load before the loader");
+assert.ok(assetsPosition < atlasPosition, "asset paths must load before sprite atlas");
+assert.ok(atlasPosition < assetUiPosition, "sprite atlas must load before asset UI integration");
+assert.ok(assetUiPosition < loadingPosition, "asset integration must load before the loader and application bootstrap");
 assert.ok(loadingPosition < bootstrapPosition, "loader must exist before application bootstrap");
 
 const app = read("src/app-v2.js");
@@ -64,6 +73,30 @@ assert.match(loaderStyles, /programmatic-spinner__segment/, "loader segment styl
 
 const assetRegistry = read("src/asset-registry.js");
 assert.doesNotMatch(assetRegistry, /assets\/sprites\/loading\.png/, "asset registry must not request a loading sprite");
+assert.match(assetRegistry, /assets\/assets-file-icons\.png/, "uploaded file icon sheet must be registered");
+assert.match(assetRegistry, /assets\/avatar-director\.png/, "confirmed department chief avatar must be registered");
+assert.match(assetRegistry, /assets\/avatar-hr-men\.png/, "confirmed HR avatar must be registered");
+
+const atlas = read("src/sprite-atlas.js");
+for (const group of ["attachments", "statuses", "folders", "files", "system"]) {
+  assert.match(atlas, new RegExp(`${group}: \\{`), `${group} sprite group must exist`);
+}
+assert.match(atlas, /function createIcon\(/, "sprite atlas must expose programmatic icon creation");
+
+const assetUi = read("src/asset-ui.js");
+assert.match(assetUi, /storyAssets/, "asset UI must expose story files");
+assert.match(assetUi, /decorateFileRows/, "file rows must use generated icons");
+assert.match(assetUi, /decorateContacts/, "employee statuses must be integrated");
+assert.match(assetUi, /decorateNotifications/, "system notification icons must be integrated");
+assert.match(assetUi, /decorateMailAttachments/, "mail attachment icons must be integrated");
+assert.match(assetUi, /openAssetViewer/, "story images and scans must open in a viewer");
+assert.match(assetUi, /assets\.documents\.contract/, "contract scan must be available in Explorer");
+assert.match(assetUi, /assets\.photos\.emptyDesk/, "story photos must be available in Explorer");
+
+const assetStyles = read("asset-ui.css");
+assert.match(assetStyles, /asset-viewer-window/, "asset viewer styling must exist");
+assert.match(assetStyles, /contact-status-icon/, "employee status styling must exist");
+assert.match(assetStyles, /mail-attachment-icon/, "attachment styling must exist");
 
 const manifest = JSON.parse(read("assets/manifest.json"));
 assert.equal(manifest.assets.length, 40, "all forty prompts must remain documented");
@@ -73,5 +106,9 @@ const generatedLoading = manifest.assets.find((item) => item.prompt === 37);
 assert.equal(generatedLoading.generated, true, "prompt 37 must be marked as generated");
 assert.equal(generatedLoading.source, "src/loading-indicator.js", "prompt 37 must point to its programmatic source");
 assert.doesNotMatch(generatedLoading.path, /\.png$/i, "prompt 37 must not require a PNG file");
+const chief = manifest.assets.find((item) => item.prompt === 18);
+const hr = manifest.assets.find((item) => item.prompt === 21);
+assert.equal(chief.role, "Андрей Соколов, начальник отдела", "prompt 18 role must be confirmed");
+assert.equal(hr.role, "Сотрудник отдела кадров", "prompt 21 role must be confirmed");
 
 console.log("UI contract validation passed.");
