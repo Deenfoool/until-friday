@@ -18,16 +18,27 @@
   }
 
   function writeWelcome(value) {
-    localStorage.setItem(WELCOME_KEY, JSON.stringify(value));
+    try {
+      localStorage.setItem(WELCOME_KEY, JSON.stringify(value));
+    } catch {
+      return false;
+    }
     queueDecorate();
+    return true;
   }
 
   function playerName() {
-    return Onboarding.readProfile()?.name || "Илья Воронов";
+    return Onboarding.readProfile()?.name || "Сотрудник";
   }
 
   function shortName() {
     return playerName().split(/\s+/)[0] || playerName();
+  }
+
+  function initials(name = playerName()) {
+    const parts = String(name).trim().split(/\s+/).filter(Boolean);
+    const value = parts.slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+    return value || "С";
   }
 
   function queueDecorate() {
@@ -56,19 +67,18 @@
     const startName = document.querySelector("#start-menu header strong");
     if (startName && startName.textContent !== profile.name) startName.textContent = profile.name;
 
-    const substitutions = [
-      ["Илья Воронов", profile.name],
-      ["ivoronov", login],
-      ["Илью", "сотрудника"],
-      ["Илья", shortName()]
-    ];
+    const avatar = document.querySelector("#start-menu .user-avatar");
+    const avatarText = initials(profile.name);
+    if (avatar && avatar.textContent !== avatarText) avatar.textContent = avatarText;
+
     const roots = document.querySelectorAll(
       ".mail-view, .document-paper, .message-bubble, .ending-card, .day-transition-card, .terminal-output, .journal-list, .work-minigame-content"
     );
-    roots.forEach((element) => replaceTextNodes(element, substitutions));
+    roots.forEach((element) => replaceTextNodes(element, [["ivoronov", login]]));
 
     document.querySelectorAll(".terminal-prompt").forEach((prompt) => {
-      prompt.textContent = `${login}@office:>`;
+      const value = `${login}@office:>`;
+      if (prompt.textContent !== value) prompt.textContent = value;
     });
   }
 
@@ -242,15 +252,17 @@
     replyPanel.prepend(options);
   }
 
-  const observer = new MutationObserver(queueDecorate);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
   document.addEventListener("DOMContentLoaded", queueDecorate, { once: true });
   window.addEventListener("until-friday-app-ready", queueDecorate);
+  window.addEventListener("until-friday-state-change", queueDecorate);
+  window.addEventListener("until-friday-ui-render", queueDecorate);
   queueDecorate();
 
   root.UntilFridayProfile = {
     playerName,
     terminalLogin,
-    readWelcome
+    initials,
+    readWelcome,
+    decorate
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
