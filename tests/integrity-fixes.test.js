@@ -34,6 +34,14 @@ assert.ok(Integrity, "integrity repair API must be exported");
 const mondayRequirement = Story.days[0].requirements.find((item) => item.id === "monday-core-work");
 assert.ok(mondayRequirement.satisfiedWhen.all, "Monday requirement must contain both work groups");
 
+for (const [eventId, actionId] of Object.entries(Integrity.BASE_EVENT_ACTION_GUARDS)) {
+  assert.equal(
+    Story.events[eventId].requires.actionDone || Story.events[eventId].requires.all?.[0]?.actionDone,
+    actionId,
+    `${eventId} must depend on ${actionId}`
+  );
+}
+
 {
   const state = Engine.createState(Story, { seed: "only-report", truthId: "player" });
   state.dayStarted = true;
@@ -67,6 +75,31 @@ assert.ok(mondayRequirement.satisfiedWhen.all, "Monday requirement must contain 
   );
 }
 
+{
+  const raw = Engine.createState(Story, { seed: "invalid-events", truthId: "player" });
+  raw.dayStarted = true;
+  raw.stats.anxiety = 3;
+  raw.stats.access = 1;
+  raw.trust.chief = 0;
+  raw.deliveredEvents = ["mon-chief-thanks", "mon-chief-angry", "tue-accountant-request"];
+  raw.inbox = [
+    { id: "mon-chief-thanks", minute: 690 },
+    { id: "mon-chief-angry", minute: 675 },
+    { id: "tue-accountant-request", minute: 590 }
+  ];
+  raw.journal = [
+    { type: "event", details: { eventId: "mon-chief-thanks" } },
+    { type: "event", details: { eventId: "tue-accountant-request" } }
+  ];
+  const repaired = Integrity.repairEngineState(Story, raw);
+  assert.deepEqual(repaired.deliveredEvents, [], "events without their source actions must be removed from old saves");
+  assert.equal(repaired.inbox.length, 0, "impossible event messages must be removed from the inbox");
+  assert.equal(repaired.journal.length, 0, "impossible event journal entries must be removed");
+  assert.equal(repaired.stats.access, 0, "effects of an impossible accountant request must be reversed");
+  assert.equal(repaired.stats.anxiety, 3, "opposite report reactions must cancel when both were incorrectly delivered");
+  assert.equal(repaired.trust.chief, 0, "opposite report trust effects must be repaired");
+}
+
 const workflow = JSON.parse(storage.get("until-friday-workflow-files-v1"));
 assert.equal(workflow.files.length, 1, "duplicate workflow files must be removed");
 assert.equal(workflow.trash.length, 1, "a file cannot exist in Documents and Trash simultaneously");
@@ -76,8 +109,8 @@ const html = require("node:fs").readFileSync(require("node:path").resolve(__dirn
 assert.match(html, /src\/integrity-fixes\.js/, "integrity repair layer must be connected");
 assert.ok(
   html.indexOf("src/state-migration.js") < html.indexOf("src/integrity-fixes.js") &&
-  html.indexOf("src/integrity-fixes.js") < html.indexOf("src/passive-clock.js"),
-  "integrity repairs must run after migration definitions and before engine wrappers"
+  html.indexOf("src/integrity-fixes.js") < html.indexOf("src/time-boundary-guard.js"),
+  "integrity repairs must run after migration definitions and before time wrappers"
 );
 
 console.log("Integrity repair validation passed.");
