@@ -26,6 +26,8 @@ jobs:
         run: node tests/app-runtime-ownership.test.js
       - name: Validate runtime notification deduplication
         run: node tests/runtime-notifications.test.js
+      - name: Validate scheduled event rollback
+        run: node tests/scheduled-event-rollback.test.js
       - name: Validate base story graph
         run: node tests/story-validation.test.js
       - name: Validate fully extended story graph
