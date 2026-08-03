@@ -4,7 +4,18 @@
   const Story = root.UNTIL_FRIDAY_STORY;
   if (!Story || root.UntilFridayTerminalSync) return;
 
-  const INTERCEPTED = new Set(["status", "day", "tasks", "actions", "logs", "run", "endday"]);
+  const INTERCEPTED = new Set([
+    "help",
+    "status",
+    "day",
+    "tasks",
+    "actions",
+    "files",
+    "logs",
+    "run",
+    "clear",
+    "endday"
+  ]);
 
   function runtime() {
     return root.UntilFridayRuntimeEngine || null;
@@ -29,6 +40,20 @@
 
   function commandResult(command, currentEngine, state) {
     const day = Story.days?.[state.dayIndex] || Story.days?.[0] || { title: "Рабочий день", dateLabel: "" };
+    if (command === "help") {
+      return [
+        "help              список команд",
+        "status            состояние сеанса",
+        "day               текущий день",
+        "tasks             доступные задачи",
+        "actions           все доступные действия",
+        "files             доступные служебные файлы",
+        "logs              журнал действий",
+        "run <id>          выполнить terminal-действие",
+        "clear             очистить экран",
+        "endday            завершить день"
+      ].join("\n");
+    }
     if (command === "status") {
       return `Пользователь: ${playerName()}\nДень: ${day.title}\nВремя: ${formatTime(state.minute)}\nСеть: OFFICE-LAN\nАудит: включён`;
     }
@@ -40,10 +65,17 @@
     if (command === "actions") {
       return currentEngine.listActions().map((action) => `${action.id} [${action.channel}] — ${action.label}`).join("\n") || "Нет доступных действий.";
     }
+    if (command === "files") {
+      const content = currentEngine.listVisibleContent("files")
+        .map((item) => `${item.id} — ${item.title}`);
+      const explorerActions = currentEngine.listActions("explorer")
+        .map((action) => `${action.id} — ${action.label}`);
+      return [...content, ...explorerActions].join("\n") || "Файлы не найдены.";
+    }
     if (command === "logs") {
       return state.journal.slice(-12).map((item) => `${formatTime(item.minute)} ${item.text}`).join("\n") || "Журнал пуст.";
     }
-    return "";
+    return `Команда «${command}» не найдена. Введите help.`;
   }
 
   function actionError(reason) {
@@ -123,22 +155,33 @@
     (result.events || []).forEach(notify);
   }
 
+  function commandMinutes(command) {
+    return command === "actions" || command === "files" ? 3 : 1;
+  }
+
   document.addEventListener("keydown", (event) => {
     const input = event.target.closest?.(".terminal-input");
     if (!input || event.key !== "Enter" || event.isComposing) return;
-    const raw = input.value.trim();
-    const [command = "", ...parts] = raw.split(/\s+/);
-    const normalized = command.toLowerCase();
-    if (!INTERCEPTED.has(normalized)) return;
-
-    const currentEngine = engine();
-    const output = input.closest(".terminal")?.querySelector(".terminal-output");
-    if (!currentEngine || !output) return;
 
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
+
+    const raw = input.value.trim();
     input.value = "";
+    if (!raw) return;
+
+    const [command = "", ...parts] = raw.split(/\s+/);
+    const normalized = command.toLowerCase();
+    const currentEngine = engine();
+    const output = input.closest(".terminal")?.querySelector(".terminal-output");
+    if (!currentEngine || !output) return;
+
+    if (normalized === "clear") {
+      output.replaceChildren();
+      return;
+    }
+
     appendLine(output, `${login()}@office:> ${raw}`);
 
     if (normalized === "endday") {
@@ -162,9 +205,14 @@
     }
 
     const before = currentEngine.getState();
-    appendLine(output, commandResult(normalized, currentEngine, before), normalized === "logs" ? "dim" : "");
-    const minutes = normalized === "actions" ? 3 : 1;
-    const result = currentEngine.advanceTime(minutes);
+    const known = INTERCEPTED.has(normalized);
+    appendLine(
+      output,
+      commandResult(normalized, currentEngine, before),
+      normalized === "logs" ? "dim" : known ? "" : "error"
+    );
+
+    const result = currentEngine.advanceTime(commandMinutes(normalized));
     if (!result?.ok) {
       appendLine(output, actionError(result?.reason), "error");
       output.scrollTop = output.scrollHeight;
@@ -182,7 +230,9 @@
     commandResult,
     actionError,
     executeRun,
+    commandMinutes,
     formatTime,
-    engine
+    engine,
+    login
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
