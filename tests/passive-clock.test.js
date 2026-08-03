@@ -83,6 +83,7 @@ assert.ok(api, "passive clock API must be exported");
 assert.equal(api.getEngine(), engineInstance, "passive clock must obtain the shared runtime instance");
 assert.equal(api.REAL_MS_PER_GAME_MINUTE, 3000, "one game minute must equal three real seconds");
 assert.equal(api.WORKDAY_END_MINUTE, 1080, "passive clock must stop at 18:00");
+api.resetDayClock();
 
 now += 30000;
 let result = api.tick(now);
