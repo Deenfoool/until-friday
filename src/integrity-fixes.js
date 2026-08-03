@@ -48,35 +48,26 @@
     event.requires = event.requires ? { all: [condition, event.requires] } : condition;
   }
 
-  function patchStoryRules() {
-    (Story.days || []).forEach((day, dayIndex) => {
+  function patchStoryRules(story = Story) {
+    (story.days || []).forEach((day, dayIndex) => {
       if (day && day.dayIndex === undefined) day.dayIndex = dayIndex;
     });
 
-    const mondayRequirement = Story.days?.[0]?.requirements?.find((item) => item.id === "monday-core-work");
+    const mondayRequirement = story.days?.[0]?.requirements?.find((item) => item.id === "monday-core-work");
     if (mondayRequirement) {
       mondayRequirement.label = "Не выполнены обе основные рабочие задачи";
       mondayRequirement.satisfiedWhen = {
         all: [
-          {
-            any: [
-              { actionDone: "mon-report-final" },
-              { actionDone: "mon-report-old" }
-            ]
-          },
-          {
-            any: [
-              { actionDone: "mon-invoice-fix" },
-              { actionDone: "mon-invoice-report" }
-            ]
-          }
+          { any: [{ actionDone: "mon-report-final" }, { actionDone: "mon-report-old" }] },
+          { any: [{ actionDone: "mon-invoice-fix" }, { actionDone: "mon-invoice-report" }] }
         ]
       };
     }
 
     Object.entries(BASE_EVENT_ACTION_GUARDS).forEach(([eventId, actionId]) => {
-      addActionGuard(Story.events?.[eventId], actionId);
+      addActionGuard(story.events?.[eventId], actionId);
     });
+    return story;
   }
 
   function dedupeObjects(items, keyOf) {
@@ -233,7 +224,6 @@
     state.scheduledEvents = repairScheduledEvents(story, state);
     synchronizeEventTimes(story, state);
     normalizeRepairedStats(state);
-
     return state;
   }
 
@@ -256,7 +246,7 @@
     try {
       localStorage.setItem(WORKFLOW_KEY, JSON.stringify({ files, trash, log }));
     } catch {
-      // The game will continue without rewriting the optional workflow cache.
+      // Optional workflow cache can remain untouched if storage is unavailable.
     }
   }
 
@@ -273,20 +263,14 @@
       try { sessionStorage.removeItem(ENDING_SNAPSHOT_KEY); } catch { /* unavailable */ }
       return;
     }
-
     if (!save.ended) {
       try { sessionStorage.removeItem(ENDING_SNAPSHOT_KEY); } catch { /* unavailable */ }
     }
   }
 
   patchStoryRules();
-  sanitizeWorkflowStorage();
-  clearStaleFinaleData();
-
-  const originalCreateEngine = Engine.createEngine.bind(Engine);
-  Engine.createEngine = function createEngineWithIntegrity(story, rawState = null, options = {}) {
-    return originalCreateEngine(story, rawState ? repairEngineState(story, rawState) : rawState, options);
-  };
+  try { sanitizeWorkflowStorage(); } catch { /* storage unavailable */ }
+  try { clearStaleFinaleData(); } catch { /* storage unavailable */ }
 
   root.UntilFridayIntegrityFixes = {
     WORKDAY_END_MINUTE,
