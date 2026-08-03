@@ -1,7 +1,11 @@
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "until-friday-workflow-files-v1";
+  const RESET_KEYS = [
+    "until-friday-workflow-files-v1",
+    "until-friday-profile-v1",
+    "until-friday-return-welcome-v1"
+  ];
   let resetRequested = false;
 
   document.addEventListener("click", (event) => {
@@ -13,6 +17,7 @@
   }, true);
 
   window.addEventListener("beforeunload", () => {
-    if (resetRequested) localStorage.removeItem(STORAGE_KEY);
+    if (!resetRequested) return;
+    RESET_KEYS.forEach((key) => localStorage.removeItem(key));
   });
 })();
