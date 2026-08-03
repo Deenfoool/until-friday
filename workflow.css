@@ -1,0 +1,117 @@
+.workflow-attachment-panel {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin: 14px 16px 16px;
+  padding: 10px 11px;
+  border: 1px solid #b8c2c9;
+  background: #eef2f4;
+  box-shadow: inset 0 1px #fff;
+}
+
+.workflow-attachment-info {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.workflow-attachment-info strong,
+.workflow-attachment-info span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workflow-attachment-info span {
+  color: #65727a;
+  font-size: 11px;
+}
+
+.workflow-save-attachment {
+  white-space: nowrap;
+}
+
+.workflow-save-attachment:disabled {
+  opacity: .62;
+}
+
+.workflow-trash-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+}
+
+.workflow-trash-info {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.workflow-trash-info strong,
+.workflow-trash-info span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workflow-trash-info span {
+  color: #6a757d;
+  font-size: 11px;
+}
+
+.workflow-file-viewer {
+  width: min(640px, calc(100vw - 44px));
+  height: min(490px, calc(100vh - 88px));
+}
+
+.workflow-document-paper {
+  min-height: calc(100% - 46px);
+  white-space: pre-wrap;
+  font-family: "Courier New", monospace;
+  line-height: 1.55;
+}
+
+.workflow-viewer-task {
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workflow-notification {
+  display: block;
+}
+
+.workflow-notification > strong,
+.workflow-notification > span {
+  display: block;
+}
+
+.workflow-journal-entry {
+  border-left: 3px solid #6b879b;
+}
+
+.toolbar [data-workflow-delete] {
+  margin-left: auto;
+}
+
+@media (max-width: 760px) {
+  .workflow-attachment-panel {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .workflow-save-attachment {
+    grid-column: 1 / -1;
+  }
+
+  .workflow-file-viewer {
+    width: calc(100vw - 18px);
+    height: calc(100vh - 62px);
+    left: 9px !important;
+    top: 9px !important;
+  }
+}
