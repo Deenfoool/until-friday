@@ -19,6 +19,7 @@ const scripts = [
   "src/sprite-atlas.js",
   "src/asset-ui.js",
   "src/workflow-extension.js",
+  "src/workflow-reset.js",
   "src/loading-indicator.js"
 ];
 
@@ -36,6 +37,7 @@ assert.match(html, /src\/asset-registry\.js/, "asset registry must be connected"
 assert.match(html, /src\/sprite-atlas\.js/, "sprite atlas must be connected");
 assert.match(html, /src\/asset-ui\.js/, "asset UI layer must be connected");
 assert.match(html, /src\/workflow-extension\.js/, "cross-app workflow must be connected");
+assert.match(html, /src\/workflow-reset\.js/, "workflow reset guard must be connected");
 assert.match(html, /src\/loading-indicator\.js/, "programmatic loading indicator must be connected");
 assert.doesNotMatch(html, /<script src="src\/app\.js"><\/script>/, "legacy app must not boot in parallel");
 
@@ -47,6 +49,7 @@ const assetsPosition = html.indexOf("src/asset-registry.js");
 const atlasPosition = html.indexOf("src/sprite-atlas.js");
 const assetUiPosition = html.indexOf("src/asset-ui.js");
 const workflowPosition = html.indexOf("src/workflow-extension.js");
+const workflowResetPosition = html.indexOf("src/workflow-reset.js");
 const loadingPosition = html.indexOf("src/loading-indicator.js");
 const bootstrapPosition = html.indexOf("src/bootstrap.js");
 assert.ok(enginePosition < storyPosition, "engine must load before story");
@@ -56,7 +59,8 @@ assert.ok(migrationPosition < assetsPosition, "migration must load before asset 
 assert.ok(assetsPosition < atlasPosition, "asset paths must load before sprite atlas");
 assert.ok(atlasPosition < assetUiPosition, "sprite atlas must load before asset UI integration");
 assert.ok(assetUiPosition < workflowPosition, "asset viewer must load before cross-app workflow");
-assert.ok(workflowPosition < loadingPosition, "workflow extension must load before application bootstrap");
+assert.ok(workflowPosition < workflowResetPosition, "workflow must load before its reset guard");
+assert.ok(workflowResetPosition < loadingPosition, "workflow reset guard must load before application bootstrap");
 assert.ok(loadingPosition < bootstrapPosition, "loader must exist before application bootstrap");
 
 const app = read("src/app-v2.js");
@@ -110,6 +114,11 @@ assert.match(workflow, /function restoreFile\(/, "files must be restorable from 
 assert.match(workflow, /Сохранено вложение/, "file operations must be logged");
 assert.match(workflow, /workflowSignature/, "Trash and Journal rendering must be guarded against observer loops");
 assert.match(workflow, /localStorage\.setItem/, "cross-app files must persist locally");
+
+const workflowReset = read("src/workflow-reset.js");
+assert.match(workflowReset, /beforeunload/, "workflow reset must wait for a confirmed reload");
+assert.match(workflowReset, /until-friday-workflow-files-v1/, "workflow reset must clear the correct storage key");
+assert.match(workflowReset, /resetRequested/, "workflow reset must not clear files when confirmation is cancelled");
 
 const workflowStyles = read("workflow.css");
 assert.match(workflowStyles, /workflow-attachment-panel/, "attachment panel styling must exist");
