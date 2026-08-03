@@ -13,7 +13,8 @@ const eventDrivenModules = [
   "src/ui-runtime-guards.js",
   "src/friday-scene-guard.js",
   "src/friday-ending-reopen.js",
-  "src/notification-history-guard.js"
+  "src/notification-history-guard.js",
+  "src/tuesday-minigames.js"
 ];
 
 for (const file of eventDrivenModules) {
@@ -60,5 +61,9 @@ assert.match(ending, /inspectEnding/, "ending restoration must handle enhanced a
 const history = read("src/notification-history-guard.js");
 assert.match(history, /until-friday-app-ready/, "restored inbox toasts must be inspected after application startup");
 assert.match(history, /queueMicrotask/, "notification inspection must occur after the current state-change stack finishes");
+
+const tuesday = read("src/tuesday-minigames.js");
+assert.match(tuesday, /event\.detail\?\.appId === "tasks"/, "Tuesday cards must be scoped to the Tasks render lifecycle");
+assert.match(tuesday, /queueDecorate/, "Tuesday lifecycle refresh must stay batched");
 
 console.log("Event-driven UI and neutral identity validation passed.");
