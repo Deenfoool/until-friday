@@ -29,9 +29,11 @@
 
   function shouldPause(state) {
     if (!state || state.ended || !state.dayStarted) return true;
+    if (document.hidden) return true;
     if (document.querySelector("#opening-flow")) return true;
     if (!document.querySelector("#desktop:not(.hidden)")) return true;
     if (document.querySelector(".modal-overlay")) return true;
+    if (document.querySelector(".day-end-control-overlay")) return true;
     if (document.querySelector(".friday-scene-overlay, .friday-ending-overlay")) return true;
     return false;
   }
@@ -177,7 +179,11 @@
     start();
   });
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) tick(Date.now());
+    lastRealTimestamp = Date.now();
+    if (!document.hidden && engineInstance) updateClock(engineInstance.getState());
+  });
+  window.addEventListener("pagehide", () => {
+    lastRealTimestamp = Date.now();
   });
   window.addEventListener("beforeunload", stop);
 
