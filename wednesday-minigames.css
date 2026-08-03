@@ -1,0 +1,258 @@
+.wednesday-audit-launcher {
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid #9aa8b5;
+  background: #eef3f6;
+}
+
+.wednesday-audit-launcher strong,
+.wednesday-audit-launcher p {
+  display: block;
+  margin: 0 0 8px;
+}
+
+.wednesday-task-card > header span {
+  color: #8d3d32;
+  font-weight: 700;
+}
+
+.wednesday-minigame-window {
+  width: min(880px, calc(100vw - 34px));
+  height: min(620px, calc(100vh - 78px));
+  left: max(16px, calc(50vw - 440px));
+  top: 42px;
+}
+
+.wednesday-minigame-content {
+  overflow: auto;
+  background: #e8edf0;
+}
+
+.wednesday-heading {
+  padding: 14px 16px;
+  border-bottom: 1px solid #a9b3bc;
+  background: #f7f9fa;
+}
+
+.wednesday-heading strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 17px;
+}
+
+.wednesday-heading p {
+  margin: 0;
+  color: #4b565e;
+}
+
+.audit-log-table {
+  margin: 14px;
+  border: 1px solid #8f9aa3;
+  background: #fff;
+  font-family: Consolas, "Courier New", monospace;
+}
+
+.audit-log-row {
+  display: grid;
+  grid-template-columns: 24px 78px 145px minmax(220px, 1fr) 90px;
+  gap: 8px;
+  align-items: center;
+  min-height: 42px;
+  padding: 6px 10px;
+  border-bottom: 1px solid #d5dadd;
+  cursor: pointer;
+}
+
+.audit-log-row:last-child {
+  border-bottom: 0;
+}
+
+.audit-log-row:hover,
+.audit-log-row.checked {
+  background: #eaf2f8;
+}
+
+.audit-log-row small {
+  text-align: right;
+  color: #6c747a;
+}
+
+.audit-review-status,
+.audit-decision-panel,
+.backlog-footer,
+.hr-draft-footer {
+  margin: 0 14px 14px;
+  padding: 12px;
+  border: 1px solid #a9b3bc;
+  background: #f7f9fa;
+}
+
+.audit-decision-panel p {
+  margin: 0 0 10px;
+}
+
+.audit-decision-panel .action-button {
+  margin: 0 8px 8px 0;
+}
+
+.backlog-ticket-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px;
+}
+
+.backlog-ticket {
+  padding: 12px;
+  border: 1px solid #9da8b0;
+  background: #fff;
+}
+
+.backlog-ticket.correct {
+  box-shadow: inset 4px 0 0 #4e7b55;
+}
+
+.backlog-ticket.wrong {
+  box-shadow: inset 4px 0 0 #9a493e;
+  background: #fff5f3;
+}
+
+.backlog-ticket header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.backlog-ticket header span {
+  color: #5b656c;
+}
+
+.backlog-ticket p {
+  min-height: 48px;
+  margin: 10px 0;
+}
+
+.backlog-ticket select {
+  width: 100%;
+  min-height: 32px;
+}
+
+.backlog-footer,
+.hr-draft-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hr-draft-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: 430px;
+  margin: 14px;
+  border: 1px solid #929da5;
+  background: #fff;
+}
+
+.hr-fragment-list {
+  padding: 8px;
+  border-right: 1px solid #aeb7bd;
+  background: #e3e8eb;
+}
+
+.hr-fragment-button {
+  width: 100%;
+  margin-bottom: 7px;
+  padding: 10px;
+  border: 1px solid #9aa5ad;
+  background: #f7f9fa;
+  text-align: left;
+}
+
+.hr-fragment-button strong,
+.hr-fragment-button small {
+  display: block;
+}
+
+.hr-fragment-button small {
+  margin-top: 3px;
+  color: #6e777d;
+}
+
+.hr-fragment-button.selected {
+  background: #dbeaf5;
+  border-color: #627f95;
+}
+
+.hr-fragment-button.viewed small {
+  color: #436748;
+}
+
+.hr-fragment-view {
+  padding: 22px;
+  background: #f2f2ef;
+}
+
+.hr-fragment-view > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #4e565b;
+}
+
+.hr-fragment-view article {
+  margin-top: 20px;
+  padding: 22px;
+  min-height: 280px;
+  border: 1px solid #b3b3aa;
+  background: #fff;
+  white-space: pre-wrap;
+  font-family: "Times New Roman", serif;
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.wednesday-empty-state {
+  display: grid;
+  min-height: 320px;
+  place-items: center;
+  color: #6a7277;
+}
+
+@media (max-width: 760px) {
+  .wednesday-minigame-window {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 58px);
+    left: 8px;
+    top: 8px;
+  }
+
+  .audit-log-row {
+    grid-template-columns: 22px 66px 1fr;
+  }
+
+  .audit-log-row span,
+  .audit-log-row small {
+    grid-column: 2 / -1;
+    text-align: left;
+  }
+
+  .backlog-ticket-list {
+    grid-template-columns: 1fr;
+  }
+
+  .hr-draft-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .hr-fragment-list {
+    border-right: 0;
+    border-bottom: 1px solid #aeb7bd;
+  }
+
+  .backlog-footer,
+  .hr-draft-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
