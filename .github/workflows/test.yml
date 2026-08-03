@@ -32,6 +32,8 @@ jobs:
         run: node tests/story-validation.test.js
       - name: Validate fully extended story graph
         run: node tests/expanded-story-validation.test.js
+      - name: Validate complete five-day routes
+        run: node tests/full-playthroughs.test.js
       - name: Validate Friday ending coverage
         run: node tests/ending-coverage.test.js
       - name: Test hidden choice rules
