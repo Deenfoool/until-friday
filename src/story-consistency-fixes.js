@@ -10,7 +10,17 @@
 
   function patchRequirements() {
     const wednesday = Story.days?.[2]?.requirements?.find((item) => item.id === "wednesday-audit");
-    if (wednesday) wednesday.appliesWhen = { eventDelivered: "wed-security-audit" };
+    if (wednesday) {
+      wednesday.appliesWhen = { eventDelivered: "wed-security-audit" };
+      wednesday.satisfiedWhen = {
+        any: [
+          { actionDone: "wed-audit-explain" },
+          { actionDone: "wed-audit-delete" },
+          { actionDone: "wed-audit-blame" },
+          { not: { eventDelivered: "wed-security-audit" } }
+        ]
+      };
+    }
 
     const thursday = Story.days?.[3]?.requirements?.find((item) => item.id === "thursday-choice");
     if (thursday) {
