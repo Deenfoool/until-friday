@@ -50,6 +50,8 @@ jobs:
         run: node tests/ui-contract.test.js
       - name: Validate runtime UI guards
         run: node tests/runtime-ui-guards.test.js
+      - name: Validate event-driven UI lifecycle
+        run: node tests/event-driven-ui.test.js
       - name: Validate exclusive app startup
         run: node tests/bootstrap-guard.test.js
       - name: Validate desktop icon presentation
