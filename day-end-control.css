@@ -1,0 +1,116 @@
+.day-end-control-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(8, 15, 21, 0.78);
+  font-family: Tahoma, "Segoe UI", Arial, sans-serif;
+}
+
+.day-end-control-dialog {
+  width: min(520px, 96vw);
+  overflow: hidden;
+  border: 1px solid #607789;
+  background: #edf1f4;
+  color: #202a31;
+  box-shadow: 0 18px 52px rgba(0, 0, 0, 0.52);
+}
+
+.day-end-control-dialog > header {
+  padding: 15px 18px;
+  border-bottom: 1px solid #526a7d;
+  background: linear-gradient(#3a6687, #294f6d);
+  color: #fff;
+}
+
+.day-end-control-dialog > header span {
+  display: block;
+  margin-bottom: 4px;
+  color: #c7d7e2;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.day-end-control-dialog > header h2 {
+  margin: 0;
+  font-size: 21px;
+}
+
+.day-end-control-body {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  line-height: 1.45;
+}
+
+.day-end-control-body p {
+  margin: 0;
+}
+
+.day-end-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 11px 13px;
+  border: 1px solid #acb8c0;
+  background: #fff;
+}
+
+.day-end-progress span {
+  color: #53636e;
+  font-size: 12px;
+}
+
+.day-end-progress strong {
+  color: #284f6b;
+  font-size: 17px;
+}
+
+.day-end-warning {
+  padding: 10px 12px;
+  border: 1px solid #d0a65b;
+  background: #fff4d9;
+  color: #654c1f;
+}
+
+.day-end-control-dialog > footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #b4c0c8;
+  background: #dce4e9;
+}
+
+.day-end-control-dialog > footer button {
+  min-width: 145px;
+}
+
+.day-end-task-card {
+  margin-top: 12px;
+  border-left: 4px solid #3d718f;
+}
+
+.day-end-task-card header span {
+  min-width: 38px;
+  text-align: center;
+  font-weight: 700;
+}
+
+@media (max-width: 620px) {
+  .day-end-control-overlay {
+    padding: 8px;
+  }
+
+  .day-end-control-dialog > footer {
+    display: grid;
+  }
+
+  .day-end-control-dialog > footer button {
+    width: 100%;
+  }
+}
