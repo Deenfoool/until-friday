@@ -13,8 +13,7 @@ for (const file of [
   "src/integrity-fixes.js",
   "src/time-boundary-guard.js",
   "src/passive-clock.js",
-  "src/day-transition-guard.js",
-  "src/persistent-engine-guard.js"
+  "src/day-transition-guard.js"
 ]) {
   const source = read(file);
   assert.doesNotThrow(() => new Function(source), `${file} must contain valid JavaScript`);
@@ -30,6 +29,23 @@ assert.equal(
 );
 assert.match(runtimeSource, /until-friday-state-change/, "runtime must publish one state-change channel");
 assert.match(runtimeSource, /replaceState/, "runtime must support explicit rollback without replacing wrappers");
+
+function allSourceFiles(directory) {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) return allSourceFiles(absolute);
+    return entry.isFile() && entry.name.endsWith(".js") ? [absolute] : [];
+  });
+}
+
+for (const absolute of allSourceFiles(path.join(root, "src"))) {
+  const relative = path.relative(root, absolute).replaceAll("\\", "/");
+  const source = fs.readFileSync(absolute, "utf8");
+  assert.doesNotMatch(source, /UntilFridayPersistentEngineGuard/, `${relative} must not use the deleted persistence facade`);
+  assert.doesNotMatch(source, /UntilFridayDayTransitionGuard\?\.getEngine/, `${relative} must not use transition fallback engine access`);
+  assert.doesNotMatch(source, /UntilFridayPassiveClock\?\.getEngine/, `${relative} must not use clock fallback engine access`);
+}
+assert.equal(fs.existsSync(path.join(root, "src/persistent-engine-guard.js")), false, "obsolete persistence facade must stay deleted");
 
 const storage = new Map();
 globalThis.localStorage = {
@@ -59,15 +75,13 @@ assert.equal(Engine.createEngine, baseFactory, "pure rule modules must leave the
 require("../src/runtime-engine.js");
 const runtimeFactory = Engine.createEngine;
 assert.notEqual(runtimeFactory, baseFactory, "the unified runtime must install the only replacement factory");
-require("../src/persistent-engine-guard.js");
-assert.equal(Engine.createEngine, runtimeFactory, "compatibility facades must not replace the runtime factory");
+assert.equal(globalThis.UntilFridayPersistentEngineGuard, undefined, "deleted facades must not be recreated globally");
 
 const engine = Engine.createEngine(globalThis.UNTIL_FRIDAY_STORY, null, {
   seed: "runtime-architecture",
   truthId: "player"
 });
 assert.equal(globalThis.UntilFridayRuntimeEngine.getEngine(), engine);
-assert.equal(globalThis.UntilFridayPersistentEngineGuard.getEngine(), engine);
 assert.equal(engine.startDay().ok, true);
 assert.equal(engine.applyAction("mon-report-final").ok, true);
 assert.equal(engine.canApplyAction("mon-report-old").reason, "choice-locked");
@@ -116,6 +130,7 @@ assert.equal(secondCalls, 1, "disconnected subscribers must stop receiving recor
 assert.equal(observerContext.UntilFridayUiObserverHub.stats().nativeObservers, 1);
 
 const html = read("index.html");
+assert.doesNotMatch(html, /persistent-engine-guard\.js/, "deleted runtime facade must not be loaded");
 assert.ok(
   html.indexOf("src/time-boundary-guard.js") < html.indexOf("src/runtime-engine.js") &&
   html.indexOf("src/runtime-engine.js") < html.indexOf("src/ui-observer-hub.js") &&
