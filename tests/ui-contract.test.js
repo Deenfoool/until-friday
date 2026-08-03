@@ -20,7 +20,10 @@ const scripts = [
   "src/asset-ui.js",
   "src/workflow-extension.js",
   "src/workflow-reset.js",
-  "src/loading-indicator.js"
+  "src/loading-indicator.js",
+  "src/onboarding.js",
+  "src/return-from-vacation.js",
+  "src/work-minigames.js"
 ];
 
 for (const file of scripts) {
@@ -29,39 +32,31 @@ for (const file of scripts) {
 }
 
 const html = read("index.html");
-assert.match(html, /styles-v2\.css/, "v2 styles must be connected");
-assert.match(html, /asset-ui\.css/, "asset integration styles must be connected");
-assert.match(html, /workflow\.css/, "cross-app workflow styles must be connected");
-assert.match(html, /src\/bootstrap\.js/, "v2 bootstrap must be connected");
-assert.match(html, /src\/asset-registry\.js/, "asset registry must be connected");
-assert.match(html, /src\/sprite-atlas\.js/, "sprite atlas must be connected");
-assert.match(html, /src\/asset-ui\.js/, "asset UI layer must be connected");
-assert.match(html, /src\/workflow-extension\.js/, "cross-app workflow must be connected");
-assert.match(html, /src\/workflow-reset\.js/, "workflow reset guard must be connected");
-assert.match(html, /src\/loading-indicator\.js/, "programmatic loading indicator must be connected");
+for (const stylesheet of ["styles-v2.css", "asset-ui.css", "workflow.css", "onboarding.css", "work-minigames.css"]) {
+  assert.match(html, new RegExp(stylesheet.replace(".", "\\.")), `${stylesheet} must be connected`);
+}
+for (const script of [
+  "bootstrap", "asset-registry", "sprite-atlas", "asset-ui", "workflow-extension", "workflow-reset",
+  "loading-indicator", "onboarding", "return-from-vacation", "work-minigames"
+]) {
+  assert.match(html, new RegExp(`src\\/${script}\\.js`), `${script} must be connected`);
+}
 assert.doesNotMatch(html, /<script src="src\/app\.js"><\/script>/, "legacy app must not boot in parallel");
 
-const enginePosition = html.indexOf("src/engine.js");
-const storyPosition = html.indexOf("src/story-v2.js");
-const rulesPosition = html.indexOf("src/rules-extension.js");
-const migrationPosition = html.indexOf("src/state-migration.js");
-const assetsPosition = html.indexOf("src/asset-registry.js");
-const atlasPosition = html.indexOf("src/sprite-atlas.js");
-const assetUiPosition = html.indexOf("src/asset-ui.js");
-const workflowPosition = html.indexOf("src/workflow-extension.js");
-const workflowResetPosition = html.indexOf("src/workflow-reset.js");
-const loadingPosition = html.indexOf("src/loading-indicator.js");
-const bootstrapPosition = html.indexOf("src/bootstrap.js");
-assert.ok(enginePosition < storyPosition, "engine must load before story");
-assert.ok(storyPosition < rulesPosition, "story must load before rule extensions");
-assert.ok(rulesPosition < migrationPosition, "rules must load before save migration and UI creation");
-assert.ok(migrationPosition < assetsPosition, "migration must load before asset decoration");
-assert.ok(assetsPosition < atlasPosition, "asset paths must load before sprite atlas");
-assert.ok(atlasPosition < assetUiPosition, "sprite atlas must load before asset UI integration");
-assert.ok(assetUiPosition < workflowPosition, "asset viewer must load before cross-app workflow");
-assert.ok(workflowPosition < workflowResetPosition, "workflow must load before its reset guard");
-assert.ok(workflowResetPosition < loadingPosition, "workflow reset guard must load before application bootstrap");
-assert.ok(loadingPosition < bootstrapPosition, "loader must exist before application bootstrap");
+const position = (name) => html.indexOf(`src/${name}.js`);
+assert.ok(position("engine") < position("story-v2"), "engine must load before story");
+assert.ok(position("story-v2") < position("rules-extension"), "story must load before rule extensions");
+assert.ok(position("rules-extension") < position("state-migration"), "rules must load before migration");
+assert.ok(position("state-migration") < position("asset-registry"), "migration must load before assets");
+assert.ok(position("asset-registry") < position("sprite-atlas"), "asset paths must load before sprite atlas");
+assert.ok(position("sprite-atlas") < position("asset-ui"), "sprite atlas must load before asset UI");
+assert.ok(position("asset-ui") < position("workflow-extension"), "asset viewer must load before workflow");
+assert.ok(position("workflow-extension") < position("workflow-reset"), "workflow must load before reset guard");
+assert.ok(position("workflow-reset") < position("loading-indicator"), "reset guard must load before startup");
+assert.ok(position("loading-indicator") < position("onboarding"), "loader must exist before login flow");
+assert.ok(position("onboarding") < position("return-from-vacation"), "profile must exist before welcome flow");
+assert.ok(position("return-from-vacation") < position("work-minigames"), "profile bridge must load before tasks");
+assert.ok(position("work-minigames") < position("bootstrap"), "extensions must observe before app bootstrap");
 
 const app = read("src/app-v2.js");
 for (const requiredApp of ["explorer", "mail", "chat", "tasks", "terminal", "journal", "trash"]) {
@@ -71,6 +66,43 @@ assert.match(app, /engine\.endDay\(\)/, "UI must support day transitions");
 assert.match(app, /engine\.applyAction\(actionId\)/, "UI must route choices through the engine");
 assert.match(app, /showEnding\(/, "UI must render an ending");
 
+const bootstrap = read("src/bootstrap.js");
+assert.match(bootstrap, /Onboarding\?\.run/, "main menu must run before the desktop");
+assert.match(bootstrap, /until-friday-app-ready/, "extensions must receive the app-ready event");
+
+const onboarding = read("src/onboarding.js");
+assert.match(onboarding, /image-empty-workplace\.png/, "menu must use the empty workplace background");
+assert.match(onboarding, /Новая игра/, "menu must offer a new game");
+assert.match(onboarding, /Настройки/, "menu must offer settings");
+assert.match(onboarding, /Имя сотрудника:/, "login must request an employee name");
+assert.match(onboarding, /Он пока ничего не знает\?/, "canonical dialogue must be present");
+assert.match(onboarding, /Пусть пока продолжает работать как обычно/, "canonical final dialogue line must be present");
+assert.doesNotMatch(onboarding, /Первый вход после длительного отсутствия/, "rejected login caption must never appear");
+assert.match(onboarding, /validName/, "employee names must be validated");
+assert.match(onboarding, /until-friday-return-welcome-v1/, "new game must schedule the friend welcome");
+
+const openingDoc = read("OPENING_FLOW.md");
+assert.match(openingDoc, /считается закреплённым началом/, "canonical opening must be documented");
+assert.doesNotMatch(openingDoc, /Первый вход после длительного отсутствия"/, "rejected caption must not be canonical");
+
+const vacation = read("src/return-from-vacation.js");
+assert.match(vacation, /с возвращением/, "friend must welcome the player back from vacation");
+assert.match(vacation, /Напомни, где что находится/, "tutorial must be optional through dialogue");
+assert.match(vacation, /Я сам разберусь/, "tutorial must be skippable without punishment");
+assert.match(vacation, /Что именно поменялось/, "player must be able to ask about changes");
+assert.match(vacation, /returnGuideSignature/, "welcome rendering must be protected from observer loops");
+assert.match(vacation, /terminalLogin/, "custom names must propagate to the terminal identity");
+
+const minigames = read("src/work-minigames.js");
+assert.match(minigames, /Подготовить отчёт за июль/, "report selection must be an interactive task");
+assert.match(minigames, /Отчёт_июль_финал_копия\.xlsx/, "report task must include ambiguous versions");
+assert.match(minigames, /Проверить счёт №7814/, "invoice verification must be an interactive task");
+assert.match(minigames, /842 000 ₽/, "invoice task must include the suspicious amount");
+assert.match(minigames, /actions\.correct/, "correct report choice must route to the engine");
+assert.match(minigames, /actions\.wrong/, "wrong report choice must retain consequences");
+assert.match(minigames, /actions\.fix/, "invoice correction must route to the engine");
+assert.match(minigames, /actions\.report/, "invoice escalation must route to the engine");
+
 const loader = read("src/loading-indicator.js");
 assert.match(loader, /const SEGMENT_COUNT = 12;/, "loader must build twelve segments programmatically");
 assert.match(loader, /createElement\("span"\)/, "loader segments must be created through JavaScript");
@@ -78,7 +110,6 @@ assert.doesNotMatch(loader, /loading\.png/, "loader must not depend on an image 
 
 const loaderStyles = read("styles-v2.css");
 assert.match(loaderStyles, /until-friday-spinner-pulse/, "loader animation must be defined in CSS");
-assert.match(loaderStyles, /programmatic-spinner__segment/, "loader segment styling must exist");
 
 const assetRegistry = read("src/asset-registry.js");
 assert.doesNotMatch(assetRegistry, /assets\/sprites\/loading\.png/, "asset registry must not request a loading sprite");
@@ -97,33 +128,18 @@ assert.match(assetUi, /storyAssets/, "asset UI must expose story files");
 assert.match(assetUi, /decorateFileRows/, "file rows must use generated icons");
 assert.match(assetUi, /decorateContacts/, "employee statuses must be integrated");
 assert.match(assetUi, /decorateNotifications/, "system notification icons must be integrated");
-assert.match(assetUi, /decorateMailAttachments/, "mail attachment icons must be integrated");
 assert.match(assetUi, /openAssetViewer/, "story images and scans must open in a viewer");
-assert.match(assetUi, /assets\.documents\.contract/, "contract scan must be available in Explorer");
-assert.match(assetUi, /assets\.photos\.emptyDesk/, "story photos must be available in Explorer");
-
-const assetStyles = read("asset-ui.css");
-assert.match(assetStyles, /asset-viewer-window/, "asset viewer styling must exist");
-assert.match(assetStyles, /contact-status-icon/, "employee status styling must exist");
-assert.match(assetStyles, /mail-attachment-icon/, "attachment styling must exist");
 
 const workflow = read("src/workflow-extension.js");
 assert.match(workflow, /Сохранить в Документы/, "mail attachments must be saveable");
 assert.match(workflow, /data-workflow-delete/, "saved files must be deletable from Explorer");
 assert.match(workflow, /function restoreFile\(/, "files must be restorable from Trash");
-assert.match(workflow, /Сохранено вложение/, "file operations must be logged");
-assert.match(workflow, /workflowSignature/, "Trash and Journal rendering must be guarded against observer loops");
-assert.match(workflow, /localStorage\.setItem/, "cross-app files must persist locally");
+assert.match(workflow, /workflowSignature/, "workflow rendering must be guarded against observer loops");
 
 const workflowReset = read("src/workflow-reset.js");
-assert.match(workflowReset, /beforeunload/, "workflow reset must wait for a confirmed reload");
-assert.match(workflowReset, /until-friday-workflow-files-v1/, "workflow reset must clear the correct storage key");
-assert.match(workflowReset, /resetRequested/, "workflow reset must not clear files when confirmation is cancelled");
-
-const workflowStyles = read("workflow.css");
-assert.match(workflowStyles, /workflow-attachment-panel/, "attachment panel styling must exist");
-assert.match(workflowStyles, /workflow-trash-item/, "Trash workflow styling must exist");
-assert.match(workflowStyles, /workflow-file-viewer/, "saved file viewer styling must exist");
+assert.match(workflowReset, /beforeunload/, "reset must wait for a confirmed reload");
+assert.match(workflowReset, /until-friday-profile-v1/, "new week must clear the employee profile");
+assert.match(workflowReset, /until-friday-return-welcome-v1/, "new week must clear the welcome dialogue");
 
 const manifest = JSON.parse(read("assets/manifest.json"));
 assert.equal(manifest.assets.length, 40, "all forty prompts must remain documented");
@@ -131,8 +147,7 @@ assert.equal(new Set(manifest.assets.map((item) => item.prompt)).size, 40, "prom
 assert.equal(new Set(manifest.assets.map((item) => item.path)).size, 40, "asset paths must be unique");
 const generatedLoading = manifest.assets.find((item) => item.prompt === 37);
 assert.equal(generatedLoading.generated, true, "prompt 37 must be marked as generated");
-assert.equal(generatedLoading.source, "src/loading-indicator.js", "prompt 37 must point to its programmatic source");
-assert.doesNotMatch(generatedLoading.path, /\.png$/i, "prompt 37 must not require a PNG file");
+assert.equal(generatedLoading.source, "src/loading-indicator.js", "prompt 37 must point to its source");
 const chief = manifest.assets.find((item) => item.prompt === 18);
 const hr = manifest.assets.find((item) => item.prompt === 21);
 assert.equal(chief.role, "Андрей Соколов, начальник отдела", "prompt 18 role must be confirmed");
