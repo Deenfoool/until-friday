@@ -3,8 +3,7 @@
 
   let fallbackStarted = false;
   const Loading = window.UntilFridayLoading;
-
-  Loading?.showScreen("Загрузка корпоративной системы...");
+  const Onboarding = window.UntilFridayOnboarding;
 
   function finishLoading() {
     Loading?.hideScreen();
@@ -24,24 +23,36 @@
     document.body.appendChild(script);
   }
 
+  function loadGame() {
+    Loading?.showScreen("Загрузка корпоративной системы...");
+
+    window.addEventListener("error", (event) => {
+      if (!window.__UNTIL_FRIDAY_V2_READY__) loadLegacy(event.message);
+    }, { once: true });
+
+    const script = document.createElement("script");
+    script.src = "src/app-v2.js";
+    script.onload = () => {
+      if (!window.__UNTIL_FRIDAY_V2_READY__) {
+        loadLegacy("v2-did-not-signal-ready");
+        return;
+      }
+      window.dispatchEvent(new CustomEvent("until-friday-app-ready"));
+      finishLoading();
+    };
+    script.onerror = () => loadLegacy("v2-script-load-error");
+    document.body.appendChild(script);
+  }
+
   if (new URLSearchParams(window.location.search).get("legacy") === "1") {
     loadLegacy("forced-by-query");
     return;
   }
 
-  window.addEventListener("error", (event) => {
-    if (!window.__UNTIL_FRIDAY_V2_READY__) loadLegacy(event.message);
-  }, { once: true });
-
-  const script = document.createElement("script");
-  script.src = "src/app-v2.js";
-  script.onload = () => {
-    if (!window.__UNTIL_FRIDAY_V2_READY__) {
-      loadLegacy("v2-did-not-signal-ready");
-      return;
-    }
-    finishLoading();
-  };
-  script.onerror = () => loadLegacy("v2-script-load-error");
-  document.body.appendChild(script);
+  Promise.resolve(Onboarding?.run?.())
+    .then(loadGame)
+    .catch((error) => {
+      console.error("Не удалось запустить вступление.", error);
+      loadGame();
+    });
 })();
