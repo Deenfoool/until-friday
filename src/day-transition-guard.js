@@ -15,12 +15,6 @@
     return Runtime.getEngine?.() || null;
   }
 
-  function saveState(state) {
-    const saved = Runtime.persist(state);
-    if (!saved.ok) console.warn("Не удалось сохранить восстановленный переход", saved.message);
-    return saved.ok;
-  }
-
   function formatDate(dayIndex) {
     const short = ["ПН", "ВТ", "СР", "ЧТ", "ПТ"];
     return `${short[dayIndex] || ""}, ${3 + dayIndex} АВГ`;
@@ -41,7 +35,8 @@
   }
 
   function flushPendingConsequences(instance = getEngine()) {
-    return instance?.flushPendingConsequences?.() || [];
+    const result = instance?.flushPendingConsequences?.();
+    return result?.events || result || [];
   }
 
   function buildRecoveredTransition(overlay, result, previousTitle) {
@@ -61,11 +56,7 @@
     overlay.querySelector(".transition-kicker").textContent = `${previousTitle || "Рабочий день"} завершён`;
     overlay.querySelector("h2").textContent = nextDay.title || "Следующий день";
     overlay.querySelector("[data-transition-text]").textContent = `${nextDay.dateLabel || ""}. Рабочий сеанс подготовлен.`;
-    overlay.querySelector("[data-recovered-start]").addEventListener("click", () => {
-      const engine = getEngine();
-      saveState(engine?.getState?.() || result.state);
-      window.location.reload();
-    });
+    overlay.querySelector("[data-recovered-start]").addEventListener("click", () => window.location.reload());
   }
 
   function recoverFailedTransition() {
@@ -89,7 +80,6 @@
         nextDay: clone(Story.days?.[state.dayIndex]),
         events: []
       };
-      saveState(state);
       updateClock(state);
       buildRecoveredTransition(overlay, result, context.previousTitle);
       return;
@@ -98,7 +88,6 @@
     const retry = engine.endDay();
     if (retry?.ok && !retry.final) {
       state = retry.state || engine.getState();
-      saveState(state);
       updateClock(state);
       buildRecoveredTransition(overlay, retry, context.previousTitle);
       return;
@@ -113,7 +102,9 @@
       error.className = "transition-warning";
       card.insertBefore(error, card.querySelector("footer"));
     }
-    error.textContent = "Не удалось завершить день автоматически. Прогресс сохранён. Обновите страницу и повторите переход.";
+    error.textContent = retry?.reason === "save-failed"
+      ? "Переход отменён: браузер не смог записать сохранение. Освободите место и повторите."
+      : "Не удалось завершить день автоматически. Обновите страницу и повторите переход.";
   }
 
   document.addEventListener("click", (event) => {
@@ -135,12 +126,8 @@
       window.setTimeout(() => {
         const overlay = startNext.closest(".modal-overlay");
         if (overlay?.isConnected) overlay.remove();
-        const currentEngine = getEngine();
-        const state = currentEngine?.getState?.();
-        if (state) {
-          saveState(state);
-          updateClock(state);
-        }
+        const state = getEngine()?.getState?.();
+        if (state) updateClock(state);
         root.UntilFridayPassiveClock?.resetDayClock?.();
         window.dispatchEvent(new CustomEvent("until-friday-day-started", { detail: { state } }));
       }, 0);
@@ -150,7 +137,6 @@
   root.UntilFridayDayTransitionGuard = {
     normalizeTransition,
     flushPendingConsequences,
-    recoverFailedTransition,
-    getEngine
+    recoverFailedTransition
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
