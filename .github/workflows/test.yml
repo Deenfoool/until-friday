@@ -28,6 +28,8 @@ jobs:
         run: node tests/rules-extension.test.js
       - name: Validate save integrity repairs
         run: node tests/integrity-fixes.test.js
+      - name: Validate atomic persistence guards
+        run: node tests/persistence-guards.test.js
       - name: Validate workday time boundaries
         run: node tests/time-boundary.test.js
       - name: Validate browser UI contract
