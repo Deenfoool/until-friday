@@ -24,14 +24,20 @@ jobs:
         run: node tests/story-validation.test.js
       - name: Validate fully extended story graph
         run: node tests/expanded-story-validation.test.js
+      - name: Validate Friday ending coverage
+        run: node tests/ending-coverage.test.js
       - name: Test hidden choice rules
         run: node tests/rules-extension.test.js
       - name: Validate save integrity repairs
         run: node tests/integrity-fixes.test.js
+      - name: Validate deterministic reset
+        run: node tests/reset-integrity.test.js
       - name: Validate atomic persistence guards
         run: node tests/persistence-guards.test.js
       - name: Validate workday time boundaries
         run: node tests/time-boundary.test.js
+      - name: Validate runtime asset references
+        run: node tests/asset-integrity.test.js
       - name: Validate browser UI contract
         run: node tests/ui-contract.test.js
       - name: Validate runtime UI guards
@@ -42,6 +48,8 @@ jobs:
         run: node tests/desktop-icons.test.js
       - name: Validate passive game clock
         run: node tests/passive-clock.test.js
+      - name: Validate notification history
+        run: node tests/notification-history.test.js
       - name: Validate day transition recovery
         run: node tests/day-transition.test.js
       - name: Validate reliable day end controls
@@ -56,5 +64,7 @@ jobs:
         run: node tests/friday-stage.test.js
       - name: Validate interrupted Friday recovery
         run: node tests/friday-scene-guard.test.js
+      - name: Validate Friday clock bypass guard
+        run: node tests/friday-clock-guard.test.js
       - name: Validate Friday ending reopen
         run: node tests/friday-reopen.test.js
