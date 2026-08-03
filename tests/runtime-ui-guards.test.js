@@ -39,15 +39,19 @@ for (const text of [
 
 const terminal = read("src/terminal-sync.js");
 assert.doesNotThrow(() => new Function(terminal), "terminal synchronization must contain valid JavaScript");
-for (const command of ["status", "day", "tasks", "actions", "logs", "run", "endday"]) {
-  assert.match(terminal, new RegExp(`\\"${command}\\"`), `terminal synchronization must intercept ${command}`);
+for (const command of ["help", "status", "day", "tasks", "actions", "files", "logs", "run", "clear", "endday"]) {
+  assert.match(terminal, new RegExp(`\\"${command}\\"`), `terminal synchronization must own ${command}`);
 }
 assert.match(terminal, /UntilFridayRuntimeEngine/, "terminal must read the shared runtime");
 assert.match(terminal, /UntilFridayDayEndControl/, "terminal endday must use the reliable transition controller");
 assert.match(terminal, /action\.channel !== "terminal"/, "terminal run must reject actions from other applications");
 assert.doesNotMatch(terminal, /storageWritable|localStorage\.setItem|\.persist\(/, "terminal must not own storage or repeat runtime persistence");
-assert.match(terminal, /event\.stopImmediatePropagation\(\)/, "old stale command handler must be bypassed");
+assert.match(terminal, /event\.preventDefault\(\)/, "all terminal input must be intercepted before the legacy handler");
+assert.match(terminal, /event\.stopImmediatePropagation\(\)/, "old stale command handler must be bypassed for every command");
 assert.match(terminal, /UntilFridayProfile/, "terminal output must use the current player profile");
+assert.match(terminal, /Команда «\$\{command\}» не найдена/, "unknown commands must be handled by the personalized parser");
+assert.match(terminal, /output\.replaceChildren\(\)/, "clear must be handled by the unified terminal parser");
+assert.match(terminal, /listVisibleContent\("files"\)/, "files must use the live engine content");
 assert.match(terminal, /result\?\.ok/, "terminal time commands must respect atomic runtime failures");
 
 const auto = read("src/auto-continue.js");
@@ -58,6 +62,8 @@ assert.match(auto, /data-recovered-start/);
 assert.match(auto, /continue-after-transition/);
 assert.match(auto, /window\.setTimeout\(clear, 5000\)/, "unused continuation markers must expire");
 assert.match(auto, /sessionStorage\.removeItem/, "one-time continuation marker must be consumed");
+assert.match(auto, /name: "Сотрудник"/, "legacy saves without a profile must receive a neutral identity");
+assert.doesNotMatch(auto, /Илья\s+Воронов/, "automatic continuation must not recreate the former fixed identity");
 
 const css = read("styles-v2.css");
 assert.match(css, /@media \(max-width: 760px\)/, "window layout must contain a narrow-screen breakpoint");
