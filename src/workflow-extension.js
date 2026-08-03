@@ -6,14 +6,14 @@
   if (!assets || !sprites) return;
 
   const STORAGE_KEY = "until-friday-workflow-files-v1";
-  const viewerWindows = new Map();
+  const viewers = new Map();
   let selectedFileId = null;
-  let renderQueued = false;
+  let queued = false;
   let topZ = 1200;
 
-  const attachmentRules = [
+  const attachments = [
     {
-      matches: ["отчёт за июль", "отчет за июль"],
+      terms: ["отчёт за июль", "отчет за июль"],
       file: {
         id: "mail-report-guide",
         name: "Инструкция_к_отчёту.txt",
@@ -23,7 +23,7 @@
       }
     },
     {
-      matches: ["актуализация личных данных", "личных данных", "отдел кадров"],
+      terms: ["актуализация личных данных", "личных данных", "отдел кадров"],
       file: {
         id: "mail-hr-form",
         name: "Форма_актуализации_данных.pdf",
@@ -34,7 +34,7 @@
       }
     },
     {
-      matches: ["счёт", "счет", "платёж", "платеж"],
+      terms: ["счёт", "счет", "платёж", "платеж"],
       file: {
         id: "mail-invoice-copy",
         name: "Счёт_7814_копия.xlsx",
@@ -44,7 +44,7 @@
       }
     },
     {
-      matches: ["журнал доступа", "проверка журнала", "безопасност"],
+      terms: ["журнал доступа", "проверка журнала", "безопасност"],
       file: {
         id: "mail-access-log",
         name: "Выписка_журнала_доступа.log",
@@ -54,7 +54,7 @@
       }
     },
     {
-      matches: ["пропуск", "деактивац"],
+      terms: ["пропуск", "деактивац"],
       file: {
         id: "mail-badge-request",
         name: "Заявка_на_изменение_пропуска.pdf",
@@ -64,7 +64,7 @@
       }
     },
     {
-      matches: ["приказ", "организационные изменения"],
+      terms: ["приказ", "организационные изменения"],
       file: {
         id: "mail-order-draft",
         name: "Приказ_организационные_изменения.pdf",
@@ -76,29 +76,29 @@
     }
   ];
 
-  function defaultState() {
+  function emptyState() {
     return { files: [], trash: [], log: [] };
   }
 
-  function loadState() {
+  function readState() {
     try {
-      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-      return parsed && Array.isArray(parsed.files) && Array.isArray(parsed.trash)
-        ? { ...defaultState(), ...parsed }
-        : defaultState();
+      const value = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+      return value && Array.isArray(value.files) && Array.isArray(value.trash)
+        ? { ...emptyState(), ...value }
+        : emptyState();
     } catch {
-      return defaultState();
+      return emptyState();
     }
   }
 
-  let state = loadState();
+  let state = readState();
 
-  function saveState() {
+  function writeState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     queueRender();
   }
 
-  function logAction(action, file) {
+  function addLog(action, file) {
     state.log.unshift({
       id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       time: new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }),
@@ -109,115 +109,111 @@
   }
 
   function queueRender() {
-    if (renderQueued) return;
-    renderQueued = true;
-    window.requestAnimationFrame(() => {
-      renderQueued = false;
-      decorateAll();
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      renderAll();
     });
   }
 
-  function findAttachment(title) {
+  function attachmentFor(title) {
     const value = String(title || "").toLowerCase();
-    return attachmentRules.find((rule) => rule.matches.some((part) => value.includes(part)))?.file || null;
+    return attachments.find((item) => item.terms.some((term) => value.includes(term)))?.file || null;
   }
 
-  function isSaved(id) {
+  function saved(id) {
     return state.files.some((file) => file.id === id);
   }
 
-  function isInTrash(id) {
+  function trashed(id) {
     return state.trash.some((file) => file.id === id);
   }
 
-  function decorateMailView() {
+  function renderMailAttachments() {
     document.querySelectorAll(".mail-view").forEach((view) => {
       const title = view.querySelector("h2")?.textContent.trim();
-      const attachment = findAttachment(title);
-      const oldPanel = view.querySelector(".workflow-attachment-panel");
-      if (!attachment) {
-        oldPanel?.remove();
+      const file = attachmentFor(title);
+      const previous = view.querySelector(".workflow-attachment-panel");
+      if (!file) {
+        previous?.remove();
         return;
       }
 
-      const panelKey = `${title}:${attachment.id}:${isSaved(attachment.id)}:${isInTrash(attachment.id)}`;
-      if (oldPanel?.dataset.panelKey === panelKey) return;
-      oldPanel?.remove();
+      const signature = `${title}:${file.id}:${saved(file.id)}:${trashed(file.id)}`;
+      if (previous?.dataset.signature === signature) return;
+      previous?.remove();
 
       const panel = document.createElement("section");
       panel.className = "workflow-attachment-panel";
-      panel.dataset.panelKey = panelKey;
-      const icon = sprites.createIcon("attachments", attachment.icon === "spreadsheet" ? "spreadsheet" : attachment.image ? "image" : "file", 34);
-      const saved = isSaved(attachment.id);
-      const trashed = isInTrash(attachment.id);
-      panel.appendChild(icon);
+      panel.dataset.signature = signature;
+      const attachmentIcon = file.icon === "spreadsheet" ? "spreadsheet" : file.image ? "image" : "file";
+      panel.appendChild(sprites.createIcon("attachments", attachmentIcon, 34));
 
       const info = document.createElement("div");
       info.className = "workflow-attachment-info";
-      info.innerHTML = `<strong>${escapeHtml(attachment.name)}</strong><span>${escapeHtml(attachment.type)}</span>`;
+      info.innerHTML = `<strong>${html(file.name)}</strong><span>${html(file.type)}</span>`;
       panel.appendChild(info);
 
       const button = document.createElement("button");
       button.type = "button";
       button.className = "action-button workflow-save-attachment";
-      button.textContent = saved ? "Сохранено" : trashed ? "В Корзине" : "Сохранить в Документы";
-      button.disabled = saved || trashed;
-      button.addEventListener("click", () => saveAttachment(attachment));
+      button.textContent = saved(file.id) ? "Сохранено" : trashed(file.id) ? "В Корзине" : "Сохранить в Документы";
+      button.disabled = saved(file.id) || trashed(file.id);
+      button.addEventListener("click", () => saveAttachment(file));
       panel.appendChild(button);
-
       view.appendChild(panel);
     });
   }
 
   function saveAttachment(file) {
-    if (isSaved(file.id) || isInTrash(file.id)) return;
+    if (saved(file.id) || trashed(file.id)) return;
     const copy = { ...file, source: "Почта", savedAt: Date.now() };
     state.files.push(copy);
-    logAction("Сохранено вложение", copy);
-    saveState();
+    addLog("Сохранено вложение", copy);
+    writeState();
     notify("Почта", `${file.name} сохранён в папку «Документы».`);
   }
 
-  function decorateExplorer() {
+  function renderExplorerFiles() {
     document.querySelectorAll(".v2-explorer").forEach((explorer) => {
       const tbody = explorer.querySelector(".file-table tbody");
-      const toolbar = explorer.parentElement?.querySelector(".toolbar") || explorer.closest(".window-content")?.querySelector(".toolbar");
+      const content = explorer.closest(".window-content");
+      const toolbar = content?.querySelector(".toolbar");
       if (!tbody) return;
 
       state.files.forEach((file) => {
-        if (tbody.querySelector(`[data-workflow-file-id="${cssEscape(file.id)}"]`)) return;
+        if (tbody.querySelector(`[data-workflow-file-id="${selector(file.id)}"]`)) return;
         const row = document.createElement("tr");
         row.dataset.workflowFileId = file.id;
-        row.innerHTML = `<td><span class="file-icon file-icon-atlas"></span><span>${escapeHtml(file.name)}</span></td><td>${escapeHtml(file.type)}</td><td>Личная папка</td>`;
-        const iconTarget = row.querySelector(".file-icon");
-        iconTarget.replaceChildren(sprites.createIcon("files", file.icon || "text", 26));
-        row.addEventListener("click", () => selectWorkflowFile(tbody, row, file.id));
+        row.innerHTML = `<td><span class="file-icon file-icon-atlas"></span><span>${html(file.name)}</span></td><td>${html(file.type)}</td><td>Личная папка</td>`;
+        row.querySelector(".file-icon").appendChild(sprites.createIcon("files", file.icon || "text", 26));
+        row.addEventListener("click", () => selectFile(tbody, row, file.id));
         row.addEventListener("dblclick", () => openFile(file));
         tbody.appendChild(row);
       });
 
       if (toolbar && !toolbar.querySelector("[data-workflow-delete]")) {
-        const deleteButton = document.createElement("button");
-        deleteButton.type = "button";
-        deleteButton.dataset.workflowDelete = "true";
-        deleteButton.textContent = "Удалить выбранный";
-        deleteButton.disabled = true;
-        deleteButton.addEventListener("click", deleteSelectedFile);
-        toolbar.appendChild(deleteButton);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.workflowDelete = "true";
+        button.textContent = "Удалить выбранный";
+        button.disabled = true;
+        button.addEventListener("click", deleteSelectedFile);
+        toolbar.appendChild(button);
       }
 
       const deleteButton = toolbar?.querySelector("[data-workflow-delete]");
-      if (deleteButton) deleteButton.disabled = !selectedFileId || !state.files.some((file) => file.id === selectedFileId);
+      if (deleteButton) deleteButton.disabled = !selectedFileId || !saved(selectedFileId);
     });
   }
 
-  function selectWorkflowFile(tbody, row, id) {
+  function selectFile(tbody, row, id) {
     selectedFileId = id;
     tbody.querySelectorAll("tr").forEach((item) => item.classList.remove("selected"));
     row.classList.add("selected");
-    const windowContent = tbody.closest(".window-content");
-    const deleteButton = windowContent?.querySelector("[data-workflow-delete]");
-    if (deleteButton) deleteButton.disabled = false;
+    const button = tbody.closest(".window-content")?.querySelector("[data-workflow-delete]");
+    if (button) button.disabled = false;
   }
 
   function deleteSelectedFile() {
@@ -225,33 +221,37 @@
     if (index < 0) return;
     const [file] = state.files.splice(index, 1);
     state.trash.push({ ...file, deletedAt: Date.now() });
-    logAction("Удалён в Корзину", file);
+    addLog("Удалён в Корзину", file);
+    closeViewer(file.id);
     selectedFileId = null;
-    closeFileViewer(file.id);
-    saveState();
+    writeState();
     notify("Проводник", `${file.name} перемещён в Корзину.`);
   }
 
-  function decorateTrash() {
+  function renderTrash() {
+    const signature = state.trash.map((file) => `${file.id}:${file.deletedAt || 0}`).join("|");
     document.querySelectorAll(".trash-list").forEach((list) => {
+      if (list.dataset.workflowSignature === signature) return;
+      list.dataset.workflowSignature = signature;
       list.querySelectorAll("[data-workflow-trash-id]").forEach((item) => item.remove());
+
       state.trash.forEach((file) => {
-        const item = document.createElement("div");
-        item.className = "trash-item workflow-trash-item";
-        item.dataset.workflowTrashId = file.id;
-        item.appendChild(sprites.createIcon("files", "deleted", 28));
+        const row = document.createElement("div");
+        row.className = "trash-item workflow-trash-item";
+        row.dataset.workflowTrashId = file.id;
+        row.appendChild(sprites.createIcon("files", "deleted", 28));
 
         const info = document.createElement("div");
         info.className = "workflow-trash-info";
-        info.innerHTML = `<strong>${escapeHtml(file.name)}</strong><span>${escapeHtml(file.type)}</span>`;
-        item.appendChild(info);
+        info.innerHTML = `<strong>${html(file.name)}</strong><span>${html(file.type)}</span>`;
+        row.appendChild(info);
 
-        const restore = document.createElement("button");
-        restore.type = "button";
-        restore.textContent = "Восстановить";
-        restore.addEventListener("click", () => restoreFile(file.id));
-        item.appendChild(restore);
-        list.appendChild(item);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = "Восстановить";
+        button.addEventListener("click", () => restoreFile(file.id));
+        row.appendChild(button);
+        list.appendChild(row);
       });
     });
   }
@@ -262,19 +262,24 @@
     const [file] = state.trash.splice(index, 1);
     delete file.deletedAt;
     state.files.push(file);
-    logAction("Восстановлен из Корзины", file);
-    saveState();
+    addLog("Восстановлен из Корзины", file);
+    writeState();
     notify("Корзина", `${file.name} восстановлен в папку «Документы».`);
   }
 
-  function decorateJournal() {
+  function renderJournal() {
+    const entries = state.log.slice(0, 10);
+    const signature = entries.map((entry) => entry.id).join("|");
     document.querySelectorAll(".journal-list").forEach((list) => {
+      if (list.dataset.workflowSignature === signature) return;
+      list.dataset.workflowSignature = signature;
       list.querySelectorAll("[data-workflow-log-id]").forEach((item) => item.remove());
-      state.log.slice(0, 10).forEach((entry) => {
+
+      entries.forEach((entry) => {
         const row = document.createElement("div");
         row.className = "journal-entry workflow-journal-entry";
         row.dataset.workflowLogId = entry.id;
-        row.innerHTML = `<time>${escapeHtml(entry.time)}</time><span>${escapeHtml(entry.action)}: ${escapeHtml(entry.file)}</span><small>USER-IV</small>`;
+        row.innerHTML = `<time>${html(entry.time)}</time><span>${html(entry.action)}: ${html(entry.file)}</span><small>USER-IV</small>`;
         list.appendChild(row);
       });
     });
@@ -291,7 +296,7 @@
       return;
     }
 
-    const existing = viewerWindows.get(file.id);
+    const existing = viewers.get(file.id);
     if (existing?.isConnected) {
       focusViewer(existing, file.id);
       return;
@@ -299,60 +304,60 @@
 
     const layer = document.querySelector("#windows-layer");
     if (!layer) return;
-    const element = document.createElement("section");
-    element.className = "app-window focused workflow-file-viewer";
-    element.style.left = `${140 + viewerWindows.size * 18}px`;
-    element.style.top = `${90 + viewerWindows.size * 16}px`;
-    element.style.zIndex = String(++topZ);
-    element.innerHTML = `
+    const win = document.createElement("section");
+    win.className = "app-window focused workflow-file-viewer";
+    win.style.left = `${140 + viewers.size * 18}px`;
+    win.style.top = `${90 + viewers.size * 16}px`;
+    win.style.zIndex = String(++topZ);
+    win.innerHTML = `
       <header class="window-titlebar">
-        <div class="window-title">${escapeHtml(file.name)}</div>
+        <div class="window-title">${html(file.name)}</div>
         <div class="window-controls"><button type="button" data-close aria-label="Закрыть">×</button></div>
       </header>
       <div class="window-content document-view">
-        <article class="document-paper workflow-document-paper">${escapeHtml(file.content || "Файл пуст.")}</article>
+        <article class="document-paper workflow-document-paper">${html(file.content || "Файл пуст.")}</article>
       </div>
-      <footer class="window-status">${escapeHtml(file.type)} · личная папка</footer>`;
-    element.querySelector("[data-close]").addEventListener("click", () => closeFileViewer(file.id));
-    element.addEventListener("mousedown", () => focusViewer(element, file.id));
-    makeDraggable(element, element.querySelector(".window-titlebar"));
-    layer.appendChild(element);
-    viewerWindows.set(file.id, element);
-    createTaskButton(file, element);
+      <footer class="window-status">${html(file.type)} · личная папка</footer>`;
+    win.querySelector("[data-close]").addEventListener("click", () => closeViewer(file.id));
+    win.addEventListener("mousedown", () => focusViewer(win, file.id));
+    draggable(win, win.querySelector(".window-titlebar"));
+    layer.appendChild(win);
+    viewers.set(file.id, win);
+    createTaskButton(file, win);
   }
 
-  function createTaskButton(file, element) {
-    const taskbar = document.querySelector("#task-buttons");
-    if (!taskbar) return;
+  function createTaskButton(file, win) {
+    const bar = document.querySelector("#task-buttons");
+    if (!bar) return;
     const button = document.createElement("button");
     button.type = "button";
     button.className = "task-button active workflow-viewer-task";
     button.dataset.workflowViewerTask = file.id;
     button.textContent = file.name;
     button.addEventListener("click", () => {
-      const minimized = element.classList.toggle("minimized");
+      const minimized = win.classList.toggle("minimized");
       button.classList.toggle("active", !minimized);
-      if (!minimized) focusViewer(element, file.id);
+      if (!minimized) focusViewer(win, file.id);
     });
-    taskbar.appendChild(button);
+    bar.appendChild(button);
   }
 
-  function focusViewer(element, id) {
-    document.querySelectorAll(".app-window").forEach((windowElement) => windowElement.classList.remove("focused"));
-    document.querySelectorAll(".task-button").forEach((button) => button.classList.remove("active"));
-    element.classList.remove("minimized");
-    element.classList.add("focused");
-    element.style.zIndex = String(++topZ);
-    document.querySelector(`[data-workflow-viewer-task="${cssEscape(id)}"]`)?.classList.add("active");
+  function focusViewer(win, id) {
+    document.querySelectorAll(".app-window").forEach((item) => item.classList.remove("focused"));
+    document.querySelectorAll(".task-button").forEach((item) => item.classList.remove("active"));
+    win.classList.remove("minimized");
+    win.classList.add("focused");
+    win.style.zIndex = String(++topZ);
+    document.querySelector(`[data-workflow-viewer-task="${selector(id)}"]`)?.classList.add("active");
   }
 
-  function closeFileViewer(id) {
-    viewerWindows.get(id)?.remove();
-    viewerWindows.delete(id);
-    document.querySelector(`[data-workflow-viewer-task="${cssEscape(id)}"]`)?.remove();
+  function closeViewer(id) {
+    viewers.get(id)?.remove();
+    viewers.delete(id);
+    document.querySelector(`[data-workflow-viewer-task="${selector(id)}"]`)?.remove();
   }
 
-  function makeDraggable(element, handle) {
+  function draggable(element, handle) {
     let drag = null;
     handle.addEventListener("mousedown", (event) => {
       if (event.target.closest("button")) return;
@@ -362,8 +367,8 @@
     });
     document.addEventListener("mousemove", (event) => {
       if (!drag) return;
-      const maxX = Math.max(0, window.innerWidth - element.offsetWidth);
-      const maxY = Math.max(0, window.innerHeight - element.offsetHeight - 42);
+      const maxX = Math.max(0, innerWidth - element.offsetWidth);
+      const maxY = Math.max(0, innerHeight - element.offsetHeight - 42);
       element.style.left = `${Math.max(0, Math.min(maxX, event.clientX - drag.x))}px`;
       element.style.top = `${Math.max(0, Math.min(maxY, event.clientY - drag.y))}px`;
     });
@@ -373,21 +378,21 @@
   function notify(title, text) {
     const container = document.querySelector("#notifications");
     if (!container) return;
-    const notification = document.createElement("div");
-    notification.className = "notification workflow-notification";
-    notification.innerHTML = `<strong>${escapeHtml(title)}</strong><span>${escapeHtml(text)}</span>`;
-    container.appendChild(notification);
-    window.setTimeout(() => notification.remove(), 4200);
+    const item = document.createElement("div");
+    item.className = "notification workflow-notification";
+    item.innerHTML = `<strong>${html(title)}</strong><span>${html(text)}</span>`;
+    container.appendChild(item);
+    setTimeout(() => item.remove(), 4200);
   }
 
-  function decorateAll() {
-    decorateMailView();
-    decorateExplorer();
-    decorateTrash();
-    decorateJournal();
+  function renderAll() {
+    renderMailAttachments();
+    renderExplorerFiles();
+    renderTrash();
+    renderJournal();
   }
 
-  function escapeHtml(value) {
+  function html(value) {
     return String(value ?? "")
       .replaceAll("&", "&amp;")
       .replaceAll("<", "&lt;")
@@ -396,9 +401,8 @@
       .replaceAll("'", "&#039;");
   }
 
-  function cssEscape(value) {
-    if (root.CSS?.escape) return root.CSS.escape(String(value));
-    return String(value).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
+  function selector(value) {
+    return root.CSS?.escape ? root.CSS.escape(String(value)) : String(value).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
   }
 
   const observer = new MutationObserver(queueRender);
