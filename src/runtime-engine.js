@@ -195,6 +195,7 @@
       const saved = persist(nextState);
 
       if (!saved.ok) {
+        Time.restoreSchedules(scheduleChanges, true);
         return rollbackSaveFailure(
           before,
           saved,
