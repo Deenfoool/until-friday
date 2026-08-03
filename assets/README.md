@@ -1,19 +1,23 @@
-# Ассеты
+# Ассеты игры «До пятницы»
 
-Пока игра использует временные CSS-иконки и символы, поэтому запускается без внешних изображений.
+Игра запускается и без внешних изображений: пока нужного файла нет, интерфейс использует временный CSS-значок.
 
-Готовые ассеты можно складывать сюда. Рекомендуемые имена:
+Точные пути для всех сгенерированных изображений перечислены в [`manifest.json`](manifest.json). Загружай файлы сразу по указанным там путям, например:
 
-- `wallpaper.jpg`
-- `company-logo.png`
-- `app-explorer.png`
-- `app-mail.png`
-- `app-chat.png`
-- `app-tasks.png`
-- `app-terminal.png`
-- `app-trash-empty.png`
-- `avatar-friend.png`
-- `avatar-gossip.png`
-- `avatar-admin.png`
+- `assets/brand/company-logo.png`
+- `assets/backgrounds/desktop-wallpaper.png`
+- `assets/icons/apps/explorer.png`
+- `assets/avatars/player.png`
+- `assets/photos/office-party.jpg`
+- `assets/brand/game-icon.png`
 
-После добавления изображений пути к ним подключаются в `src/data.js` через поле `asset` соответствующего приложения или персонажа.
+## Пункт 37 — загружать не нужно
+
+Индикатор загрузки создаётся программно в `src/loading-indicator.js`:
+
+- JavaScript создаёт 12 отдельных сегментов;
+- CSS последовательно меняет их яркость;
+- индикатор используется при запуске игры и обновлении приложений;
+- файл `assets/sprites/loading.png` больше не используется.
+
+Остальные пункты из манифеста остаются обычными изображениями.
