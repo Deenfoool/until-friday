@@ -18,6 +18,7 @@ const scripts = [
   "src/asset-registry.js",
   "src/sprite-atlas.js",
   "src/asset-ui.js",
+  "src/workflow-extension.js",
   "src/loading-indicator.js"
 ];
 
@@ -29,10 +30,12 @@ for (const file of scripts) {
 const html = read("index.html");
 assert.match(html, /styles-v2\.css/, "v2 styles must be connected");
 assert.match(html, /asset-ui\.css/, "asset integration styles must be connected");
+assert.match(html, /workflow\.css/, "cross-app workflow styles must be connected");
 assert.match(html, /src\/bootstrap\.js/, "v2 bootstrap must be connected");
 assert.match(html, /src\/asset-registry\.js/, "asset registry must be connected");
 assert.match(html, /src\/sprite-atlas\.js/, "sprite atlas must be connected");
 assert.match(html, /src\/asset-ui\.js/, "asset UI layer must be connected");
+assert.match(html, /src\/workflow-extension\.js/, "cross-app workflow must be connected");
 assert.match(html, /src\/loading-indicator\.js/, "programmatic loading indicator must be connected");
 assert.doesNotMatch(html, /<script src="src\/app\.js"><\/script>/, "legacy app must not boot in parallel");
 
@@ -43,6 +46,7 @@ const migrationPosition = html.indexOf("src/state-migration.js");
 const assetsPosition = html.indexOf("src/asset-registry.js");
 const atlasPosition = html.indexOf("src/sprite-atlas.js");
 const assetUiPosition = html.indexOf("src/asset-ui.js");
+const workflowPosition = html.indexOf("src/workflow-extension.js");
 const loadingPosition = html.indexOf("src/loading-indicator.js");
 const bootstrapPosition = html.indexOf("src/bootstrap.js");
 assert.ok(enginePosition < storyPosition, "engine must load before story");
@@ -51,7 +55,8 @@ assert.ok(rulesPosition < migrationPosition, "rules must load before save migrat
 assert.ok(migrationPosition < assetsPosition, "migration must load before asset decoration");
 assert.ok(assetsPosition < atlasPosition, "asset paths must load before sprite atlas");
 assert.ok(atlasPosition < assetUiPosition, "sprite atlas must load before asset UI integration");
-assert.ok(assetUiPosition < loadingPosition, "asset integration must load before the loader and application bootstrap");
+assert.ok(assetUiPosition < workflowPosition, "asset viewer must load before cross-app workflow");
+assert.ok(workflowPosition < loadingPosition, "workflow extension must load before application bootstrap");
 assert.ok(loadingPosition < bootstrapPosition, "loader must exist before application bootstrap");
 
 const app = read("src/app-v2.js");
@@ -97,6 +102,19 @@ const assetStyles = read("asset-ui.css");
 assert.match(assetStyles, /asset-viewer-window/, "asset viewer styling must exist");
 assert.match(assetStyles, /contact-status-icon/, "employee status styling must exist");
 assert.match(assetStyles, /mail-attachment-icon/, "attachment styling must exist");
+
+const workflow = read("src/workflow-extension.js");
+assert.match(workflow, /Сохранить в Документы/, "mail attachments must be saveable");
+assert.match(workflow, /data-workflow-delete/, "saved files must be deletable from Explorer");
+assert.match(workflow, /function restoreFile\(/, "files must be restorable from Trash");
+assert.match(workflow, /Сохранено вложение/, "file operations must be logged");
+assert.match(workflow, /workflowSignature/, "Trash and Journal rendering must be guarded against observer loops");
+assert.match(workflow, /localStorage\.setItem/, "cross-app files must persist locally");
+
+const workflowStyles = read("workflow.css");
+assert.match(workflowStyles, /workflow-attachment-panel/, "attachment panel styling must exist");
+assert.match(workflowStyles, /workflow-trash-item/, "Trash workflow styling must exist");
+assert.match(workflowStyles, /workflow-file-viewer/, "saved file viewer styling must exist");
 
 const manifest = JSON.parse(read("assets/manifest.json"));
 assert.equal(manifest.assets.length, 40, "all forty prompts must remain documented");
