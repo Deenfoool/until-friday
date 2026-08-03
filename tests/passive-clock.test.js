@@ -11,6 +11,7 @@ assert.doesNotThrow(() => new Function(source), "passive clock module must conta
 
 let now = 100000;
 let modalOpen = false;
+let dayEndOpen = false;
 const notifications = [];
 const clockTime = { textContent: "" };
 const clockDate = { textContent: "" };
@@ -53,6 +54,22 @@ const engineApi = {
 };
 
 const storage = new Map();
+const documentStub = {
+  hidden: false,
+  querySelector(selector) {
+    if (selector === "#desktop:not(.hidden)") return {};
+    if (selector === ".modal-overlay") return modalOpen ? {} : null;
+    if (selector === ".day-end-control-overlay") return dayEndOpen ? {} : null;
+    if (selector === "#clock-time") return clockTime;
+    if (selector === "#clock-date") return clockDate;
+    if (selector === "#notifications") return notificationContainer;
+    return null;
+  },
+  querySelectorAll: () => [],
+  createElement,
+  addEventListener() {}
+};
+
 const context = {
   UntilFridayEngine: engineApi,
   UntilFridayMigration: { ENGINE_SAVE_KEY: "until-friday-save-v2" },
@@ -61,20 +78,7 @@ const context = {
     setItem: (key, value) => storage.set(key, value),
     getItem: (key) => storage.get(key) || null
   },
-  document: {
-    hidden: false,
-    querySelector(selector) {
-      if (selector === "#desktop:not(.hidden)") return {};
-      if (selector === ".modal-overlay") return modalOpen ? {} : null;
-      if (selector === "#clock-time") return clockTime;
-      if (selector === "#clock-date") return clockDate;
-      if (selector === "#notifications") return notificationContainer;
-      return null;
-    },
-    querySelectorAll: () => [],
-    createElement,
-    addEventListener() {}
-  },
+  document: documentStub,
   window: {
     addEventListener() {},
     setInterval: () => 1,
@@ -110,6 +114,23 @@ assert.equal(result.advanced, 0, "time must pause while a modal day transition i
 assert.equal(state.minute, 537);
 modalOpen = false;
 
+dayEndOpen = true;
+now += 30000;
+result = api.tick(now);
+assert.equal(result.advanced, 0, "time must pause while the reliable day-end dialog is open");
+assert.equal(state.minute, 537);
+dayEndOpen = false;
+
+documentStub.hidden = true;
+now += 600000;
+result = api.tick(now);
+assert.equal(result.advanced, 0, "a hidden browser tab must not consume the entire workday");
+assert.equal(state.minute, 537);
+documentStub.hidden = false;
+result = api.tick(now);
+assert.equal(result.advanced, 0, "returning to the tab must resume from the current moment without catch-up");
+assert.equal(state.minute, 537);
+
 state.dayIndex = 1;
 state.minute = 535;
 now += 30000;
@@ -131,9 +152,9 @@ assert.equal(state.minute, 1080);
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 assert.match(html, /src\/passive-clock\.js/, "passive clock script must be connected");
 assert.ok(
-  html.indexOf("src/state-migration.js") < html.indexOf("src/passive-clock.js") &&
+  html.indexOf("src/integrity-fixes.js") < html.indexOf("src/passive-clock.js") &&
   html.indexOf("src/passive-clock.js") < html.indexOf("src/bootstrap.js"),
-  "passive clock must wrap engine creation before app bootstrap"
+  "passive clock must wrap the repaired engine before app bootstrap"
 );
 
 console.log("Passive clock validation passed.");
