@@ -61,8 +61,7 @@
       fileTypes: "assets/sprites/file-types.png",
       folders: "assets/sprites/folders.png",
       employeeStatuses: "assets/sprites/employee-statuses.png",
-      attachments: "assets/sprites/attachments.png",
-      loading: "assets/sprites/loading.png"
+      attachments: "assets/sprites/attachments.png"
     }
   };
 
