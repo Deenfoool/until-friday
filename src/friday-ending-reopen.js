@@ -21,9 +21,10 @@
     }
   }
 
-  function bind(overlay) {
+  function bindRestored(overlay) {
     if (!overlay || overlay.dataset.reopenBound === "true") return;
     overlay.dataset.reopenBound = "true";
+    overlay.dataset.restoredEnding = "true";
 
     overlay.querySelectorAll("[data-tab]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -58,7 +59,7 @@
     if (!restored) return;
     restored.removeAttribute("data-reopen-bound");
     basic.replaceWith(restored);
-    bind(restored);
+    bindRestored(restored);
   }
 
   document.addEventListener("click", (event) => {
@@ -81,7 +82,7 @@
       const enhanced = document.querySelector(".friday-ending-overlay");
       if (enhanced) {
         remember(enhanced);
-        bind(enhanced);
+        if (enhanced.dataset.restoredEnding === "true") bindRestored(enhanced);
       } else {
         restoreBasicEnding();
       }
@@ -93,5 +94,5 @@
   document.addEventListener("DOMContentLoaded", queue, { once: true });
   queue();
 
-  window.UntilFridayEndingReopen = { remember, restoreBasicEnding };
+  window.UntilFridayEndingReopen = { remember, restoreBasicEnding, bindRestored };
 })();
