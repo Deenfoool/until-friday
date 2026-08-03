@@ -150,10 +150,18 @@
       if (requiredAction && !state.completedActions?.[requiredAction]) return;
       const dayIndex = clamp(item.dayIndex, 0, Math.max(0, (story.days?.length || 1) - 1));
       if (dayIndex < state.dayIndex) return;
-      const minute = Math.max(0, Number(item.minute) || Number(story.days?.[dayIndex]?.startMinute) || 0);
-      const key = `${item.eventId}:${dayIndex}:${minute}`;
+
+      let minute = Number(item.minute) || Number(story.days?.[dayIndex]?.startMinute) || 0;
+      const completion = item.sourceAction ? state.completedActions?.[item.sourceAction] : null;
+      if (completion && Number(completion.dayIndex) === dayIndex) {
+        minute = Math.max(minute, Number(completion.minute || 0) + 5);
+      }
+      minute = clamp(minute, 0, WORKDAY_END_MINUTE);
+
+      const key = `${item.eventId}:${dayIndex}`;
       if (seen.has(key)) return;
       seen.add(key);
+      events[item.eventId].minute = minute;
       repaired.push({
         eventId: item.eventId,
         dayIndex,
@@ -161,8 +169,6 @@
         sourceAction: item.sourceAction || null
       });
     }
-
-    (Array.isArray(state.scheduledEvents) ? state.scheduledEvents : []).forEach(append);
 
     for (const actionId of Object.keys(state.completedActions || {})) {
       const action = story.actions?.[actionId];
@@ -176,6 +182,7 @@
       }
     }
 
+    (Array.isArray(state.scheduledEvents) ? state.scheduledEvents : []).forEach(append);
     return repaired;
   }
 
