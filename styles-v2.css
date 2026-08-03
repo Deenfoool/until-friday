@@ -298,8 +298,35 @@
 }
 
 @media (max-width: 760px) {
+  .app-window {
+    width: calc(100vw - 12px) !important;
+    max-width: calc(100vw - 12px) !important;
+    min-width: 0 !important;
+    height: calc(100vh - var(--taskbar-height) - 12px) !important;
+    max-height: calc(100vh - var(--taskbar-height) - 12px) !important;
+    min-height: 0 !important;
+    left: 6px !important;
+    top: 6px !important;
+  }
+
+  .start-menu {
+    width: min(330px, calc(100vw - 8px));
+  }
+
   .v2-explorer {
-    grid-template-columns: 125px minmax(0, 1fr);
+    grid-template-columns: 112px minmax(0, 1fr);
+  }
+
+  .mail-layout {
+    grid-template-columns: minmax(120px, 36%) minmax(0, 1fr);
+  }
+
+  .chat-layout {
+    grid-template-columns: minmax(112px, 34%) minmax(0, 1fr);
+  }
+
+  .document-paper {
+    padding: 24px 20px;
   }
 
   .journal-entry {
@@ -308,5 +335,24 @@
 
   .journal-entry small {
     display: none;
+  }
+}
+
+@media (max-width: 430px) {
+  .desktop-icons {
+    grid-auto-columns: 84px;
+  }
+
+  .mail-layout,
+  .chat-layout {
+    grid-template-columns: 105px minmax(0, 1fr);
+  }
+
+  .mail-view {
+    padding: 12px;
+  }
+
+  .task-button {
+    min-width: 90px;
   }
 }
