@@ -71,19 +71,20 @@ assert.match(bootstrap, /Onboarding\?\.run/, "main menu must run before the desk
 assert.match(bootstrap, /until-friday-app-ready/, "extensions must receive the app-ready event");
 
 const onboarding = read("src/onboarding.js");
-assert.match(onboarding, /image-empty-workplace\.png/, "menu must use the empty workplace background");
+const onboardingStyles = read("onboarding.css");
+assert.match(onboardingStyles, /image-empty-workplace\.png/, "menu must use the empty workplace background");
 assert.match(onboarding, /Новая игра/, "menu must offer a new game");
 assert.match(onboarding, /Настройки/, "menu must offer settings");
 assert.match(onboarding, /Имя сотрудника:/, "login must request an employee name");
 assert.match(onboarding, /Он пока ничего не знает\?/, "canonical dialogue must be present");
 assert.match(onboarding, /Пусть пока продолжает работать как обычно/, "canonical final dialogue line must be present");
-assert.doesNotMatch(onboarding, /Первый вход после длительного отсутствия/, "rejected login caption must never appear");
+assert.doesNotMatch(onboarding, /Первый вход после длительного отсутствия/, "rejected login caption must never appear in the game");
 assert.match(onboarding, /validName/, "employee names must be validated");
 assert.match(onboarding, /until-friday-return-welcome-v1/, "new game must schedule the friend welcome");
 
 const openingDoc = read("OPENING_FLOW.md");
 assert.match(openingDoc, /считается закреплённым началом/, "canonical opening must be documented");
-assert.doesNotMatch(openingDoc, /Первый вход после длительного отсутствия"/, "rejected caption must not be canonical");
+assert.match(openingDoc, /На экране нет фразы/, "rejected caption must be explicitly excluded from the specification");
 
 const vacation = read("src/return-from-vacation.js");
 assert.match(vacation, /с возвращением/, "friend must welcome the player back from vacation");
