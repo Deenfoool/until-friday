@@ -1,11 +1,9 @@
 (function (root) {
   "use strict";
 
-  const Engine = root.UntilFridayEngine;
   const Story = root.UNTIL_FRIDAY_STORY;
-  if (!Engine || !Story || Engine.__rulesExtended) return;
+  if (!Story || root.UntilFridayRules) return;
 
-  const originalCreateEngine = Engine.createEngine;
   const AUDIT_EVENT_ID = "wed-security-audit";
   const AUDIT_ACTION_IDS = ["wed-audit-explain", "wed-audit-delete", "wed-audit-blame"];
 
@@ -56,17 +54,21 @@
       return;
     }
     if (action.requires.eventDelivered === AUDIT_EVENT_ID) return;
+    if (action.requires.all?.some((item) => item?.eventDelivered === AUDIT_EVENT_ID)) return;
     action.requires = { all: [auditCondition, action.requires] };
   }
 
-  Object.entries(Story.actions || {}).forEach(([id, action]) => {
-    if (groupAssignments[id]) action.choiceGroup = groupAssignments[id];
-    action.focusCost = Number(focusCosts[id] || action.focusCost || 1);
-  });
-  AUDIT_ACTION_IDS.forEach((id) => requireAuditEvent(Story.actions?.[id]));
-  (Story.days || []).forEach((day, index) => {
-    day.focusLimit = Number(day.focusLimit || focusLimits[index] || 4);
-  });
+  function patchStoryRules(story = Story) {
+    Object.entries(story.actions || {}).forEach(([id, action]) => {
+      if (groupAssignments[id]) action.choiceGroup = groupAssignments[id];
+      action.focusCost = Number(focusCosts[id] || action.focusCost || 1);
+    });
+    AUDIT_ACTION_IDS.forEach((id) => requireAuditEvent(story.actions?.[id]));
+    (story.days || []).forEach((day, index) => {
+      day.focusLimit = Number(day.focusLimit || focusLimits[index] || 4);
+    });
+    return story;
+  }
 
   function ensureUsage(state) {
     state.metadata ||= {};
@@ -92,6 +94,37 @@
     return Object.keys(state.completedActions || {}).find((id) => story.actions?.[id]?.choiceGroup === group) || null;
   }
 
+  function ruleCheck(story, core, state, actionId) {
+    const base = core.canApplyAction(actionId);
+    if (!base.ok) return base;
+
+    const action = story.actions?.[actionId];
+    if (!action) return { ok: false, reason: "unknown-action" };
+
+    if (action.choiceGroup) {
+      const chosenActionId = completedGroupAction(story, state, action.choiceGroup);
+      if (chosenActionId && chosenActionId !== actionId) {
+        return { ok: false, reason: "choice-locked", chosenActionId, action };
+      }
+    }
+
+    const used = usedFocus(story, state, state.dayIndex);
+    const cost = Math.max(0, Number(action.focusCost || 1));
+    const limit = Number(story.days?.[state.dayIndex]?.focusLimit || 4);
+    if (used + cost > limit) {
+      return { ok: false, reason: "focus-exhausted", used, cost, limit, action };
+    }
+
+    return { ok: true, action, used, cost, limit };
+  }
+
+  function applyFocus(state, check) {
+    const next = clone(state);
+    const usage = ensureUsage(next);
+    usage[next.dayIndex] = Number(check.used || 0) + Number(check.cost || 0);
+    return next;
+  }
+
   function auditEventDelivered(state) {
     return (state.deliveredEvents || []).includes(AUDIT_EVENT_ID);
   }
@@ -100,105 +133,34 @@
     return AUDIT_ACTION_IDS.some((id) => Boolean(state.completedActions?.[id]));
   }
 
+  function shouldSkipAuditRequirement(state) {
+    return state.dayIndex === 2 && !auditEventDelivered(state) && !auditActionCompleted(state);
+  }
+
   function storedEnding(story, state) {
     if (!state.ended || !state.endingId) return null;
     const endings = Array.isArray(story.endings) ? story.endings : Object.values(story.endings || {});
     return endings.find((ending) => ending.id === state.endingId) || story.fallbackEnding || null;
   }
 
-  Engine.createEngine = function createEngineWithRules(story, rawState = null, options = {}) {
-    let core = originalCreateEngine(story, rawState, options);
+  patchStoryRules();
 
-    function getState() {
-      return core.getState();
-    }
-
-    function ruleCheck(actionId) {
-      const base = core.canApplyAction(actionId);
-      if (!base.ok) return base;
-
-      const action = story.actions?.[actionId];
-      const state = getState();
-      if (!action) return { ok: false, reason: "unknown-action" };
-
-      if (action.choiceGroup) {
-        const chosenActionId = completedGroupAction(story, state, action.choiceGroup);
-        if (chosenActionId && chosenActionId !== actionId) {
-          return { ok: false, reason: "choice-locked", chosenActionId, action };
-        }
-      }
-
-      const used = usedFocus(story, state, state.dayIndex);
-      const cost = Math.max(0, Number(action.focusCost || 1));
-      const limit = Number(story.days?.[state.dayIndex]?.focusLimit || 4);
-      if (used + cost > limit) {
-        return { ok: false, reason: "focus-exhausted", used, cost, limit, action };
-      }
-
-      return { ok: true, action, used, cost, limit };
-    }
-
-    function applyAction(actionId, payload = {}) {
-      const check = ruleCheck(actionId);
-      if (!check.ok) return check;
-      const result = core.applyAction(actionId, payload);
-      if (!result.ok) return result;
-
-      const nextState = result.state;
-      const usage = ensureUsage(nextState);
-      usage[nextState.dayIndex] = check.used + check.cost;
-      core = originalCreateEngine(story, nextState);
-      return { ...result, state: core.getState(), focus: { used: usage[nextState.dayIndex], limit: check.limit } };
-    }
-
-    function listActions(channel = null) {
-      return core.listActions(channel).filter((action) => ruleCheck(action.id).ok);
-    }
-
-    function endDay(...args) {
-      const state = getState();
-      const shouldSkipAuditRequirement = state.dayIndex === 2 && !auditEventDelivered(state) && !auditActionCompleted(state);
-      if (!shouldSkipAuditRequirement) return core.endDay(...args);
-
-      const temporaryState = clone(state);
-      temporaryState.completedActions ||= {};
-      temporaryState.completedActions["wed-audit-explain"] = {
-        dayIndex: 2,
-        minute: temporaryState.minute,
-        synthetic: true,
-        result: "Проверка не назначалась."
-      };
-
-      const temporaryCore = originalCreateEngine(story, temporaryState);
-      const result = temporaryCore.endDay(...args);
-      if (!result?.ok || !result.state) return result;
-
-      const cleanedState = clone(result.state);
-      delete cleanedState.completedActions?.["wed-audit-explain"];
-      core = originalCreateEngine(story, cleanedState);
-      return { ...result, state: core.getState(), skippedRequirement: "wednesday-audit" };
-    }
-
-    function resolveEnding(...args) {
-      const ending = storedEnding(story, getState());
-      return ending ? clone(ending) : core.resolveEnding(...args);
-    }
-
-    return {
-      startDay: (...args) => core.startDay(...args),
-      currentDay: (...args) => core.currentDay(...args),
-      listActions,
-      listVisibleContent: (...args) => core.listVisibleContent(...args),
-      canApplyAction: ruleCheck,
-      applyAction,
-      advanceTime: (...args) => core.advanceTime(...args),
-      endDay,
-      resolveEnding,
-      conditionPasses: (...args) => core.conditionPasses(...args),
-      getState,
-      serialize: () => JSON.stringify(getState())
-    };
+  root.UntilFridayRules = {
+    AUDIT_EVENT_ID,
+    AUDIT_ACTION_IDS,
+    groupAssignments,
+    focusCosts,
+    focusLimits,
+    patchStoryRules,
+    ensureUsage,
+    calculateUsedFocus,
+    usedFocus,
+    completedGroupAction,
+    ruleCheck,
+    applyFocus,
+    shouldSkipAuditRequirement,
+    storedEnding
   };
 
-  Engine.__rulesExtended = true;
+  if (root.UntilFridayEngine) root.UntilFridayEngine.__rulesExtended = true;
 })(typeof globalThis !== "undefined" ? globalThis : window);
