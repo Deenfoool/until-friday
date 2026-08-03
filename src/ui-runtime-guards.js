@@ -15,6 +15,13 @@
     "tue-answer-admin-honest": "Роман Белов",
     "tue-answer-admin-lie": "Роман Белов"
   };
+  const DISABLED_ACTION_TEXT = {
+    "choice-locked": "Другой вариант уже выбран",
+    "focus-exhausted": "Не хватает времени сегодня",
+    "workday-ended": "Рабочий день завершён",
+    "requirements-not-met": "Условия не выполнены",
+    "already-completed": "Уже выполнено"
+  };
 
   let queued = false;
   let lastActionAttempt = null;
@@ -122,12 +129,56 @@
     });
   }
 
+  function repairDocumentActionButtons() {
+    const currentEngine = engine();
+    if (!currentEngine) return;
+    document.querySelectorAll(".document-actions .action-button, .restricted .action-button").forEach((button) => {
+      const action = Story.actions?.[button.dataset.runtimeActionId] || actionByLabel(button.textContent);
+      if (!action) return;
+      button.dataset.runtimeActionId = action.id;
+      const result = currentEngine.canApplyAction(action.id);
+      if (result.ok) {
+        button.disabled = false;
+        button.textContent = action.label;
+        button.removeAttribute("title");
+        return;
+      }
+      button.disabled = true;
+      button.textContent = DISABLED_ACTION_TEXT[result.reason] || "Действие недоступно";
+      button.title = result.reason || "Недоступно";
+    });
+  }
+
   function removeDuplicateEndings() {
     const overlays = Array.from(document.querySelectorAll(".friday-ending-overlay, .ending-overlay"));
     if (overlays.length <= 1) return;
     const preferred = overlays.find((item) => item.classList.contains("friday-ending-overlay")) || overlays.at(-1);
     overlays.forEach((item) => {
       if (item !== preferred) item.remove();
+    });
+  }
+
+  function repairEndingNarrative() {
+    const state = engine()?.getState?.();
+    if (!state?.endingId || !["voluntary-exit", "fired-clean"].includes(state.endingId)) return;
+    const definition = (Story.endings || []).find((item) => item.id === state.endingId);
+    const paragraph = document.querySelector(".friday-ending-header > p");
+    if (paragraph && definition?.text) paragraph.textContent = definition.text;
+  }
+
+  function repairWindowPositions() {
+    if (!Number.isFinite(window.innerWidth) || !Number.isFinite(window.innerHeight)) return;
+    document.querySelectorAll(".app-window:not(.minimized)").forEach((win) => {
+      if (typeof win.getBoundingClientRect !== "function") return;
+      const rect = win.getBoundingClientRect();
+      const maxX = Math.max(0, window.innerWidth - Math.min(rect.width, window.innerWidth));
+      const maxY = Math.max(0, window.innerHeight - 42 - Math.min(rect.height, window.innerHeight - 42));
+      const left = Math.min(maxX, Math.max(0, Number.parseFloat(win.style.left) || rect.left || 0));
+      const top = Math.min(maxY, Math.max(0, Number.parseFloat(win.style.top) || rect.top || 0));
+      if (window.innerWidth > 760) {
+        win.style.left = `${left}px`;
+        win.style.top = `${top}px`;
+      }
     });
   }
 
@@ -159,7 +210,10 @@
     repairMailActionContext();
     repairChatActionContext();
     repairWorkflowSelection();
+    repairDocumentActionButtons();
     removeDuplicateEndings();
+    repairEndingNarrative();
+    repairWindowPositions();
     improveGenericActionError();
   }
 
@@ -174,7 +228,9 @@
 
   document.addEventListener("click", (event) => {
     const actionButton = event.target.closest?.(".action-button");
-    const action = actionButton ? actionByLabel(actionButton.textContent) : null;
+    const action = actionButton
+      ? Story.actions?.[actionButton.dataset.runtimeActionId] || actionByLabel(actionButton.textContent)
+      : null;
     if (action) {
       lastActionAttempt = { actionId: action.id, at: Date.now() };
       if (!storageWritable()) {
@@ -227,6 +283,7 @@
   observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
   document.addEventListener("DOMContentLoaded", queue, { once: true });
   window.addEventListener("until-friday-app-ready", queue);
+  window.addEventListener("resize", queue);
   queue();
 
   root.UntilFridayUiRuntimeGuards = {
@@ -236,6 +293,9 @@
     storageWritable,
     repairMailActionContext,
     repairChatActionContext,
-    repairWorkflowSelection
+    repairWorkflowSelection,
+    repairDocumentActionButtons,
+    repairEndingNarrative,
+    repairWindowPositions
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
