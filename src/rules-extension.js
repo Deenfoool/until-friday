@@ -6,6 +6,8 @@
   if (!Engine || !Story || Engine.__rulesExtended) return;
 
   const originalCreateEngine = Engine.createEngine;
+  const AUDIT_EVENT_ID = "wed-security-audit";
+  const AUDIT_ACTION_IDS = ["wed-audit-explain", "wed-audit-delete", "wed-audit-blame"];
 
   const groupAssignments = {
     "mon-report-final": "monday-report",
@@ -42,10 +44,26 @@
 
   const focusLimits = [4, 4, 3, 3, 1];
 
+  function clone(value) {
+    return value == null ? value : JSON.parse(JSON.stringify(value));
+  }
+
+  function requireAuditEvent(action) {
+    if (!action) return;
+    const auditCondition = { eventDelivered: AUDIT_EVENT_ID };
+    if (!action.requires) {
+      action.requires = auditCondition;
+      return;
+    }
+    if (action.requires.eventDelivered === AUDIT_EVENT_ID) return;
+    action.requires = { all: [auditCondition, action.requires] };
+  }
+
   Object.entries(Story.actions || {}).forEach(([id, action]) => {
     if (groupAssignments[id]) action.choiceGroup = groupAssignments[id];
     action.focusCost = Number(focusCosts[id] || action.focusCost || 1);
   });
+  AUDIT_ACTION_IDS.forEach((id) => requireAuditEvent(Story.actions?.[id]));
   (Story.days || []).forEach((day, index) => {
     day.focusLimit = Number(day.focusLimit || focusLimits[index] || 4);
   });
@@ -72,6 +90,20 @@
 
   function completedGroupAction(story, state, group) {
     return Object.keys(state.completedActions || {}).find((id) => story.actions?.[id]?.choiceGroup === group) || null;
+  }
+
+  function auditEventDelivered(state) {
+    return (state.deliveredEvents || []).includes(AUDIT_EVENT_ID);
+  }
+
+  function auditActionCompleted(state) {
+    return AUDIT_ACTION_IDS.some((id) => Boolean(state.completedActions?.[id]));
+  }
+
+  function storedEnding(story, state) {
+    if (!state.ended || !state.endingId) return null;
+    const endings = Array.isArray(story.endings) ? story.endings : Object.values(story.endings || {});
+    return endings.find((ending) => ending.id === state.endingId) || story.fallbackEnding || null;
   }
 
   Engine.createEngine = function createEngineWithRules(story, rawState = null, options = {}) {
@@ -123,6 +155,35 @@
       return core.listActions(channel).filter((action) => ruleCheck(action.id).ok);
     }
 
+    function endDay(...args) {
+      const state = getState();
+      const shouldSkipAuditRequirement = state.dayIndex === 2 && !auditEventDelivered(state) && !auditActionCompleted(state);
+      if (!shouldSkipAuditRequirement) return core.endDay(...args);
+
+      const temporaryState = clone(state);
+      temporaryState.completedActions ||= {};
+      temporaryState.completedActions["wed-audit-explain"] = {
+        dayIndex: 2,
+        minute: temporaryState.minute,
+        synthetic: true,
+        result: "Проверка не назначалась."
+      };
+
+      const temporaryCore = originalCreateEngine(story, temporaryState);
+      const result = temporaryCore.endDay(...args);
+      if (!result?.ok || !result.state) return result;
+
+      const cleanedState = clone(result.state);
+      delete cleanedState.completedActions?.["wed-audit-explain"];
+      core = originalCreateEngine(story, cleanedState);
+      return { ...result, state: core.getState(), skippedRequirement: "wednesday-audit" };
+    }
+
+    function resolveEnding(...args) {
+      const ending = storedEnding(story, getState());
+      return ending ? clone(ending) : core.resolveEnding(...args);
+    }
+
     return {
       startDay: (...args) => core.startDay(...args),
       currentDay: (...args) => core.currentDay(...args),
@@ -131,8 +192,8 @@
       canApplyAction: ruleCheck,
       applyAction,
       advanceTime: (...args) => core.advanceTime(...args),
-      endDay: (...args) => core.endDay(...args),
-      resolveEnding: (...args) => core.resolveEnding(...args),
+      endDay,
+      resolveEnding,
       conditionPasses: (...args) => core.conditionPasses(...args),
       getState,
       serialize: () => JSON.stringify(getState())
