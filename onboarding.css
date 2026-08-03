@@ -1,0 +1,464 @@
+.opening-flow {
+  position: fixed;
+  z-index: 20000;
+  inset: 0;
+  overflow: hidden;
+  background: #070a0c;
+  color: #e7ebee;
+  font-family: Tahoma, Arial, sans-serif;
+  opacity: 1;
+  transition: opacity 260ms ease;
+}
+
+.opening-flow.closing {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.opening-background,
+.opening-vignette {
+  position: absolute;
+  inset: 0;
+}
+
+.opening-background {
+  background-image: linear-gradient(rgba(4, 8, 11, .64), rgba(4, 8, 11, .68)), url("assets/image-empty-workplace.png");
+  background-position: center;
+  background-size: cover;
+  filter: blur(2px) saturate(.72);
+  transform: scale(1.015);
+}
+
+.opening-vignette {
+  background:
+    radial-gradient(circle at 50% 45%, transparent 0 22%, rgba(0, 0, 0, .32) 70%, rgba(0, 0, 0, .78) 100%),
+    linear-gradient(90deg, rgba(0, 0, 0, .55), transparent 50%, rgba(0, 0, 0, .38));
+}
+
+.opening-stage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  min-height: 100%;
+  place-items: center;
+  padding: 32px;
+}
+
+.menu-stage {
+  place-items: center start;
+  padding-left: clamp(36px, 9vw, 150px);
+}
+
+.opening-menu {
+  width: min(440px, calc(100vw - 48px));
+  padding: 34px 36px 30px;
+  border: 1px solid rgba(183, 196, 205, .34);
+  background: rgba(22, 29, 34, .88);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .52);
+  backdrop-filter: blur(6px);
+}
+
+.opening-menu__eyebrow {
+  display: block;
+  margin-bottom: 8px;
+  color: #9cacb7;
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.opening-menu h1,
+.opening-panel h2,
+.corporate-login h2 {
+  margin: 0;
+  font-weight: 500;
+}
+
+.opening-menu h1 {
+  font-size: clamp(38px, 6vw, 58px);
+  letter-spacing: -.04em;
+}
+
+.opening-menu__brand p {
+  max-width: 360px;
+  margin: 14px 0 28px;
+  color: #bec8ce;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.opening-menu__actions {
+  display: grid;
+  gap: 8px;
+}
+
+.opening-button,
+.prologue-next {
+  min-height: 40px;
+  border: 1px solid #657681;
+  background: #dfe5e8;
+  color: #223039;
+  font: inherit;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+}
+
+.opening-button {
+  width: 100%;
+  padding: 9px 14px;
+  text-align: left;
+}
+
+.opening-button:hover:not(:disabled),
+.opening-button:focus-visible,
+.prologue-next:hover,
+.prologue-next:focus-visible {
+  border-color: #a9bbc7;
+  background: #f2f5f6;
+}
+
+.opening-button.primary {
+  border-color: #5a7487;
+  background: #4f6e83;
+  color: #fff;
+}
+
+.opening-button.primary:hover:not(:disabled),
+.opening-button.primary:focus-visible {
+  background: #5d7d92;
+}
+
+.opening-button:disabled {
+  cursor: default;
+  opacity: .38;
+}
+
+.opening-menu__save-note {
+  display: block;
+  margin-top: 16px;
+  color: #8e9ca5;
+  font-size: 11px;
+}
+
+.settings-stage,
+.login-stage {
+  background: rgba(5, 8, 10, .72);
+}
+
+.opening-panel,
+.corporate-login,
+.login-progress {
+  width: min(430px, calc(100vw - 40px));
+  border: 1px solid #63727c;
+  background: #e8ecef;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, .48);
+  color: #24323a;
+}
+
+.opening-panel {
+  padding: 28px;
+}
+
+.opening-panel header {
+  margin-bottom: 24px;
+}
+
+.opening-field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 17px;
+  font-size: 12px;
+}
+
+.opening-field input,
+.opening-field select {
+  width: 100%;
+  min-height: 39px;
+  box-sizing: border-box;
+  border: 1px solid #8f9aa2;
+  background: #fff;
+  color: #202a30;
+  padding: 8px 10px;
+  font: 14px Tahoma, Arial, sans-serif;
+}
+
+.opening-field input:focus,
+.opening-field select:focus {
+  outline: 2px solid rgba(55, 104, 139, .24);
+  border-color: #527d99;
+}
+
+.opening-check {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  margin: 18px 0;
+  font-size: 12px;
+}
+
+.opening-check input {
+  width: 16px;
+  height: 16px;
+}
+
+.opening-hint,
+.opening-error {
+  min-height: 16px;
+  margin: 5px 0 14px;
+  color: #65717a;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.opening-error {
+  color: #8e3434;
+}
+
+.opening-panel__footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.prologue-stage,
+.dialogue-stage,
+.login-progress-stage {
+  background: #020304;
+}
+
+.prologue-card,
+.heard-dialogue {
+  width: min(720px, calc(100vw - 44px));
+  min-height: 270px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.prologue-text {
+  max-width: 690px;
+  min-height: 90px;
+  margin: 0;
+  color: #d3d8dc;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(20px, 3vw, 29px);
+  line-height: 1.6;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 520ms ease, transform 520ms ease;
+}
+
+.prologue-text.visible {
+  opacity: 1;
+  transform: none;
+}
+
+.prologue-next {
+  min-width: 150px;
+  margin-top: 32px;
+  padding: 9px 20px;
+  border-color: #68737a;
+  background: transparent;
+  color: #cdd4d8;
+}
+
+.heard-dialogue__lines {
+  width: 100%;
+  min-height: 230px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+}
+
+.heard-dialogue__lines p {
+  margin: 0;
+  color: #e2e5e7;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(19px, 2.7vw, 27px);
+  opacity: 0;
+  transform: translateY(5px);
+  transition: opacity 420ms ease, transform 420ms ease;
+}
+
+.heard-dialogue__lines p.visible {
+  opacity: 1;
+  transform: none;
+}
+
+.heard-dialogue__lines .dialogue-last {
+  margin-top: 15px;
+  color: #8f999f;
+  font-size: 15px;
+  font-style: italic;
+}
+
+.corporate-login {
+  padding: 0;
+}
+
+.corporate-login__header {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 20px 22px;
+  border-bottom: 1px solid #aeb7bd;
+  background: #d5dde2;
+}
+
+.corporate-login__header img,
+.login-progress > img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.corporate-login__header h2 {
+  font-size: 17px;
+  letter-spacing: .04em;
+}
+
+.corporate-login__header span {
+  display: block;
+  margin-top: 3px;
+  color: #647079;
+  font-size: 11px;
+}
+
+.corporate-login form {
+  padding: 26px 24px 24px;
+}
+
+.corporate-login .opening-button {
+  text-align: center;
+}
+
+.login-progress {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 5px 14px;
+  align-items: center;
+  padding: 22px;
+}
+
+.login-progress > img {
+  grid-row: 1 / 3;
+}
+
+.login-progress strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.login-progress__row {
+  min-height: 24px;
+  color: #5c6870;
+  font-size: 12px;
+}
+
+.return-welcome-toast {
+  cursor: pointer;
+}
+
+.desktop-icon[data-app="chat"].return-unread::after,
+.start-app.return-unread::after {
+  content: "1";
+  display: grid;
+  place-items: center;
+  position: absolute;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border: 1px solid #e1e5e7;
+  border-radius: 9px;
+  background: #a84848;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.desktop-icon[data-app="chat"].return-unread {
+  position: relative;
+}
+
+.desktop-icon[data-app="chat"].return-unread::after {
+  top: 0;
+  right: 8px;
+}
+
+.start-app.return-unread {
+  position: relative;
+}
+
+.start-app.return-unread::after {
+  top: 7px;
+  right: 10px;
+}
+
+.return-guide-message {
+  animation: return-message-in 240ms ease both;
+}
+
+.return-guide-options {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+
+.return-guide-button {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #96a3ab;
+  background: #edf1f3;
+  color: #25323a;
+  text-align: left;
+  cursor: pointer;
+}
+
+.return-guide-button:hover {
+  background: #fff;
+}
+
+.reply-panel.return-guide-active > :not(.return-guide-options) {
+  display: none !important;
+}
+
+.return-guide-summary {
+  display: block;
+  padding: 7px 9px;
+  color: #65717a;
+  font-size: 11px;
+}
+
+@keyframes return-message-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+html.reduced-motion *,
+html.reduced-motion *::before,
+html.reduced-motion *::after {
+  scroll-behavior: auto !important;
+  animation-duration: .001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .001ms !important;
+}
+
+@media (max-width: 640px) {
+  .opening-stage,
+  .menu-stage {
+    padding: 18px;
+    place-items: center;
+  }
+
+  .opening-menu {
+    padding: 26px 22px 22px;
+  }
+
+  .opening-menu h1 {
+    font-size: 40px;
+  }
+}
