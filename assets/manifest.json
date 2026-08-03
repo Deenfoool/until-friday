@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "naming": "Files are named by prompt number and purpose. PNG is preferred for transparent assets; JPG is used for photographs.",
+  "version": 2,
+  "naming": "Files are named by prompt number and purpose. PNG is preferred for transparent assets; JPG is used for photographs. Prompt 37 is generated programmatically and requires no uploaded file.",
   "assets": [
     { "prompt": 1, "key": "brand.companyLogo", "path": "assets/brand/company-logo.png" },
     { "prompt": 2, "key": "backgrounds.desktop", "path": "assets/backgrounds/desktop-wallpaper.png" },
@@ -38,7 +38,7 @@
     { "prompt": 34, "key": "avatars.default", "path": "assets/avatars/default.png" },
     { "prompt": 35, "key": "sprites.employeeStatuses", "path": "assets/sprites/employee-statuses.png" },
     { "prompt": 36, "key": "sprites.attachments", "path": "assets/sprites/attachments.png" },
-    { "prompt": 37, "key": "sprites.loading", "path": "assets/sprites/loading.png" },
+    { "prompt": 37, "key": "generated.loading", "path": "programmatic://loading-indicator", "generated": true, "source": "src/loading-indicator.js" },
     { "prompt": 38, "key": "system.systemLog", "path": "assets/icons/system/system-log.png" },
     { "prompt": 39, "key": "system.lockedAccess", "path": "assets/icons/system/locked-access.png" },
     { "prompt": 40, "key": "brand.gameIcon", "path": "assets/brand/game-icon.png" }
