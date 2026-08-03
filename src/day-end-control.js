@@ -9,11 +9,12 @@
   let activeOverlay = null;
   let decorateQueued = false;
 
+  function runtime() {
+    return root.UntilFridayRuntimeEngine || null;
+  }
+
   function getEngine() {
-    return root.UntilFridayPersistentEngineGuard?.getEngine?.()
-      || root.UntilFridayDayTransitionGuard?.getEngine?.()
-      || root.UntilFridayPassiveClock?.getEngine?.()
-      || null;
+    return runtime()?.getEngine?.() || null;
   }
 
   function clone(value) {
@@ -77,6 +78,14 @@
   }
 
   function saveState(state) {
+    const sharedRuntime = runtime();
+    if (sharedRuntime?.persist) {
+      const result = sharedRuntime.persist(state);
+      if (result?.ok) return true;
+      console.error("Не удалось сохранить переход на следующий день", result?.error || result?.message);
+      return false;
+    }
+
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(state));
       return true;
@@ -325,6 +334,7 @@
 
   const observer = new MutationObserver(queueDecorate);
   observer.observe(document.documentElement, { childList: true, subtree: true });
+  root.addEventListener?.("until-friday-state-change", queueDecorate);
   window.addEventListener("until-friday-app-ready", queueDecorate);
   document.addEventListener("DOMContentLoaded", queueDecorate, { once: true });
   queueDecorate();
