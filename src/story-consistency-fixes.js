@@ -40,6 +40,17 @@
     if (wrongReport) {
       wrongReport.text = "Ты снова отправил черновик. Я исправлю цифры сам, но неверная версия останется в истории отправки.";
     }
+
+    const normalWednesday = Story.events?.["wed-normal-morning"];
+    if (normalWednesday) {
+      normalWednesday.requires = {
+        all: [
+          { statLt: ["suspicion", 2] },
+          { notFlag: "requestedLeadershipAccess" },
+          { not: { hasItem: "payment-list" } }
+        ]
+      };
+    }
   }
 
   function patchEndings() {
