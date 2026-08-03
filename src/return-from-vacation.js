@@ -127,11 +127,12 @@
     if (icon) icon.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
   }
 
-  function decorateDimaConversation(state) {
+  function decorateDimaConversation(initialState) {
     document.querySelectorAll(".chat-layout").forEach((layout) => {
       const header = layout.querySelector(".chat-header strong")?.textContent.trim();
       if (header !== "Дима Орлов") return;
 
+      let state = initialState;
       if (!state.read) {
         state = { ...state, read: true };
         writeWelcome(state);
@@ -140,6 +141,10 @@
       const messages = layout.querySelector("[data-messages]");
       const replyPanel = layout.querySelector("[data-actions]");
       if (!messages || !replyPanel) return;
+
+      const signature = `${playerName()}|${state.read}|${state.choice || "pending"}`;
+      if (layout.dataset.returnGuideSignature === signature) return;
+      layout.dataset.returnGuideSignature = signature;
 
       messages.querySelectorAll(".return-guide-message").forEach((message) => message.remove());
       const existingRumor = Array.from(messages.querySelectorAll(".message")).find((message) =>
@@ -151,7 +156,10 @@
         `${shortName()}, с возвращением. Рад, что ты наконец вышел из отпуска.`,
         "Если нужно освежить память, могу быстро напомнить, где что находится."
       ];
-      welcomeMessages.forEach((text, index) => prependMessage(messages, text, "them", `08:${48 + index}`));
+      welcomeMessages.slice().reverse().forEach((text, reverseIndex) => {
+        const originalIndex = welcomeMessages.length - 1 - reverseIndex;
+        prependMessage(messages, text, "them", `08:${48 + originalIndex}`);
+      });
 
       if (state.choice) renderChoiceMessages(messages, state.choice);
       renderGuideOptions(replyPanel, state);
