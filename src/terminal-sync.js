@@ -58,8 +58,9 @@
       "focus-exhausted": "На сегодня не осталось времени для ещё одного крупного действия.",
       "workday-ended": "Рабочий день уже закончился. Введите endday.",
       "not-enough-time": "До конца рабочего дня недостаточно времени для этого действия.",
-      "save-failed": "Действие отменено: браузер не смог записать сохранение.",
-      "action-exception": "Действие отменено из-за внутренней ошибки. Состояние не изменено."
+      "save-failed": "Изменение отменено: браузер не смог записать сохранение.",
+      "action-exception": "Действие отменено из-за внутренней ошибки. Состояние не изменено.",
+      "time-exception": "Ход времени отменён из-за внутренней ошибки."
     };
     return messages[reason] || "Действие недоступно.";
   }
@@ -93,23 +94,6 @@
     item.addEventListener("click", () => item.remove());
     container.appendChild(item);
     window.setTimeout(() => item.remove(), 6500);
-  }
-
-  function persist(state) {
-    const result = runtime()?.persist?.(state);
-    if (result?.ok) return true;
-    if (result) {
-      console.warn("Терминал не смог сохранить состояние", result.error || result.message);
-      return false;
-    }
-
-    try {
-      localStorage.setItem("until-friday-save-v2", JSON.stringify(state));
-      return true;
-    } catch (error) {
-      console.warn("Терминал не смог сохранить состояние", error);
-      return false;
-    }
   }
 
   function updateClock(state) {
@@ -181,8 +165,13 @@
     appendLine(output, commandResult(normalized, currentEngine, before), normalized === "logs" ? "dim" : "");
     const minutes = normalized === "actions" ? 3 : 1;
     const result = currentEngine.advanceTime(minutes);
+    if (!result?.ok) {
+      appendLine(output, actionError(result?.reason), "error");
+      output.scrollTop = output.scrollHeight;
+      return;
+    }
+
     const after = result.state || currentEngine.getState();
-    if (!persist(after)) appendLine(output, "Время изменилось, но сохранить состояние не удалось.", "error");
     updateClock(after);
     (result.events || []).forEach(notify);
     output.scrollTop = output.scrollHeight;
