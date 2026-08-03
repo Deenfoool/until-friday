@@ -1,31 +1,22 @@
 (function (root) {
   "use strict";
 
-  const Engine = root.UntilFridayEngine;
-  if (!Engine || root.UntilFridayPassiveClock) return;
+  const Runtime = root.UntilFridayRuntimeEngine;
+  if (!Runtime || root.UntilFridayPassiveClock) return;
 
   const REAL_MS_PER_GAME_MINUTE = 3000;
   const WORKDAY_END_MINUTE = 18 * 60;
   const DAY_SHORT = ["ПН", "ВТ", "СР", "ЧТ", "ПТ"];
   const MONTH_SHORT = "АВГ";
-  const SAVE_KEY = root.UntilFridayMigration?.ENGINE_SAVE_KEY || "until-friday-save-v2";
 
-  let engineInstance = null;
   let timerId = null;
   let lastRealTimestamp = Date.now();
   let lastDayIndex = null;
   let endOfDayNoticeShown = false;
 
-  const originalCreateEngine = Engine.createEngine.bind(Engine);
-  Engine.createEngine = function createEngineWithPassiveClock(...args) {
-    const instance = originalCreateEngine(...args);
-    engineInstance = instance;
-    const state = instance.getState();
-    lastDayIndex = state.dayIndex;
-    lastRealTimestamp = Date.now();
-    endOfDayNoticeShown = false;
-    return instance;
-  };
+  function getEngine() {
+    return Runtime.getEngine?.() || null;
+  }
 
   function shouldPause(state) {
     if (!state || state.ended || !state.dayStarted) return true;
@@ -39,12 +30,9 @@
   }
 
   function persist(state) {
-    if (!state) return;
-    try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-    } catch (error) {
-      console.warn("Не удалось сохранить пассивное течение времени", error);
-    }
+    const result = Runtime.persist(state);
+    if (!result.ok) console.warn("Не удалось сохранить пассивное течение времени", result.message);
+    return result.ok;
   }
 
   function formatTime(totalMinutes) {
@@ -62,25 +50,18 @@
   }
 
   function notify(title, text) {
-    const container = document.querySelector("#notifications");
-    if (!container) return;
-    const toast = document.createElement("button");
-    toast.type = "button";
-    toast.className = "notification passive-clock-notification";
-    const strong = document.createElement("strong");
-    const span = document.createElement("span");
-    strong.textContent = title || "Система";
-    span.textContent = text || "Новое событие";
-    toast.append(strong, span);
-    toast.addEventListener("click", () => toast.remove());
-    container.appendChild(toast);
-    window.setTimeout(() => toast.remove(), 6500);
+    Runtime.notify(title || "Система", text || "Новое событие");
   }
 
   function deliverEvents(events) {
     (events || []).forEach((event) => {
       notify(event.source || event.title || "Система", event.text || event.title || "Новое событие");
     });
+  }
+
+  function cssEscape(value) {
+    if (root.CSS?.escape) return root.CSS.escape(value);
+    return String(value).replace(/(["\\])/g, "\\$1");
   }
 
   function refreshOpenWindows() {
@@ -101,12 +82,13 @@
   }
 
   function tick(now = Date.now()) {
-    if (!engineInstance) {
+    const engine = getEngine();
+    if (!engine) {
       lastRealTimestamp = now;
       return { advanced: 0, events: [] };
     }
 
-    const state = engineInstance.getState();
+    const state = engine.getState();
     if (lastDayIndex !== state.dayIndex) {
       lastDayIndex = state.dayIndex;
       lastRealTimestamp = now;
@@ -136,9 +118,15 @@
 
     const minutesToAdvance = Math.min(elapsedMinutes, WORKDAY_END_MINUTE - state.minute);
     lastRealTimestamp += minutesToAdvance * REAL_MS_PER_GAME_MINUTE;
-    const result = engineInstance.advanceTime(minutesToAdvance);
-    const nextState = result.state || engineInstance.getState();
-    persist(nextState);
+    const result = engine.advanceTime(minutesToAdvance);
+    const nextState = result.state || engine.getState();
+
+    if (!persist(nextState)) {
+      engine.replaceState?.(state, "passive-clock-rollback");
+      lastRealTimestamp = now;
+      return { advanced: 0, events: [], rolledBack: true, state };
+    }
+
     updateClock(nextState);
     deliverEvents(result.events || []);
     if (result.events?.length) refreshOpenWindows();
@@ -165,22 +153,24 @@
 
   function resetDayClock() {
     lastRealTimestamp = Date.now();
-    lastDayIndex = engineInstance?.getState?.().dayIndex ?? null;
+    lastDayIndex = getEngine()?.getState?.().dayIndex ?? null;
     endOfDayNoticeShown = false;
-  }
-
-  function cssEscape(value) {
-    if (root.CSS?.escape) return root.CSS.escape(value);
-    return String(value).replace(/(["\\])/g, "\\$1");
   }
 
   window.addEventListener("until-friday-app-ready", () => {
     resetDayClock();
     start();
   });
+  window.addEventListener("until-friday-state-change", (event) => {
+    const state = event.detail?.state;
+    if (!state) return;
+    if (lastDayIndex !== state.dayIndex) resetDayClock();
+    updateClock(state);
+  });
   document.addEventListener("visibilitychange", () => {
     lastRealTimestamp = Date.now();
-    if (!document.hidden && engineInstance) updateClock(engineInstance.getState());
+    const engine = getEngine();
+    if (!document.hidden && engine) updateClock(engine.getState());
   });
   window.addEventListener("pagehide", () => {
     lastRealTimestamp = Date.now();
@@ -194,6 +184,6 @@
     stop,
     tick,
     resetDayClock,
-    getEngine: () => engineInstance
+    getEngine
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
