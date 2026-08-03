@@ -84,6 +84,18 @@ for (const requiredText of [
   assert.match(source, new RegExp(requiredText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `Thursday module must contain: ${requiredText}`);
 }
 
+const guardSource = read("src/thursday-event-guards.js");
+assert.doesNotThrow(() => new Function(guardSource), "Thursday event guard must contain valid JavaScript");
+const savedFiles = [];
+context.UntilFridayWorkflow = { saveAttachment: (file) => savedFiles.push(file) };
+vm.runInNewContext(guardSource, context, { filename: "thursday-event-guards.js" });
+assert.equal(story.actions["thu-finish-project"].effects.schedule[0].minute, 610, "project response must be due after the project action");
+assert.equal(story.actions["thu-build-case"].effects.schedule[0].minute, 575, "archive trace must be due after case preparation");
+assert.equal(story.actions["thu-resign"].effects.schedule[0].minute, 560, "draft confirmation must be due after saving the draft");
+assert.equal(story.actions["thu-frame-chief"].effects.schedule[0].minute, 572, "complaint response must be due after submission");
+context.UntilFridayWorkflow.saveAttachment({ id: "test", icon: "protectedArchive" });
+assert.equal(savedFiles[0].icon, "protected", "encrypted case file must use a supported Explorer icon");
+
 const css = read("thursday-minigames.css");
 assert.match(css, /thursday-minigame-window/, "Thursday windows must have dedicated styling");
 assert.match(css, /project-builder-grid/, "project builder must be styled");
@@ -95,9 +107,11 @@ assert.match(css, /@media \(max-width: 760px\)/, "Thursday tasks must adapt to s
 const html = read("index.html");
 assert.match(html, /thursday-minigames\.css/, "Thursday stylesheet must be connected");
 assert.match(html, /src\/thursday-minigames\.js/, "Thursday script must be connected");
+assert.match(html, /src\/thursday-event-guards\.js/, "Thursday guard script must be connected");
 assert.ok(
-  html.indexOf("src/thursday-minigames.js") < html.indexOf("src/bootstrap.js"),
-  "Thursday events and Friday gates must be registered before engine creation"
+  html.indexOf("src/thursday-minigames.js") < html.indexOf("src/thursday-event-guards.js") &&
+  html.indexOf("src/thursday-event-guards.js") < html.indexOf("src/bootstrap.js"),
+  "Thursday events, timing guards and Friday gates must be registered before engine creation"
 );
 
 console.log("Thursday gameplay stage validation passed.");
