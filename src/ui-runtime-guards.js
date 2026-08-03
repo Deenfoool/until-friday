@@ -240,7 +240,13 @@
     });
   }
 
+  function queueAfterInteraction() {
+    window.setTimeout(queue, 0);
+  }
+
   document.addEventListener("click", (event) => {
+    queueAfterInteraction();
+
     const actionButton = event.target.closest?.(".action-button");
     const action = actionButton
       ? Story.actions?.[actionButton.dataset.runtimeActionId] || actionByLabel(actionButton.textContent)
@@ -284,6 +290,7 @@
     if (!icon || !["Enter", " "].includes(event.key)) return;
     event.preventDefault();
     icon.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+    queueAfterInteraction();
   }, true);
 
   document.addEventListener("pointerup", (event) => {
@@ -291,11 +298,11 @@
     const icon = event.target.closest?.(".desktop-icon[data-app]");
     if (!icon) return;
     icon.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+    queueAfterInteraction();
   }, true);
 
-  const observer = new MutationObserver(queue);
-  observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
   root.addEventListener?.("until-friday-state-change", queue);
+  root.addEventListener?.("until-friday-ui-render", queue);
   document.addEventListener("DOMContentLoaded", queue, { once: true });
   window.addEventListener("until-friday-app-ready", queue);
   window.addEventListener("resize", queue);
@@ -313,6 +320,8 @@
     repairEndingNarrative,
     repairWindowPositions,
     setText,
-    engine
+    engine,
+    decorate,
+    queue
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
