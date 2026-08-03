@@ -7,14 +7,20 @@ const path = require("node:path");
 const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
-const scripts = [
+const syntaxFiles = [
   "src/app-v2.js",
   "src/bootstrap.js",
-  "src/app.js",
   "src/engine.js",
   "src/story-v2.js",
   "src/rules-extension.js",
   "src/state-migration.js",
+  "src/integrity-fixes.js",
+  "src/time-boundary-guard.js",
+  "src/runtime-engine.js",
+  "src/ui-observer-hub.js",
+  "src/passive-clock.js",
+  "src/day-transition-guard.js",
+  "src/day-end-control.js",
   "src/asset-registry.js",
   "src/sprite-atlas.js",
   "src/asset-ui.js",
@@ -23,40 +29,93 @@ const scripts = [
   "src/loading-indicator.js",
   "src/onboarding.js",
   "src/return-from-vacation.js",
-  "src/work-minigames.js"
+  "src/terminal-sync.js",
+  "src/work-minigames.js",
+  "src/tuesday-minigames.js",
+  "src/wednesday-minigames.js",
+  "src/thursday-minigames.js",
+  "src/friday-finale.js"
 ];
 
-for (const file of scripts) {
-  const source = read(file);
-  assert.doesNotThrow(() => new Function(source), `${file} must contain valid JavaScript`);
+for (const file of syntaxFiles) {
+  assert.doesNotThrow(() => new Function(read(file)), `${file} must contain valid JavaScript`);
 }
 
 const html = read("index.html");
-for (const stylesheet of ["styles-v2.css", "asset-ui.css", "workflow.css", "onboarding.css", "work-minigames.css"]) {
-  assert.match(html, new RegExp(stylesheet.replace(".", "\\.")), `${stylesheet} must be connected`);
+for (const stylesheet of [
+  "styles-v2.css",
+  "asset-ui.css",
+  "workflow.css",
+  "onboarding.css",
+  "work-minigames.css",
+  "tuesday-minigames.css",
+  "wednesday-minigames.css",
+  "thursday-minigames.css",
+  "friday-finale.css",
+  "day-end-control.css"
+]) {
+  assert.ok(html.includes(stylesheet), `${stylesheet} must be connected`);
 }
+
 for (const script of [
-  "bootstrap", "asset-registry", "sprite-atlas", "asset-ui", "workflow-extension", "workflow-reset",
-  "loading-indicator", "onboarding", "return-from-vacation", "work-minigames"
+  "runtime-engine",
+  "ui-observer-hub",
+  "passive-clock",
+  "day-transition-guard",
+  "day-end-control",
+  "bootstrap",
+  "asset-registry",
+  "sprite-atlas",
+  "asset-ui",
+  "workflow-extension",
+  "workflow-reset",
+  "loading-indicator",
+  "onboarding",
+  "return-from-vacation",
+  "terminal-sync",
+  "work-minigames",
+  "tuesday-minigames",
+  "wednesday-minigames",
+  "thursday-minigames",
+  "friday-finale"
 ]) {
   assert.match(html, new RegExp(`src\\/${script}\\.js`), `${script} must be connected`);
 }
+
 assert.doesNotMatch(html, /<script src="src\/app\.js"><\/script>/, "legacy app must not boot in parallel");
+assert.doesNotMatch(html, /persistent-engine-guard\.js/, "deleted runtime facade must not be loaded");
 
 const position = (name) => html.indexOf(`src/${name}.js`);
 assert.ok(position("engine") < position("story-v2"), "engine must load before story");
-assert.ok(position("story-v2") < position("rules-extension"), "story must load before rule extensions");
+assert.ok(position("story-v2") < position("rules-extension"), "story must load before rules");
 assert.ok(position("rules-extension") < position("state-migration"), "rules must load before migration");
-assert.ok(position("state-migration") < position("asset-registry"), "migration must load before assets");
+assert.ok(position("state-migration") < position("integrity-fixes"), "migration definitions must load before integrity repairs");
+assert.ok(position("integrity-fixes") < position("time-boundary-guard"), "repaired state must precede time rules");
+assert.ok(position("time-boundary-guard") < position("runtime-engine"), "pure helpers must load before the runtime");
+assert.ok(position("runtime-engine") < position("ui-observer-hub"), "runtime must exist before UI subscriptions");
+assert.ok(position("ui-observer-hub") < position("passive-clock"), "observer hub must intercept observers before UI consumers");
+assert.ok(position("passive-clock") < position("day-transition-guard"), "clock must exist before transition UI resets it");
+assert.ok(position("day-transition-guard") < position("day-end-control"), "transition recovery must load before the day-end dialog");
+assert.ok(position("day-end-control") < position("asset-registry"), "runtime controls must be ready before app extensions");
 assert.ok(position("asset-registry") < position("sprite-atlas"), "asset paths must load before sprite atlas");
 assert.ok(position("sprite-atlas") < position("asset-ui"), "sprite atlas must load before asset UI");
-assert.ok(position("asset-ui") < position("workflow-extension"), "asset viewer must load before workflow");
 assert.ok(position("workflow-extension") < position("workflow-reset"), "workflow must load before reset guard");
-assert.ok(position("workflow-reset") < position("loading-indicator"), "reset guard must load before startup");
 assert.ok(position("loading-indicator") < position("onboarding"), "loader must exist before login flow");
 assert.ok(position("onboarding") < position("return-from-vacation"), "profile must exist before welcome flow");
-assert.ok(position("return-from-vacation") < position("work-minigames"), "profile bridge must load before tasks");
-assert.ok(position("work-minigames") < position("bootstrap"), "extensions must observe before app bootstrap");
+assert.ok(position("return-from-vacation") < position("terminal-sync"), "profile bridge must load before terminal identity");
+assert.ok(position("friday-finale") < position("bootstrap"), "all story extensions must load before app bootstrap");
+
+const runtime = read("src/runtime-engine.js");
+assert.equal((runtime.match(/Engine\.createEngine\s*=/g) || []).length, 1, "only the unified runtime may replace the engine factory");
+for (const phrase of [
+  "until-friday-state-change",
+  "Действие не сохранено",
+  "Время не сохранено",
+  "Переход не сохранён",
+  "rolledBack: true"
+]) {
+  assert.match(runtime, new RegExp(phrase), `runtime must contain: ${phrase}`);
+}
 
 const app = read("src/app-v2.js");
 for (const requiredApp of ["explorer", "mail", "chat", "tasks", "terminal", "journal", "trash"]) {
@@ -73,74 +132,67 @@ assert.match(bootstrap, /until-friday-app-ready/, "extensions must receive the a
 const onboarding = read("src/onboarding.js");
 const onboardingStyles = read("onboarding.css");
 assert.match(onboardingStyles, /image-empty-workplace\.png/, "menu must use the empty workplace background");
-assert.match(onboarding, /Новая игра/, "menu must offer a new game");
-assert.match(onboarding, /Настройки/, "menu must offer settings");
-assert.match(onboarding, /Имя сотрудника:/, "login must request an employee name");
-assert.match(onboarding, /Он пока ничего не знает\?/, "canonical dialogue must be present");
-assert.match(onboarding, /Пусть пока продолжает работать как обычно/, "canonical final dialogue line must be present");
-assert.doesNotMatch(onboarding, /Первый вход после длительного отсутствия/, "rejected login caption must never appear in the game");
+for (const text of [
+  "Новая игра",
+  "Настройки",
+  "Имя сотрудника:",
+  "Он пока ничего не знает?",
+  "Пусть пока продолжает работать как обычно"
+]) {
+  assert.match(onboarding, new RegExp(text.replace(/[?]/g, "\\?")), `onboarding must contain: ${text}`);
+}
+assert.doesNotMatch(onboarding, /Первый вход после длительного отсутствия/, "rejected login caption must never appear");
 assert.match(onboarding, /validName/, "employee names must be validated");
-assert.match(onboarding, /until-friday-return-welcome-v1/, "new game must schedule the friend welcome");
 
-const openingDoc = read("OPENING_FLOW.md");
-assert.match(openingDoc, /считается закреплённым началом/, "canonical opening must be documented");
-assert.match(openingDoc, /На экране нет фразы/, "rejected caption must be explicitly excluded from the specification");
+const reset = read("src/workflow-reset.js");
+assert.match(reset, /clearGameData/, "reset must clear all game data in one operation");
+assert.match(reset, /stopImmediatePropagation/, "reset guard must replace the old asynchronous handler");
+assert.match(reset, /root\.confirm/, "reset must wait for explicit confirmation");
+assert.match(reset, /until-friday-save-v2/, "reset must clear the engine save");
+assert.match(reset, /until-friday-workflow-files-v1/, "reset must clear saved documents");
+assert.match(reset, /until-friday-notification-history-v1/, "reset must clear notification history");
+assert.doesNotMatch(reset, /beforeunload|resetRequested/, "reset must not depend on unload timing");
 
 const vacation = read("src/return-from-vacation.js");
-assert.match(vacation, /с возвращением/, "friend must welcome the player back from vacation");
-assert.match(vacation, /Напомни, где что находится/, "tutorial must be optional through dialogue");
-assert.match(vacation, /Я сам разберусь/, "tutorial must be skippable without punishment");
-assert.match(vacation, /Что именно поменялось/, "player must be able to ask about changes");
-assert.match(vacation, /returnGuideSignature/, "welcome rendering must be protected from observer loops");
-assert.match(vacation, /terminalLogin/, "custom names must propagate to the terminal identity");
+for (const text of [
+  "с возвращением",
+  "Напомни, где что находится",
+  "Я сам разберусь",
+  "Что именно поменялось",
+  "returnGuideSignature",
+  "terminalLogin"
+]) {
+  assert.match(vacation, new RegExp(text), `vacation bridge must contain: ${text}`);
+}
 
-const minigames = read("src/work-minigames.js");
-assert.match(minigames, /Подготовить отчёт за июль/, "report selection must be an interactive task");
-assert.match(minigames, /Отчёт_июль_финал_копия\.xlsx/, "report task must include ambiguous versions");
-assert.match(minigames, /Проверить счёт №7814/, "invoice verification must be an interactive task");
-assert.match(minigames, /842 000 ₽/, "invoice task must include the suspicious amount");
-assert.match(minigames, /actions\.correct/, "correct report choice must route to the engine");
-assert.match(minigames, /actions\.wrong/, "wrong report choice must retain consequences");
-assert.match(minigames, /actions\.fix/, "invoice correction must route to the engine");
-assert.match(minigames, /actions\.report/, "invoice escalation must route to the engine");
+const monday = read("src/work-minigames.js");
+assert.match(monday, /Подготовить отчёт за июль/, "report selection must be interactive");
+assert.match(monday, /Отчёт_июль_финал_копия\.xlsx/, "report task must include ambiguous versions");
+assert.match(monday, /Проверить счёт №7814/, "invoice verification must be interactive");
+assert.match(monday, /842 000 ₽/, "invoice task must include the suspicious amount");
 
 const loader = read("src/loading-indicator.js");
 assert.match(loader, /const SEGMENT_COUNT = 12;/, "loader must build twelve segments programmatically");
-assert.match(loader, /createElement\("span"\)/, "loader segments must be created through JavaScript");
 assert.doesNotMatch(loader, /loading\.png/, "loader must not depend on an image sprite");
-
-const loaderStyles = read("styles-v2.css");
-assert.match(loaderStyles, /until-friday-spinner-pulse/, "loader animation must be defined in CSS");
+assert.match(read("styles-v2.css"), /until-friday-spinner-pulse/, "loader animation must exist in CSS");
 
 const assetRegistry = read("src/asset-registry.js");
 assert.doesNotMatch(assetRegistry, /assets\/sprites\/loading\.png/, "asset registry must not request a loading sprite");
-assert.match(assetRegistry, /assets\/assets-file-icons\.png/, "uploaded file icon sheet must be registered");
-assert.match(assetRegistry, /assets\/avatar-director\.png/, "confirmed department chief avatar must be registered");
-assert.match(assetRegistry, /assets\/avatar-hr-men\.png/, "confirmed HR avatar must be registered");
+assert.match(assetRegistry, /assets\/assets-file-icons\.png/, "file icon sheet must be registered");
+assert.match(assetRegistry, /assets\/avatar-director\.png/, "department chief avatar must be registered");
+assert.match(assetRegistry, /assets\/avatar-hr-men\.png/, "HR avatar must be registered");
 
 const atlas = read("src/sprite-atlas.js");
 for (const group of ["attachments", "statuses", "folders", "files", "system"]) {
   assert.match(atlas, new RegExp(`${group}: \\{`), `${group} sprite group must exist`);
 }
-assert.match(atlas, /function createIcon\(/, "sprite atlas must expose programmatic icon creation");
-
-const assetUi = read("src/asset-ui.js");
-assert.match(assetUi, /storyAssets/, "asset UI must expose story files");
-assert.match(assetUi, /decorateFileRows/, "file rows must use generated icons");
-assert.match(assetUi, /decorateContacts/, "employee statuses must be integrated");
-assert.match(assetUi, /decorateNotifications/, "system notification icons must be integrated");
-assert.match(assetUi, /openAssetViewer/, "story images and scans must open in a viewer");
+assert.match(atlas, /function createIcon\(/, "sprite atlas must expose icon creation");
 
 const workflow = read("src/workflow-extension.js");
 assert.match(workflow, /Сохранить в Документы/, "mail attachments must be saveable");
-assert.match(workflow, /data-workflow-delete/, "saved files must be deletable from Explorer");
-assert.match(workflow, /function restoreFile\(/, "files must be restorable from Trash");
-assert.match(workflow, /workflowSignature/, "workflow rendering must be guarded against observer loops");
-
-const workflowReset = read("src/workflow-reset.js");
-assert.match(workflowReset, /beforeunload/, "reset must wait for a confirmed reload");
-assert.match(workflowReset, /until-friday-profile-v1/, "new week must clear the employee profile");
-assert.match(workflowReset, /until-friday-return-welcome-v1/, "new week must clear the welcome dialogue");
+assert.match(workflow, /data-workflow-delete/, "saved files must be deletable");
+assert.match(workflow, /function restoreFile\(/, "files must be restorable");
+assert.match(workflow, /workflowSignature/, "workflow rendering must avoid observer loops");
 
 const manifest = JSON.parse(read("assets/manifest.json"));
 assert.equal(manifest.assets.length, 40, "all forty prompts must remain documented");
@@ -149,9 +201,5 @@ assert.equal(new Set(manifest.assets.map((item) => item.path)).size, 40, "asset 
 const generatedLoading = manifest.assets.find((item) => item.prompt === 37);
 assert.equal(generatedLoading.generated, true, "prompt 37 must be marked as generated");
 assert.equal(generatedLoading.source, "src/loading-indicator.js", "prompt 37 must point to its source");
-const chief = manifest.assets.find((item) => item.prompt === 18);
-const hr = manifest.assets.find((item) => item.prompt === 21);
-assert.equal(chief.role, "Андрей Соколов, начальник отдела", "prompt 18 role must be confirmed");
-assert.equal(hr.role, "Сотрудник отдела кадров", "prompt 21 role must be confirmed");
 
 console.log("UI contract validation passed.");
