@@ -32,6 +32,8 @@ jobs:
         run: node tests/passive-clock.test.js
       - name: Validate day transition recovery
         run: node tests/day-transition.test.js
+      - name: Validate reliable day end controls
+        run: node tests/day-end-control.test.js
       - name: Validate Tuesday gameplay stage
         run: node tests/tuesday-stage.test.js
       - name: Validate Wednesday gameplay stage
