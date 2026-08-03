@@ -5,7 +5,8 @@
   if (!Story || root.UntilFridayTerminalSync) return;
 
   const SAVE_KEY = root.UntilFridayMigration?.ENGINE_SAVE_KEY || "until-friday-save-v2";
-  const INTERCEPTED = new Set(["status", "day", "tasks", "actions", "logs"]);
+  const STORAGE_TEST_KEY = "__until_friday_terminal_storage_test__";
+  const INTERCEPTED = new Set(["status", "day", "tasks", "actions", "logs", "run", "endday"]);
 
   function engine() {
     return root.UntilFridayDayTransitionGuard?.getEngine?.()
@@ -45,6 +46,31 @@
     return "";
   }
 
+  function actionError(reason) {
+    const messages = {
+      "game-ended": "Неделя уже завершена.",
+      "day-not-started": "Рабочий день ещё не начался.",
+      "unknown-action": "Действие не найдено.",
+      "wrong-day": "Это действие недоступно сегодня.",
+      "already-completed": "Это действие уже выполнено.",
+      "requirements-not-met": "Не выполнены условия этого действия.",
+      "choice-locked": "Для этой ситуации уже выбран другой вариант.",
+      "focus-exhausted": "На сегодня не осталось времени для ещё одного крупного действия.",
+      "workday-ended": "Рабочий день уже закончился. Введите endday."
+    };
+    return messages[reason] || "Действие недоступно.";
+  }
+
+  function storageWritable() {
+    try {
+      localStorage.setItem(STORAGE_TEST_KEY, "1");
+      localStorage.removeItem(STORAGE_TEST_KEY);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function appendLine(output, text, className = "") {
     const line = document.createElement("div");
     line.className = className;
@@ -71,8 +97,10 @@
   function persist(state) {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      return true;
     } catch (error) {
-      console.warn("Терминал не смог сохранить прошедшую минуту", error);
+      console.warn("Терминал не смог сохранить состояние", error);
+      return false;
     }
   }
 
@@ -84,12 +112,36 @@
     if (date) date.textContent = `${dayShort[state.dayIndex] || ""}, ${3 + state.dayIndex} АВГ`;
   }
 
+  function executeRun(argument, currentEngine, output) {
+    const action = Story.actions?.[argument];
+    if (!action || action.channel !== "terminal") {
+      appendLine(output, "Команда может запускать только доступные terminal-действия. Введите actions.", "error");
+      return;
+    }
+    if (!storageWritable()) {
+      appendLine(output, "Локальное сохранение недоступно. Действие не выполнено.", "error");
+      return;
+    }
+
+    const result = currentEngine.applyAction(argument);
+    if (!result.ok) {
+      appendLine(output, actionError(result.reason), "error");
+      return;
+    }
+    const state = result.state || currentEngine.getState();
+    persist(state);
+    updateClock(state);
+    appendLine(output, result.result || action.label);
+    (result.events || []).forEach(notify);
+  }
+
   document.addEventListener("keydown", (event) => {
     const input = event.target.closest?.(".terminal-input");
     if (!input || event.key !== "Enter" || event.isComposing) return;
     const raw = input.value.trim();
-    const command = raw.split(/\s+/)[0]?.toLowerCase() || "";
-    if (!INTERCEPTED.has(command)) return;
+    const [command = "", ...parts] = raw.split(/\s+/);
+    const normalized = command.toLowerCase();
+    if (!INTERCEPTED.has(normalized)) return;
 
     const currentEngine = engine();
     const output = input.closest(".terminal")?.querySelector(".terminal-output");
@@ -99,12 +151,23 @@
     event.stopPropagation();
     event.stopImmediatePropagation();
     input.value = "";
+    appendLine(output, `${login()}@office:> ${raw}`);
+
+    if (normalized === "endday") {
+      root.UntilFridayDayEndControl?.open?.();
+      output.scrollTop = output.scrollHeight;
+      return;
+    }
+
+    if (normalized === "run") {
+      executeRun(parts.join(" "), currentEngine, output);
+      output.scrollTop = output.scrollHeight;
+      return;
+    }
 
     const before = currentEngine.getState();
-    appendLine(output, `${login()}@office:> ${raw}`);
-    appendLine(output, commandResult(command, currentEngine, before), command === "logs" ? "dim" : "");
-
-    const minutes = command === "actions" ? 3 : 1;
+    appendLine(output, commandResult(normalized, currentEngine, before), normalized === "logs" ? "dim" : "");
+    const minutes = normalized === "actions" ? 3 : 1;
     const result = currentEngine.advanceTime(minutes);
     const after = result.state || currentEngine.getState();
     persist(after);
@@ -116,6 +179,8 @@
   root.UntilFridayTerminalSync = {
     INTERCEPTED,
     commandResult,
+    actionError,
+    executeRun,
     formatTime,
     engine
   };
