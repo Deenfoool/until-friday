@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#23496c" />
+  <meta name="description" content="До пятницы — браузерная психологическая игра о последней рабочей неделе." />
+  <title>До пятницы</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <noscript>Для запуска игры требуется JavaScript.</noscript>
+
+  <main id="game" class="game" aria-label="Рабочий стол корпоративного компьютера">
+    <section id="boot-screen" class="boot-screen">
+      <div class="boot-dialogue" role="dialog" aria-modal="true" aria-labelledby="boot-title">
+        <p class="boot-caption">Пятница, 19:12. Коридор возле кабинета директора.</p>
+        <div id="boot-lines" class="boot-lines" aria-live="polite"></div>
+        <button id="boot-next" class="button primary" type="button">Продолжить</button>
+      </div>
+    </section>
+
+    <section id="desktop" class="desktop hidden" aria-label="Рабочий стол">
+      <div class="desktop-brand" aria-hidden="true">
+        <div class="desktop-brand__mark">К</div>
+        <div>
+          <strong>КОНТУР-СЕРВИС</strong>
+          <span>внутренняя сеть</span>
+        </div>
+      </div>
+
+      <div id="desktop-icons" class="desktop-icons" aria-label="Приложения"></div>
+      <div id="windows-layer" class="windows-layer"></div>
+      <div id="notifications" class="notifications" aria-live="polite"></div>
+
+      <footer class="taskbar">
+        <button id="start-button" class="start-button" type="button" aria-expanded="false">
+          <span class="start-logo">К</span>
+          <span>Пуск</span>
+        </button>
+        <div id="task-buttons" class="task-buttons" aria-label="Открытые окна"></div>
+        <button id="clock" class="clock" type="button" title="Завершить рабочий день">
+          <span id="clock-time">08:47</span>
+          <span id="clock-date">ПН, 3 АВГ</span>
+        </button>
+      </footer>
+
+      <aside id="start-menu" class="start-menu hidden" aria-label="Меню Пуск">
+        <header>
+          <div class="user-avatar">ИВ</div>
+          <div><strong>Илья Воронов</strong><span>Отдел сопровождения</span></div>
+        </header>
+        <div id="start-apps" class="start-apps"></div>
+        <footer>
+          <button id="save-button" type="button">Сохранить</button>
+          <button id="reset-button" type="button">Начать заново</button>
+        </footer>
+      </aside>
+    </section>
+  </main>
+
+  <template id="window-template">
+    <section class="app-window" role="dialog">
+      <header class="window-titlebar">
+        <div class="window-title"></div>
+        <div class="window-controls">
+          <button data-window-action="minimize" type="button" aria-label="Свернуть">_</button>
+          <button data-window-action="close" type="button" aria-label="Закрыть">×</button>
+        </div>
+      </header>
+      <div class="window-content"></div>
+      <footer class="window-status"></footer>
+    </section>
+  </template>
+
+  <script src="src/data.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>
