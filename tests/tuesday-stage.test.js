@@ -12,6 +12,10 @@ const source = read("src/tuesday-minigames.js");
 const guardSource = read("src/tuesday-event-guards.js");
 assert.doesNotThrow(() => new Function(source), "Tuesday minigame module must contain valid JavaScript");
 assert.doesNotThrow(() => new Function(guardSource), "Tuesday event guard must contain valid JavaScript");
+assert.doesNotMatch(source, /new\s+MutationObserver\s*\(/, "Tuesday minigames must use the application render lifecycle");
+assert.match(source, /until-friday-state-change/, "Tuesday cards must refresh after confirmed actions");
+assert.match(source, /until-friday-ui-render/, "Tuesday cards must be added after Tasks rendering");
+assert.match(source, /event\.detail\?\.appId === "tasks"/, "Tuesday lifecycle work must be scoped to the Tasks app");
 
 const story = {
   actions: {
@@ -24,7 +28,6 @@ const story = {
 
 const context = {
   UNTIL_FRIDAY_STORY: story,
-  MutationObserver: class MutationObserver { observe() {} },
   document: {
     querySelectorAll: () => [],
     addEventListener: () => {}
@@ -41,6 +44,7 @@ vm.runInNewContext(source, context, { filename: "tuesday-minigames.js" });
 vm.runInNewContext(guardSource, context, { filename: "tuesday-event-guards.js" });
 
 assert.ok(context.UntilFridayTuesdayMinigames, "Tuesday minigame API must be exported");
+assert.equal(typeof context.UntilFridayTuesdayMinigames.queueDecorate, "function", "Tuesday lifecycle refresh must be exported for diagnostics");
 assert.ok(story.events["tue-client-thanks"], "successful client response must schedule feedback");
 assert.ok(story.events["tue-client-escalation"], "delayed client response must schedule escalation");
 assert.ok(story.events["tue-accountant-thanks"], "accountant task must schedule a follow-up message");
