@@ -102,12 +102,34 @@
     }, Math.max(180, Number(duration) || 520));
   }
 
+  function pulseWindow(appWindow, label = "Обновление данных...", duration = 520) {
+    if (!appWindow?.isConnected) return;
+    const status = appWindow.querySelector(".window-status");
+    if (!status || status.dataset.programmaticLoading === "true") return;
+
+    const previousText = status.textContent;
+    status.dataset.programmaticLoading = "true";
+    status.setAttribute("aria-busy", "true");
+    status.replaceChildren(createLoadingRow(label, { compact: true, size: 14 }));
+
+    window.setTimeout(() => {
+      if (!status.isConnected || status.dataset.programmaticLoading !== "true") return;
+      delete status.dataset.programmaticLoading;
+      status.removeAttribute("aria-busy");
+      status.textContent = previousText;
+    }, Math.max(220, Number(duration) || 520));
+  }
+
   document.addEventListener("click", (event) => {
     const button = event.target.closest(
       "[data-mail-refresh], [data-task-refresh], [data-explorer-refresh]"
     );
-    if (button) pulseButton(button);
-  });
+    if (!button) return;
+
+    const appWindow = button.closest(".app-window");
+    pulseButton(button);
+    window.setTimeout(() => pulseWindow(appWindow), 0);
+  }, true);
 
   root.UntilFridayLoading = {
     SEGMENT_COUNT,
@@ -115,6 +137,7 @@
     createLoadingRow,
     showScreen,
     hideScreen,
-    pulseButton
+    pulseButton,
+    pulseWindow
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
