@@ -4,15 +4,14 @@
   const Story = root.UNTIL_FRIDAY_STORY;
   if (!Story || root.UntilFridayTerminalSync) return;
 
-  const SAVE_KEY = root.UntilFridayMigration?.ENGINE_SAVE_KEY || "until-friday-save-v2";
-  const STORAGE_TEST_KEY = "__until_friday_terminal_storage_test__";
   const INTERCEPTED = new Set(["status", "day", "tasks", "actions", "logs", "run", "endday"]);
 
+  function runtime() {
+    return root.UntilFridayRuntimeEngine || null;
+  }
+
   function engine() {
-    return root.UntilFridayPersistentEngineGuard?.getEngine?.()
-      || root.UntilFridayDayTransitionGuard?.getEngine?.()
-      || root.UntilFridayPassiveClock?.getEngine?.()
-      || null;
+    return runtime()?.getEngine?.() || null;
   }
 
   function formatTime(totalMinutes) {
@@ -58,20 +57,11 @@
       "choice-locked": "Для этой ситуации уже выбран другой вариант.",
       "focus-exhausted": "На сегодня не осталось времени для ещё одного крупного действия.",
       "workday-ended": "Рабочий день уже закончился. Введите endday.",
+      "not-enough-time": "До конца рабочего дня недостаточно времени для этого действия.",
       "save-failed": "Действие отменено: браузер не смог записать сохранение.",
       "action-exception": "Действие отменено из-за внутренней ошибки. Состояние не изменено."
     };
     return messages[reason] || "Действие недоступно.";
-  }
-
-  function storageWritable() {
-    try {
-      localStorage.setItem(STORAGE_TEST_KEY, "1");
-      localStorage.removeItem(STORAGE_TEST_KEY);
-      return true;
-    } catch {
-      return false;
-    }
   }
 
   function appendLine(output, text, className = "") {
@@ -82,15 +72,23 @@
   }
 
   function notify(event) {
+    if (!event) return;
+    const title = event.source || event.title || "Система";
+    const text = event.text || event.title || "Новое событие";
+    if (runtime()?.notify) {
+      runtime().notify(title, text);
+      return;
+    }
+
     const container = document.querySelector("#notifications");
-    if (!container || !event) return;
+    if (!container) return;
     const item = document.createElement("button");
     item.type = "button";
     item.className = "notification terminal-sync-notification";
     const strong = document.createElement("strong");
     const span = document.createElement("span");
-    strong.textContent = event.source || event.title || "Система";
-    span.textContent = event.text || event.title || "Новое событие";
+    strong.textContent = title;
+    span.textContent = text;
     item.append(strong, span);
     item.addEventListener("click", () => item.remove());
     container.appendChild(item);
@@ -98,8 +96,15 @@
   }
 
   function persist(state) {
+    const result = runtime()?.persist?.(state);
+    if (result?.ok) return true;
+    if (result) {
+      console.warn("Терминал не смог сохранить состояние", result.error || result.message);
+      return false;
+    }
+
     try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      localStorage.setItem("until-friday-save-v2", JSON.stringify(state));
       return true;
     } catch (error) {
       console.warn("Терминал не смог сохранить состояние", error);
@@ -121,18 +126,14 @@
       appendLine(output, "Команда может запускать только доступные terminal-действия. Введите actions.", "error");
       return;
     }
-    if (!storageWritable()) {
-      appendLine(output, "Локальное сохранение недоступно. Действие не выполнено.", "error");
-      return;
-    }
 
     const result = currentEngine.applyAction(argument);
     if (!result.ok) {
       appendLine(output, actionError(result.reason), "error");
       return;
     }
+
     const state = result.state || currentEngine.getState();
-    persist(state);
     updateClock(state);
     appendLine(output, result.result || action.label);
     (result.events || []).forEach(notify);
@@ -181,7 +182,7 @@
     const minutes = normalized === "actions" ? 3 : 1;
     const result = currentEngine.advanceTime(minutes);
     const after = result.state || currentEngine.getState();
-    persist(after);
+    if (!persist(after)) appendLine(output, "Время изменилось, но сохранить состояние не удалось.", "error");
     updateClock(after);
     (result.events || []).forEach(notify);
     output.scrollTop = output.scrollHeight;
