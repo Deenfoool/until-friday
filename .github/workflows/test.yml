@@ -20,14 +20,20 @@ jobs:
           node-version: 22
       - name: Run engine tests
         run: node tests/engine.test.js
-      - name: Validate story graph
+      - name: Validate base story graph
         run: node tests/story-validation.test.js
+      - name: Validate fully extended story graph
+        run: node tests/expanded-story-validation.test.js
       - name: Test hidden choice rules
         run: node tests/rules-extension.test.js
       - name: Validate save integrity repairs
         run: node tests/integrity-fixes.test.js
+      - name: Validate workday time boundaries
+        run: node tests/time-boundary.test.js
       - name: Validate browser UI contract
         run: node tests/ui-contract.test.js
+      - name: Validate runtime UI guards
+        run: node tests/runtime-ui-guards.test.js
       - name: Validate exclusive app startup
         run: node tests/bootstrap-guard.test.js
       - name: Validate desktop icon presentation
