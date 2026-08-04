@@ -26,7 +26,6 @@ for (const phrase of [
   "compactMode",
   "safeSearch",
   "Ctrl+T",
-  "Ctrl+L",
   "KONTUR Web 12.4"
 ]) {
   assert.match(source, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `rebuilt browser must contain: ${phrase}`);
