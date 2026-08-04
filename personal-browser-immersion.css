@@ -1,3 +1,9 @@
+.personal-browser-window:not([data-browser-immersive="true"]) .window-title,
+.personal-browser-window:not([data-browser-immersive="true"]) .window-content,
+.personal-browser-window:not([data-browser-immersive="true"]) .window-status {
+  visibility: hidden;
+}
+
 .personal-browser-window[data-browser-immersive="true"] .browser-time-card {
   display: none !important;
 }
