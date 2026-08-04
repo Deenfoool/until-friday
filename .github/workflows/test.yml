@@ -72,6 +72,8 @@ jobs:
         run: node tests/marketplace-parody.test.js
       - name: Validate full VideoLenta platform
         run: node tests/video-platform-parody.test.js
+      - name: Validate browser clock stability and VideoLenta routing
+        run: node tests/browser-render-stability.test.js
       - name: Validate passive game clock
         run: node tests/passive-clock.test.js
       - name: Validate notification history
