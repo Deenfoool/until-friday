@@ -68,6 +68,8 @@ jobs:
         run: node tests/personal-browser.test.js
       - name: Validate single-source browser UI v3
         run: node tests/personal-browser-ui-v3.test.js
+      - name: Open Videotok directly from browser
+        run: node tests/browser-videotok-open.test.js
       - name: Validate populated Kupitut marketplace
         run: node tests/marketplace-parody.test.js
       - name: Validate clean Videotok hosting
