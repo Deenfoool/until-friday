@@ -62,6 +62,8 @@ jobs:
         run: node tests/bootstrap-guard.test.js
       - name: Validate desktop icon presentation
         run: node tests/desktop-icons.test.js
+      - name: Validate full-size resizable windows
+        run: node tests/window-layout.test.js
       - name: Validate passive game clock
         run: node tests/passive-clock.test.js
       - name: Validate notification history
