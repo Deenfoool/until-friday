@@ -50,38 +50,31 @@
 
   document.addEventListener("click", (event) => {
     const videoPageLink = event.target.closest?.('[data-rb-page="video"]');
-    if (videoPageLink) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      openVideoAddress();
-      return;
-    }
-
     const storedAddress = event.target.closest?.("[data-rb-address-value]")?.dataset?.rbAddressValue;
-    if (isVideoAddress(storedAddress)) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      openVideoAddress(storedAddress, "ВидеоЛента");
+
+    if (videoPageLink || isVideoAddress(storedAddress)) {
+      root.setTimeout?.(settleVideoRoute, 0);
       return;
     }
 
-    if (event.target.closest?.(".personal-browser-window")) settleVideoRoute();
-  }, true);
+    if (event.target.closest?.(".personal-browser-window") && isVideoAddress()) {
+      root.setTimeout?.(settleVideoRoute, 0);
+    }
+  });
 
   document.addEventListener("submit", (event) => {
     const addressForm = event.target.closest?.("[data-rb-address]");
-    if (addressForm) {
-      const value = addressForm.querySelector("input")?.value || "";
-      if (isVideoAddress(value)) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        openVideoAddress(value, "ВидеоЛента");
-        return;
-      }
+    const submittedAddress = addressForm?.querySelector("input")?.value || "";
+
+    if (isVideoAddress(submittedAddress)) {
+      root.setTimeout?.(settleVideoRoute, 0);
+      return;
     }
 
-    if (event.target.closest?.(".personal-browser-window")) settleVideoRoute();
-  }, true);
+    if (event.target.closest?.(".personal-browser-window") && isVideoAddress()) {
+      root.setTimeout?.(settleVideoRoute, 0);
+    }
+  });
 
   root.addEventListener?.("until-friday-app-ready", settleVideoRoute);
   root.addEventListener?.("until-friday-ui-render", (event) => {
