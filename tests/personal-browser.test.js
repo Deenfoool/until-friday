@@ -114,8 +114,10 @@ assert.deepEqual(state, beforeFailure);
 engine.updateState = originalUpdate;
 
 const html = read("index.html");
-assert.match(html, /src\/personal-browser-core\.js\?v=20260804-7/);
-assert.doesNotMatch(html, /src\/personal-browser\.js/);
+assert.match(html, /src\/personal-browser-core\.js\?v=20260804-8/);
+assert.match(html, /personal-browser-core\.css\?v=20260804-8/);
+assert.match(html, /browser-shell\.css\?v=20260804-8/);
+assert.doesNotMatch(html, /src\/personal-browser\.js|personal-browser\.css|personal-browser-ui-v2\.css/);
 assert.ok(html.indexOf("src/window-layout.js") < html.indexOf("src/personal-browser-core.js") && html.indexOf("src/personal-browser-core.js") < html.indexOf("src/bootstrap.js"));
 
 console.log("Clean personal browser core validation passed.");
