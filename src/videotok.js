@@ -7,7 +7,6 @@
   const ICON = "https://img.icons8.com/fluency-systems-regular";
   const icon = (name, size = 24) => `${ICON}/${size}/${name}.png`;
   const FALLBACK_THUMB = "https://img.icons8.com/fluency/240/video.png";
-  const FALLBACK_AVATAR = "https://img.icons8.com/fluency/96/test-account.png";
 
   const CATEGORY_LABELS = {
     all: "Все",
@@ -208,7 +207,7 @@
 
   function videoCard(video, state) {
     const later = state.later.includes(video.id);
-    return `<article class="vtk-card"><button class="vtk-card-open" data-vtk-watch="${video.id}">${thumb(video)}<section><div class="vtk-avatar-letter">${esc(video.channelName.slice(0, 1))}</div><div><h3>${esc(video.title)}</h3><button class="vtk-channel-link" data-vtk-channel="${video.channelId}">${esc(video.channelName)}</button><p>${esc(video.views)} · ${esc(video.published)}</p></div></section></button><button class="vtk-later ${later ? "active" : ""}" data-vtk-later="${video.id}" title="Смотреть позже"><img src="${icon(later ? "checked-checkbox" : "clock")}" alt=""></button></article>`;
+    return `<article class="vtk-card"><button class="vtk-card-open" data-vtk-watch="${video.id}">${thumb(video)}<section><div class="vtk-avatar-letter">${esc(video.channelName.slice(0, 1))}</div><div><h3>${esc(video.title)}</h3><span class="vtk-channel-link" data-vtk-channel="${video.channelId}">${esc(video.channelName)}</span><p>${esc(video.views)} · ${esc(video.published)}</p></div></section></button><button class="vtk-later ${later ? "active" : ""}" data-vtk-later="${video.id}" title="Смотреть позже"><img src="${icon(later ? "checked-checkbox" : "clock")}" alt=""></button></article>`;
   }
 
   function sidebar(route, state) {
@@ -233,7 +232,7 @@
     if (!video) return `<div class="vtk-empty"><h2>Ролик не найден</h2><button data-vtk-route="home">На главную</button></div>`;
     const channel = CHANNEL_BY_ID[video.channelId];
     const related = VIDEOS.filter((item) => item.id !== video.id).sort((a, b) => Number(b.category === video.category) - Number(a.category === video.category)).slice(0, 12);
-    return `<div class="vtk-watch"><main><div class="vtk-player">${thumb(video, "player")}<button data-vtk-play="${video.id}"><img src="${icon("play", 64)}" alt=""><span>Воспроизвести</span></button><div class="vtk-controls"><span></span><small>00:00 / ${esc(video.duration)}</small></div></div><h1>${esc(video.title)}</h1><div class="vtk-watch-actions"><button data-vtk-channel="${channel.id}" class="vtk-author"><span>${esc(channel.name.slice(0, 1))}</span><div><b>${esc(channel.name)}</b><small>${esc(channel.subscribers)} подписчиков</small></div></button><button data-vtk-subscribe="${channel.id}" class="${state.subscriptions.includes(channel.id) ? "active" : ""}">${state.subscriptions.includes(channel.id) ? "Вы подписаны" : "Подписаться"}</button><button data-vtk-like="${video.id}" class="${state.liked.includes(video.id) ? "active" : ""}"><img src="${icon("facebook-like")}" alt="">Нравится</button><button data-vtk-later="${video.id}" class="${state.later.includes(video.id) ? "active" : ""}"><img src="${icon("clock")}" alt="">Смотреть позже</button></div><section class="vtk-description"><b>${esc(video.views)} · ${esc(video.published)}</b><p>Новый выпуск канала «${esc(channel.name)}». Описание автор обещал дописать после работы.</p></section><section class="vtk-comments"><h2>Комментарии</h2>${["Наконец-то нормальное объяснение.", "Смотрю это вместо работы.", "Автор, сделай продолжение.", "У меня было ровно так же."].map((text, index) => `<article><span>${["А","М","И","К"][index]}</span><div><b>@пользователь${index + 17}</b><p>${text}</p></div></article>`).join("")}</section></main><aside><h2>Следующие видео</h2>${related.map((item) => `<button data-vtk-watch="${item.id}">${thumb(item, "small")}<div><b>${esc(item.title)}</b><small>${esc(item.channelName)}</small><span>${esc(item.views)}</span></div></button>`).join("")}</aside></div>`;
+    return `<div class="vtk-watch"><main><div class="vtk-player">${thumb(video, "player")}<button data-vtk-play="${video.id}"><img src="${icon("play", 64)}" alt=""><span>Воспроизвести</span></button><div class="vtk-controls"><span></span><small>00:00 / ${esc(video.duration)}</small></div></div><h1>${esc(video.title)}</h1><div class="vtk-watch-actions"><button data-vtk-channel="${channel.id}" class="vtk-author"><span>${esc(channel.name.slice(0, 1))}</span><div><b>${esc(channel.name)}</b><small>${esc(channel.subscribers)} подписчиков</small></div></button><button data-vtk-subscribe="${channel.id}" class="${state.subscriptions.includes(channel.id) ? "active" : ""}">${state.subscriptions.includes(channel.id) ? "Вы подписаны" : "Подписаться"}</button><button data-vtk-like="${video.id}" class="${state.liked.includes(video.id) ? "active" : ""}"><img src="${icon("facebook-like")}" alt="">Нравится</button><button data-vtk-later="${video.id}" class="${state.later.includes(video.id) ? "active" : ""}"><img src="${icon("clock")}" alt="">Смотреть позже</button></div><section class="vtk-description"><b>${esc(video.views)} · ${esc(video.published)}</b><p>Новый выпуск канала «${esc(channel.name)}». Описание автор обещал дописать после работы.</p></section><section class="vtk-comments"><h2>Комментарии</h2>${["Наконец-то нормальное объяснение.", "Смотрю это вместо работы.", "Автор, сделай продолжение.", "У меня было ровно так же."].map((text, index) => `<article><span>${["А", "М", "И", "К"][index]}</span><div><b>@пользователь${index + 17}</b><p>${text}</p></div></article>`).join("")}</section></main><aside><h2>Следующие видео</h2>${related.map((item) => `<button data-vtk-watch="${item.id}">${thumb(item, "small")}<div><b>${esc(item.title)}</b><small>${esc(item.channelName)}</small><span>${esc(item.views)}</span></div></button>`).join("")}</aside></div>`;
   }
 
   function channelPage(channel, state) {
@@ -270,7 +269,7 @@
     const state = normalize(context.personal);
     const selectedCategory = context.selectedCategory || "all";
     container.innerHTML = `<section class="vtk-app">${header(route)}${sidebar(route, state)}<main class="vtk-content">${content(route, state, selectedCategory)}</main></section>`;
-    bind(container, context, state);
+    bind(container, context);
     return true;
   }
 
@@ -282,14 +281,15 @@
     }, reason);
   }
 
-  function bind(container, context, state) {
-    container.querySelectorAll("[data-vtk-route]").forEach((button) => button.addEventListener("click", () => context.navigate(routeUrl(button.dataset.vtkRoute), `Видеоток`)));
+  function bind(container, context) {
+    container.querySelectorAll("[data-vtk-route]").forEach((button) => button.addEventListener("click", () => context.navigate(routeUrl(button.dataset.vtkRoute), "Видеоток")));
     container.querySelectorAll("[data-vtk-watch]").forEach((button) => button.addEventListener("click", () => {
       const video = VIDEO_BY_ID[button.dataset.vtkWatch];
       if (video) context.navigate(`${ROUTES.watch}${video.id}`, `${video.title} — Видеоток`);
     }));
-    container.querySelectorAll("[data-vtk-channel]").forEach((button) => button.addEventListener("click", () => {
-      const channel = CHANNEL_BY_ID[button.dataset.vtkChannel];
+    container.querySelectorAll("[data-vtk-channel]").forEach((element) => element.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const channel = CHANNEL_BY_ID[element.dataset.vtkChannel];
       if (channel) context.navigate(`${ROUTES.channel}${channel.id}`, `${channel.name} — Видеоток`);
     }));
     container.querySelector("[data-vtk-search]")?.addEventListener("submit", (event) => {
@@ -331,7 +331,6 @@
       });
     }));
     container.querySelectorAll("img[data-vtk-thumb]").forEach((image) => image.addEventListener("error", () => { image.onerror = null; image.src = FALLBACK_THUMB; }, { once: true }));
-    container.querySelectorAll("img[data-vtk-avatar]").forEach((image) => image.addEventListener("error", () => { image.onerror = null; image.src = FALLBACK_AVATAR; }, { once: true }));
   }
 
   root.UntilFridayVideotok = {
