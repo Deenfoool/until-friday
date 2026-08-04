@@ -9,8 +9,7 @@
   const wrappedListeners = new WeakMap();
 
   function isPassiveClockTick(event) {
-    const detail = event?.detail || {};
-    return detail.reason === "time" && !(Array.isArray(detail.events) && detail.events.length);
+    return event?.detail?.reason === "time";
   }
 
   function gatedAddEventListener(type, listener, options) {
