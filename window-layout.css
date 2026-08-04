@@ -1,0 +1,89 @@
+.app-window.window-layout-managed {
+  max-width: calc(100vw - 12px);
+  max-height: calc(100vh - var(--taskbar-height) - 12px);
+}
+
+.app-window.window-layout-managed.window-maximized {
+  box-shadow: 2px 3px 12px rgba(0, 0, 0, .3);
+}
+
+.window-controls .window-layout-maximize {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.window-resize-grip {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  z-index: 20;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  opacity: .55;
+  background:
+    linear-gradient(135deg, transparent 0 45%, #788792 46% 52%, transparent 53% 62%, #788792 63% 69%, transparent 70% 79%, #788792 80% 86%, transparent 87%);
+}
+
+.app-window.focused .window-resize-grip {
+  opacity: .85;
+}
+
+body.window-resizing,
+body.window-resizing * {
+  user-select: none !important;
+}
+
+.desktop-app-window > .window-content {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.desktop-app-window[data-window-id="mail"] .mail-layout {
+  height: calc(100% - 36px);
+}
+
+.desktop-app-window[data-window-id="tasks"] .task-list {
+  height: calc(100% - 36px);
+  overflow: auto;
+  align-content: start;
+}
+
+.desktop-app-window[data-window-id="trash"] .trash-list {
+  height: 100%;
+  overflow: auto;
+}
+
+@media (min-width: 1000px) {
+  .desktop-app-window[data-window-id="tasks"] .task-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .desktop-app-window[data-window-id="tasks"] .task-card {
+    margin-bottom: 0;
+  }
+
+  .desktop-app-window[data-window-id="tasks"] .empty-state {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1600px) {
+  .desktop-app-window[data-window-id="tasks"] .task-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .window-controls .window-layout-maximize,
+  .window-resize-grip {
+    display: none;
+  }
+
+  .app-window.window-layout-managed {
+    cursor: default !important;
+  }
+}
