@@ -89,7 +89,7 @@
     Runtime.__personalBrowserImmersiveNotify = true;
     Runtime.notify = function immersiveNotify(title, text) {
       if (title === "Личное время") return;
-      return ORIGINAL_NOTIFY(title, stripGameTiming(text));
+      return ORIGINAL_NOTIFY(title, text);
     };
   }
 
