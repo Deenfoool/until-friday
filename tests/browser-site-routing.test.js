@@ -11,6 +11,7 @@ const gateSource = read("src/browser-site-listener-gate.js");
 const closeSource = read("src/browser-site-listener-gate-close.js");
 const routerSource = read("src/browser-site-router.js");
 const notifySource = read("src/personal-browser-notification-guard.js");
+const baseUiSource = read("src/personal-browser-ui-v2.js");
 
 for (const [name, source] of [
   ["site listener gate", gateSource],
@@ -25,6 +26,7 @@ for (const [name, source] of [
 assert.doesNotMatch(routerSource, /preventDefault\s*\(|stopImmediatePropagation/, "site router must never block normal browser navigation");
 assert.match(routerSource, /NAVIGATION_SELECTOR/, "site router must react only to browser navigation controls");
 assert.doesNotMatch(routerSource, /closest\?\.\(\"\.personal-browser-window\"\)/, "site router must not rerender after arbitrary clicks inside the browser");
+assert.match(baseUiSource, /\.personal-browser-window, \[data-personal-browser-launcher\]/, "base UI contains the broad click listener that must be gated during load");
 
 const forwarded = [];
 function originalAdd(type, listener, options) {
@@ -128,12 +130,13 @@ for (const obsolete of [
   assert.doesNotMatch(index, new RegExp(obsolete.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `${obsolete} must stay disconnected`);
 }
 assert.ok(
-  index.indexOf("src/personal-browser-ui-v2.js") < index.indexOf("src/browser-site-listener-gate.js") &&
-  index.indexOf("src/browser-site-listener-gate.js") < index.indexOf("src/marketplace-parody.js") &&
+  index.indexOf("src/personal-browser.js") < index.indexOf("src/browser-site-listener-gate.js") &&
+  index.indexOf("src/browser-site-listener-gate.js") < index.indexOf("src/personal-browser-ui-v2.js") &&
+  index.indexOf("src/personal-browser-ui-v2.js") < index.indexOf("src/marketplace-parody.js") &&
   index.indexOf("src/marketplace-parody.js") < index.indexOf("src/video-platform-parody.js") &&
   index.indexOf("src/video-platform-runtime-fixes.js") < index.indexOf("src/browser-site-listener-gate-close.js") &&
   index.indexOf("src/browser-site-listener-gate-close.js") < index.indexOf("src/browser-site-router.js"),
-  "site listener gate and router must wrap the site modules in one deterministic order"
+  "site listener gate must wrap the base UI and both site modules before the unified router"
 );
 
 console.log("Direct Kupitut and VideoLenta routing validation passed.");
