@@ -66,9 +66,11 @@ jobs:
         run: node tests/window-layout.test.js
       - name: Validate clean personal browser core
         run: node tests/personal-browser.test.js
-      - name: Validate single-source browser UI v3
-        run: node tests/personal-browser-ui-v3.test.js
-      - name: Open Videotok directly from browser
+      - name: Validate browser UI v4
+        run: node tests/personal-browser-ui-v4.test.js
+      - name: Validate functional MIN messenger
+        run: node tests/min-messenger.test.js
+      - name: Open Videotok through browser UI v4
         run: node tests/browser-videotok-open.test.js
       - name: Validate populated Kupitut marketplace
         run: node tests/marketplace-parody.test.js
