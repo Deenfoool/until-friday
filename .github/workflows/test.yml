@@ -72,6 +72,8 @@ jobs:
         run: node tests/min-messenger.test.js
       - name: Validate MIN peer-to-peer network
         run: node tests/min-messenger-p2p.test.js
+      - name: Validate standalone desktop MIN
+        run: node tests/min-desktop-integration.test.js
       - name: Open Videotok through browser UI v4
         run: node tests/browser-videotok-open.test.js
       - name: Validate populated Kupitut marketplace
