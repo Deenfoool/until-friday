@@ -27,7 +27,7 @@ for (const phrase of [
   "listActions?.(\"chat\")",
   "applyAction(actionId)",
   "data-min-story-actions",
-  "data-min-desktop-launcher",
+  "minDesktopLauncher",
   "data-min-desktop-badge",
   "data-rb-page=\"min\"",
   "data-rb-address-value*=\"min.local\"",
