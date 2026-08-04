@@ -11,6 +11,8 @@ const source = read("src/videotok.js");
 
 assert.doesNotThrow(() => new Function(source), "Videotok module must parse");
 assert.doesNotMatch(source, /ВидеоЛента|video\.local|UntilFridayVideoPlatform|document\.addEventListener/, "Videotok must be independent from the deleted VideoLenta stack and global click listeners");
+assert.doesNotMatch(source, /<button class="vtk-channel-link"/, "video cards must not contain a channel button nested inside a video button");
+assert.match(source, /event\.stopPropagation\(\)/, "channel and Watch Later clicks must not also open the video card");
 
 const browser = { performActivity: () => ({ ok: true }) };
 const context = { UntilFridayPersonalBrowser: browser, URL, console };
@@ -68,8 +70,8 @@ const css = read("videotok.css");
 for (const phrase of [".vtk-top", ".vtk-sidebar", ".vtk-grid", ".vtk-watch", ".vtk-channel", "@media(max-width:620px)"]) assert.match(css, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 
 const html = read("index.html");
-assert.match(html, /videotok\.css\?v=20260804-7/);
-assert.match(html, /src\/videotok\.js\?v=20260804-7/);
+assert.match(html, /videotok\.css\?v=20260804-8/);
+assert.match(html, /src\/videotok\.js\?v=20260804-8/);
 assert.doesNotMatch(html, /video-platform|video-content-pack|video-route-hardener|browser-direct-site-navigation|ВидеоЛента|video\.local/);
 
 console.log("Clean Videotok hosting validation passed.");
