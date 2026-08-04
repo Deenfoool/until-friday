@@ -149,10 +149,12 @@ for (const file of [
   "src/video-platform-runtime-fixes.js"
 ]) assert.match(html, new RegExp(file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `${file} must be connected`);
 assert.ok(
+  html.indexOf("src/browser-site-listener-gate.js") < html.indexOf("src/video-content-pack.js") &&
   html.indexOf("src/video-content-pack.js") < html.indexOf("src/video-platform-parody.js") &&
   html.indexOf("src/video-platform-parody.js") < html.indexOf("src/video-platform-runtime-fixes.js") &&
-  html.indexOf("src/video-platform-runtime-fixes.js") < html.indexOf("src/personal-browser-diegetic-guard.js"),
-  "video modules must load in data, platform, fixes order"
+  html.indexOf("src/video-platform-runtime-fixes.js") < html.indexOf("src/browser-site-listener-gate-close.js") &&
+  html.indexOf("src/browser-site-listener-gate-close.js") < html.indexOf("src/browser-site-router.js"),
+  "video modules must load inside the shared listener gate and before the unified router"
 );
 
 console.log("Full VideoLenta parody platform validation passed.");
