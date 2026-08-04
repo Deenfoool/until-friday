@@ -90,11 +90,13 @@ for (const phrase of [
 const html = read("index.html");
 assert.match(html, /marketplace-parody\.css/, "marketplace stylesheet must be connected");
 assert.match(html, /src\/marketplace-parody\.js/, "marketplace module must be connected");
+assert.match(html, /src\/browser-direct-site-navigation\.js/, "direct site navigation must be connected");
+assert.doesNotMatch(html, /src\/browser-site-router\.js/, "obsolete address-guessing router must stay disconnected");
 assert.ok(
   html.indexOf("src/browser-site-listener-gate.js") < html.indexOf("src/marketplace-parody.js") &&
   html.indexOf("src/marketplace-parody.js") < html.indexOf("src/browser-site-listener-gate-close.js") &&
-  html.indexOf("src/browser-site-listener-gate-close.js") < html.indexOf("src/browser-site-router.js"),
-  "marketplace must load inside the shared site listener gate and before the unified router"
+  html.indexOf("src/browser-site-listener-gate-close.js") < html.indexOf("src/browser-direct-site-navigation.js"),
+  "marketplace must load inside the listener gate and before direct page navigation"
 );
 
 console.log("Kupitut marketplace parody validation passed.");
