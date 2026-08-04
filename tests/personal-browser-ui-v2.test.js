@@ -8,10 +8,10 @@ const vm = require("node:vm");
 const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const source = read("src/personal-browser-ui-v2.js");
-const guardSource = read("src/personal-browser-diegetic-guard.js");
+const guardSource = read("src/personal-browser-notification-guard.js");
 
 assert.doesNotThrow(() => new Function(source), "rebuilt browser UI must contain valid JavaScript");
-assert.doesNotThrow(() => new Function(guardSource), "browser diegetic guard must contain valid JavaScript");
+assert.doesNotThrow(() => new Function(guardSource), "browser notification guard must contain valid JavaScript");
 assert.doesNotMatch(source, /new\s+MutationObserver\s*\(/, "browser UI must use lifecycle events");
 
 for (const phrase of [
@@ -76,18 +76,11 @@ const guardContext = {
   UntilFridayRuntimeEngine: {
     notify(title, text) { notices.push({ title, text }); }
   },
-  UntilFridayPersonalBrowserUIV2: { schedule() {} },
-  document: {
-    querySelector: () => null,
-    addEventListener() {}
-  },
-  addEventListener() {},
-  setTimeout(callback) { callback(); },
   console
 };
 guardContext.window = guardContext;
 guardContext.globalThis = guardContext;
-vm.runInNewContext(guardSource, guardContext, { filename: "personal-browser-diegetic-guard.js" });
+vm.runInNewContext(guardSource, guardContext, { filename: "personal-browser-notification-guard.js" });
 guardContext.UntilFridayRuntimeEngine.notify("Личное время", "Просмотрено видео · 10 мин.");
 assert.equal(notices.length, 0, "browser timing meta notification must remain hidden");
 guardContext.UntilFridayRuntimeEngine.notify("Почта", "Новое письмо");
@@ -112,13 +105,16 @@ for (const phrase of [
 const html = read("index.html");
 assert.match(html, /personal-browser-ui-v2\.css/, "rebuilt browser stylesheet must be connected");
 assert.match(html, /src\/personal-browser-ui-v2\.js/, "rebuilt browser UI must be connected");
-assert.match(html, /src\/personal-browser-diegetic-guard\.js/, "browser diegetic guard must be connected");
+assert.match(html, /src\/personal-browser-notification-guard\.js/, "browser notification guard must be connected");
+assert.match(html, /src\/browser-site-router\.js/, "unified site router must be connected");
 assert.doesNotMatch(html, /personal-browser-immersion/, "obsolete immersion patch must stay removed");
+assert.doesNotMatch(html, /personal-browser-diegetic-guard/, "obsolete routing guard must stay disconnected");
 assert.ok(
   html.indexOf("src/personal-browser.js") < html.indexOf("src/personal-browser-ui-v2.js") &&
-  html.indexOf("src/personal-browser-ui-v2.js") < html.indexOf("src/personal-browser-diegetic-guard.js") &&
-  html.indexOf("src/personal-browser-diegetic-guard.js") < html.indexOf("src/bootstrap.js"),
-  "browser modules must load in mechanics, UI, guard order"
+  html.indexOf("src/personal-browser-ui-v2.js") < html.indexOf("src/personal-browser-notification-guard.js") &&
+  html.indexOf("src/personal-browser-notification-guard.js") < html.indexOf("src/browser-site-router.js") &&
+  html.indexOf("src/browser-site-router.js") < html.indexOf("src/bootstrap.js"),
+  "browser modules must load in mechanics, UI, notification guard, router order"
 );
 
 console.log("Rebuilt personal browser UI validation passed.");
