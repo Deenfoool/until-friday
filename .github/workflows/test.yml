@@ -64,6 +64,8 @@ jobs:
         run: node tests/desktop-icons.test.js
       - name: Validate full-size resizable windows
         run: node tests/window-layout.test.js
+      - name: Validate five-day office work task pack
+        run: node tests/office-work-pack.test.js
       - name: Validate clean personal browser core
         run: node tests/personal-browser.test.js
       - name: Validate browser UI v4
