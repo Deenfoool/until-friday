@@ -52,8 +52,9 @@
       if (/игровых минут/i.test(paragraph.textContent)) paragraph.remove();
     });
 
+    const historyPage = Boolean(page.querySelector(".browser-history-list"));
     page.querySelectorAll(".browser-network-warning").forEach((notice) => {
-      notice.textContent = notice.closest(".browser-history-list")
+      notice.textContent = historyPage
         ? "Локальная история хранится в профиле этого браузера."
         : "Соединение проходит через корпоративный шлюз OFFICE-LAN.";
     });
@@ -80,7 +81,8 @@
   function queuePatch() {
     if (patchQueued) return;
     patchQueued = true;
-    root.requestAnimationFrame?.(patchBrowser) || root.setTimeout?.(patchBrowser, 0);
+    if (typeof root.requestAnimationFrame === "function") root.requestAnimationFrame(patchBrowser);
+    else root.setTimeout?.(patchBrowser, 0);
   }
 
   if (Runtime && ORIGINAL_NOTIFY && !Runtime.__personalBrowserImmersiveNotify) {
