@@ -39,7 +39,7 @@ assert.match(source, /connection\.on\("open"/);
 assert.match(source, /connection\.on\("data"/);
 assert.match(source, /currentCall\.on\("stream"/);
 assert.match(source, /call\.answer\(localStream\)/);
-assert.match(source, /record\.blob/);
+assert.match(source, /record\?\.blob/);
 assert.match(source, /item\.blob instanceof Blob/);
 assert.match(source, /setInterval\(syncOutgoing, 700\)/);
 assert.match(source, /stopImmediatePropagation\(\)/, "P2P calls must suppress the local-only call preview for connected chats");
