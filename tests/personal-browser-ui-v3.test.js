@@ -57,9 +57,10 @@ assert.equal(api.pageFromAddress("https://video.local/"), null, "deleted video.l
 assert.doesNotThrow(() => api.navigateAddress("https://videotok.local/"));
 
 const html = read("index.html");
-assert.match(html, /src\/personal-browser-ui-v3\.js\?v=20260804-7/);
-assert.match(html, /personal-browser-ui-v3\.css\?v=20260804-7/);
-assert.doesNotMatch(html, /personal-browser-ui-v2\.js/);
+assert.match(html, /src\/personal-browser-ui-v3\.js\?v=20260804-8/);
+assert.match(html, /personal-browser-ui-v3\.css\?v=20260804-8/);
+assert.match(html, /browser-shell\.css\?v=20260804-8/);
+assert.doesNotMatch(html, /personal-browser-ui-v2\.js|personal-browser-ui-v2\.css/);
 assert.ok(
   html.indexOf("src/videotok.js") < html.indexOf("src/personal-browser-ui-v3.js") &&
   html.indexOf("src/marketplace-parody.js") < html.indexOf("src/personal-browser-ui-v3.js") &&
