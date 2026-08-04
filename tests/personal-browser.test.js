@@ -105,7 +105,7 @@ assert.equal(api.PRODUCTS.length >= 6, true, "marketplace must contain items acr
 assert.equal(api.VIDEOS.length >= 6, true, "video feed must contain items across the week");
 assert.equal(api.MESSAGES.length >= 6, true, "personal messages must span the week");
 
-const defaultState = api.createDefaultPersonalState();
+const defaultState = clone(api.createDefaultPersonalState());
 assert.equal(defaultState.balance, 8420);
 assert.deepEqual(defaultState.history, []);
 assert.deepEqual(defaultState.replies, {});
@@ -143,15 +143,15 @@ assert.equal(state.stats.suspicion, 1, "forty-five personal minutes must create 
 assert.ok(state.metadata.personalBrowser.excessiveDays.includes(0));
 assert.equal(state.flags.personalBrowsingExcessive, true);
 
-const normalized = api.normalizePersonalState({
+const normalized = clone(api.normalizePersonalState({
   favorites: ["a", "a", "b"],
   history: [{ id: "old" }],
   dailyMinutes: { 0: 12 }
-});
-assert.deepEqual(Array.from(normalized.favorites), ["a", "b"]);
+}));
+assert.deepEqual(normalized.favorites, ["a", "b"]);
 assert.equal(normalized.dailyMinutes[0], 12);
 
-const visible = api.visibleHistory({
+const visible = clone(api.visibleHistory({
   ...api.createDefaultPersonalState(),
   clearedBefore: { dayIndex: 1, minute: 600 },
   history: [
@@ -160,8 +160,8 @@ const visible = api.visibleHistory({
     { id: "after", dayIndex: 1, minute: 610 },
     { id: "future", dayIndex: 2, minute: 500 }
   ]
-});
-assert.deepEqual(Array.from(visible, (item) => item.id), ["after", "future"], "cleared history must hide all earlier visits");
+}));
+assert.deepEqual(visible.map((item) => item.id), ["after", "future"], "cleared history must hide all earlier visits");
 
 const beforeFailure = clone(state);
 const originalUpdate = engine.updateState;
