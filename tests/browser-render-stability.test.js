@@ -42,9 +42,9 @@ const gatedListener = registered.get("until-friday-state-change")[0];
 gatedListener({ detail: { reason: "time", events: [] } });
 assert.equal(stateCalls, 0, "plain passive clock tick must not rerender browser modules");
 gatedListener({ detail: { reason: "time", events: [{ id: "mail-arrived" }] } });
-assert.equal(stateCalls, 1, "clock events with delivered content must still refresh browser modules");
+assert.equal(stateCalls, 0, "clock delivery events must not replace an open browser page either");
 gatedListener({ detail: { reason: "personal-browser-activity" } });
-assert.equal(stateCalls, 2, "browser state changes must still refresh browser modules");
+assert.equal(stateCalls, 1, "browser state changes must still refresh browser modules");
 
 vm.runInNewContext(closeSource, gateContext, { filename: "browser-state-render-gate-close.js" });
 assert.equal(gateContext.addEventListener, originalAddEventListener, "global listener registration must be restored after browser modules load");
