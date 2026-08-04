@@ -72,6 +72,8 @@ jobs:
         run: node tests/marketplace-parody.test.js
       - name: Validate full VideoLenta platform
         run: node tests/video-platform-parody.test.js
+      - name: Smoke test real VideoLenta rendering
+        run: node tests/video-platform-render-smoke.test.js
       - name: Validate direct browser site routing
         run: node tests/browser-site-routing.test.js
       - name: Validate passive game clock
