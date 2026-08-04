@@ -70,8 +70,9 @@ const css = read("videotok.css");
 for (const phrase of [".vtk-top", ".vtk-sidebar", ".vtk-grid", ".vtk-watch", ".vtk-channel", "@media(max-width:620px)"]) assert.match(css, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 
 const html = read("index.html");
-assert.match(html, /videotok\.css\?v=20260804-8/);
-assert.match(html, /src\/videotok\.js\?v=20260804-8/);
-assert.doesNotMatch(html, /video-platform|video-content-pack|video-route-hardener|browser-direct-site-navigation|ВидеоЛента|video\.local/);
+assert.match(html, /videotok\.css\?v=20260804-9/);
+assert.match(html, /src\/videotok\.js\?v=20260804-9/);
+assert.match(html, /src\/personal-browser-ui-v4\.js\?v=20260804-9/);
+assert.doesNotMatch(html, /video-platform|video-content-pack|video-route-hardener|browser-direct-site-navigation|ВидеоЛента|video\.local|personal-browser-ui-v3\.js/);
 
-console.log("Clean Videotok hosting validation passed.");
+console.log("Clean Videotok hosting validation passed with browser UI v4.");
