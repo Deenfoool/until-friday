@@ -121,11 +121,12 @@ assert.deepEqual(state, beforeFailure);
 engine.updateState = originalUpdate;
 
 const html = read("index.html");
-assert.match(html, /src\/personal-browser-core\.js\?v=20260804-9/);
-assert.match(html, /personal-browser-core\.css\?v=20260804-9/);
-assert.match(html, /browser-shell\.css\?v=20260804-9/);
-assert.match(html, /src\/min-messenger\.js\?v=20260804-9/);
-assert.match(html, /src\/personal-browser-ui-v4\.js\?v=20260804-9/);
+assert.match(html, /src\/personal-browser-core\.js\?v=20260804-10/);
+assert.match(html, /personal-browser-core\.css\?v=20260804-10/);
+assert.match(html, /browser-shell\.css\?v=20260804-10/);
+assert.match(html, /src\/min-messenger\.js\?v=20260804-10/);
+assert.match(html, /src\/min-messenger-p2p\.js\?v=20260804-10/);
+assert.match(html, /src\/personal-browser-ui-v4\.js\?v=20260804-10/);
 assert.doesNotMatch(html, /src\/personal-browser\.js|personal-browser-ui-v3\.js|personal-browser-ui-v3\.css/);
 assert.ok(html.indexOf("src/window-layout.js") < html.indexOf("src/personal-browser-core.js") && html.indexOf("src/personal-browser-core.js") < html.indexOf("src/bootstrap.js"));
 
