@@ -20,12 +20,13 @@ assert.doesNotMatch(fixesSource, /new\s+MutationObserver\s*\(/, "video fixes mus
 const listeners = new Map();
 const browser = {
   VIDEOS: [],
-  personalState: () => ({
+  personalState: (value) => ({
     watched: [],
     subscriptions: [],
     watchLater: [],
     likedVideos: [],
-    videoHistory: []
+    videoHistory: [],
+    ...(value?.metadata?.personalBrowser || {})
   }),
   performActivity: () => ({ ok: true })
 };
@@ -97,11 +98,11 @@ assert.deepEqual(JSON.parse(JSON.stringify(normalized.watchLater)), ["vl-001"]);
 assert.deepEqual(JSON.parse(JSON.stringify(normalized.likedVideos)), ["vl-002"]);
 
 for (const phrase of [
+  "routeButton(\"subscriptions\"",
+  "routeButton(\"watchLater\"",
+  "routeButton(\"history\"",
+  "routeButton(\"liked\"",
   "data-vl-search",
-  "data-vl-route=\"subscriptions\"",
-  "data-vl-route=\"watchLater\"",
-  "data-vl-route=\"history\"",
-  "data-vl-route=\"liked\"",
   "data-vl-play",
   "data-vl-subscribe",
   "data-vl-later",
