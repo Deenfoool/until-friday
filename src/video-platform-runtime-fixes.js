@@ -8,6 +8,7 @@
 
   const FALLBACK_THUMB = "https://img.icons8.com/fluency/240/video.png";
   let queued = false;
+  let attempts = 0;
 
   function esc(value) {
     return String(value ?? "")
@@ -19,9 +20,21 @@
   }
 
   function repairShorts() {
-    queued = false;
     const strip = document.querySelector(".personal-browser-window[data-video-platform-active='true'] .vl-shorts>div");
-    if (!strip || strip.dataset.vlShortsRepaired === "true") return;
+    if (!strip) {
+      if (attempts < 4) {
+        attempts += 1;
+        root.setTimeout?.(repairShorts, 20);
+        return;
+      }
+      queued = false;
+      attempts = 0;
+      return;
+    }
+
+    queued = false;
+    attempts = 0;
+    if (strip.dataset.vlShortsRepaired === "true") return;
 
     const videos = Pack.VIDEOS.filter((video) => video.channelId === "short-weird");
     strip.innerHTML = videos.map((video) => `<article class="vl-short-card">
@@ -57,6 +70,7 @@
   function schedule() {
     if (queued) return;
     queued = true;
+    attempts = 0;
     root.setTimeout?.(repairShorts, 0);
   }
 
