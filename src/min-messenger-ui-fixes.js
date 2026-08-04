@@ -67,7 +67,14 @@
         root.dispatchEvent?.(event);
       }
     } catch {
-      root.dispatchEvent?.({ type: "storage", key: STORAGE_KEY, newValue: json });
+      try {
+        const fallback = typeof root.Event === "function" ? new root.Event("storage") : null;
+        if (fallback) {
+          Object.defineProperty(fallback, "key", { value: STORAGE_KEY });
+          Object.defineProperty(fallback, "newValue", { value: json });
+          root.dispatchEvent?.(fallback);
+        }
+      } catch {}
     }
     try {
       root.dispatchEvent?.(new root.CustomEvent("until-friday-min-state-change", { detail: { reason } }));
@@ -149,10 +156,11 @@
     const activeFolder = folderStateById(state, activeButton?.dataset.minFolder);
     const rows = [...app.querySelectorAll(".min-chat-items [data-min-chat]")];
     const list = app.querySelector(".min-chat-items");
-    list?.querySelector("[data-min-custom-folder-empty]")?.remove();
+    const existingEmpty = list?.querySelector("[data-min-custom-folder-empty]") || null;
 
     if (!isCustomFolder(activeFolder)) {
       rows.forEach((row) => { row.hidden = false; });
+      existingEmpty?.remove();
       return;
     }
 
@@ -162,7 +170,11 @@
       row.hidden = !allowed.has(row.dataset.minChat);
       if (!row.hidden) visible += 1;
     });
-    if (!visible && list) {
+    if (visible) {
+      existingEmpty?.remove();
+      return;
+    }
+    if (!existingEmpty && list) {
       const empty = document.createElement("div");
       empty.className = "min-custom-folder-empty";
       empty.dataset.minCustomFolderEmpty = "true";
