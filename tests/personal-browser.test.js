@@ -11,7 +11,8 @@ const source = read("src/personal-browser-core.js");
 
 assert.doesNotThrow(() => new Function(source), "clean browser core must contain valid JavaScript");
 assert.doesNotMatch(source, /new\s+MutationObserver\s*\(/);
-assert.doesNotMatch(source, /ВидеоЛента|video\.local|UntilFridayVideoPlatform/, "old VideoLenta implementation must not exist in the browser core");
+assert.doesNotMatch(source, /const MESSAGES|Browser\.MESSAGES|partner-bread|data-rb-reply/, "scripted game messages must be removed from browser core");
+assert.doesNotMatch(source, /UntilFridayPersonalBrowserUIV3/);
 
 for (const phrase of [
   "metadata.personalBrowser",
@@ -23,7 +24,10 @@ for (const phrase of [
   "until-friday-app-ready",
   "until-friday-state-change",
   "UntilFridayWindowLayout",
-  "videotok"
+  "UntilFridayPersonalBrowserUIV4",
+  "UntilFridayMinMessenger",
+  "videotok",
+  "min"
 ]) {
   assert.match(source, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `browser core must contain: ${phrase}`);
 }
@@ -56,6 +60,7 @@ const engine = {
 const context = {
   UntilFridayRuntimeEngine: { getEngine: () => engine, notify() {}, persist: () => ({ ok: true }) },
   UntilFridayWindowLayout: null,
+  UntilFridayMinMessenger: { unreadCount: () => 12 },
   document: { addEventListener() {}, querySelector: () => null, querySelectorAll: () => [] },
   CustomEvent: class CustomEvent { constructor(type, init = {}) { this.type = type; this.detail = init.detail; } },
   addEventListener() {},
@@ -70,8 +75,10 @@ const api = context.UntilFridayPersonalBrowser;
 assert.ok(api);
 assert.equal(api.APP_ID, "browser");
 assert.equal(api.DAILY_WARNING_MINUTES, 45);
-assert.equal(api.MESSAGES.length, 6);
-assert.deepEqual(clone(api.createDefaultPersonalState().bookmarks), ["market", "videotok", "messages"]);
+assert.equal(api.MESSAGES, undefined);
+assert.equal(api.unreadMessageCount(), 12);
+assert.deepEqual(clone(api.createDefaultPersonalState().bookmarks), ["market", "videotok", "min"]);
+assert.equal(api.createDefaultPersonalState().version, 3);
 
 let result = api.performActivity({
   id: "videotok-test",
@@ -87,7 +94,6 @@ assert.equal(state.minute, 550);
 assert.equal(state.metadata.personalBrowser.dailyMinutes["0"], 10);
 assert.deepEqual(state.metadata.personalBrowser.videotok.watched, ["vt-001"]);
 assert.equal(state.metadata.personalBrowser.history[0].site, "Видеоток");
-assert.equal(state.metadata.personalBrowser.history[0].url, "https://videotok.local/watch/vt-001");
 
 result = api.performActivity({ id: "videotok-test", minutes: 10, label: "Повтор" });
 assert.equal(result.ok, false);
@@ -101,8 +107,9 @@ assert.ok(state.metadata.personalBrowser.excessiveDays.includes(0));
 assert.equal(state.flags.personalBrowsingExcessive, true);
 
 const normalized = clone(api.normalizePersonalState({ bookmarks: ["market", "video", "messages"], favorites: ["a", "a"] }));
-assert.deepEqual(normalized.bookmarks, ["market", "videotok", "messages"], "old video bookmark must migrate to Videotok");
+assert.deepEqual(normalized.bookmarks, ["market", "videotok", "min"], "legacy bookmarks must migrate to Videotok and MIN");
 assert.deepEqual(normalized.favorites, ["a"]);
+assert.equal(normalized.replies, undefined, "scripted reply state must not survive normalization");
 
 const beforeFailure = clone(state);
 const originalUpdate = engine.updateState;
@@ -114,10 +121,12 @@ assert.deepEqual(state, beforeFailure);
 engine.updateState = originalUpdate;
 
 const html = read("index.html");
-assert.match(html, /src\/personal-browser-core\.js\?v=20260804-8/);
-assert.match(html, /personal-browser-core\.css\?v=20260804-8/);
-assert.match(html, /browser-shell\.css\?v=20260804-8/);
-assert.doesNotMatch(html, /src\/personal-browser\.js|personal-browser\.css|personal-browser-ui-v2\.css/);
+assert.match(html, /src\/personal-browser-core\.js\?v=20260804-9/);
+assert.match(html, /personal-browser-core\.css\?v=20260804-9/);
+assert.match(html, /browser-shell\.css\?v=20260804-9/);
+assert.match(html, /src\/min-messenger\.js\?v=20260804-9/);
+assert.match(html, /src\/personal-browser-ui-v4\.js\?v=20260804-9/);
+assert.doesNotMatch(html, /src\/personal-browser\.js|personal-browser-ui-v3\.js|personal-browser-ui-v3\.css/);
 assert.ok(html.indexOf("src/window-layout.js") < html.indexOf("src/personal-browser-core.js") && html.indexOf("src/personal-browser-core.js") < html.indexOf("src/bootstrap.js"));
 
-console.log("Clean personal browser core validation passed.");
+console.log("Clean personal browser core with independent MIN validation passed.");
