@@ -115,9 +115,10 @@ for (const phrase of [".min-app", ".min-nav", ".min-chat-list", ".min-conversati
 }
 
 const html = read("index.html");
-assert.match(html, /min-messenger\.css\?v=20260804-9/);
-assert.match(html, /src\/min-messenger\.js\?v=20260804-9/);
-assert.ok(html.indexOf("src/min-messenger.js") < html.indexOf("src/personal-browser-ui-v4.js"));
+assert.match(html, /min-messenger\.css\?v=20260804-10/);
+assert.match(html, /src\/min-messenger\.js\?v=20260804-10/);
+assert.match(html, /src\/min-messenger-p2p\.js\?v=20260804-10/);
+assert.ok(html.indexOf("src/min-messenger.js") < html.indexOf("src/min-messenger-p2p.js") && html.indexOf("src/min-messenger-p2p.js") < html.indexOf("src/personal-browser-ui-v4.js"));
 assert.doesNotMatch(html, /src\/personal-browser-ui-v3\.js/);
 
 console.log("Functional MIN messenger validation passed.");
