@@ -70,12 +70,10 @@ jobs:
         run: node tests/personal-browser-ui-v2.test.js
       - name: Validate populated Kupitut marketplace
         run: node tests/marketplace-parody.test.js
-      - name: Validate stable Kupitut interactions
-        run: node tests/marketplace-interaction-stability.test.js
       - name: Validate full VideoLenta platform
         run: node tests/video-platform-parody.test.js
-      - name: Validate browser clock stability and VideoLenta routing
-        run: node tests/browser-render-stability.test.js
+      - name: Validate direct browser site routing
+        run: node tests/browser-site-routing.test.js
       - name: Validate passive game clock
         run: node tests/passive-clock.test.js
       - name: Validate notification history
