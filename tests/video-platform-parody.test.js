@@ -146,15 +146,17 @@ for (const file of [
   "video-platform-parody.css",
   "src/video-content-pack.js",
   "src/video-platform-parody.js",
-  "src/video-platform-runtime-fixes.js"
+  "src/video-platform-runtime-fixes.js",
+  "src/browser-direct-site-navigation.js"
 ]) assert.match(html, new RegExp(file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `${file} must be connected`);
+assert.doesNotMatch(html, /src\/browser-site-router\.js/, "obsolete address-guessing router must stay disconnected");
 assert.ok(
   html.indexOf("src/browser-site-listener-gate.js") < html.indexOf("src/video-content-pack.js") &&
   html.indexOf("src/video-content-pack.js") < html.indexOf("src/video-platform-parody.js") &&
   html.indexOf("src/video-platform-parody.js") < html.indexOf("src/video-platform-runtime-fixes.js") &&
   html.indexOf("src/video-platform-runtime-fixes.js") < html.indexOf("src/browser-site-listener-gate-close.js") &&
-  html.indexOf("src/browser-site-listener-gate-close.js") < html.indexOf("src/browser-site-router.js"),
-  "video modules must load inside the shared listener gate and before the unified router"
+  html.indexOf("src/browser-site-listener-gate-close.js") < html.indexOf("src/browser-direct-site-navigation.js"),
+  "video modules must load inside the listener gate and before direct page navigation"
 );
 
 console.log("Full VideoLenta parody platform validation passed.");
