@@ -9,9 +9,11 @@ const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const source = read("src/personal-browser-ui-v2.js");
 const guardSource = read("src/personal-browser-notification-guard.js");
+const navigationSource = read("src/browser-direct-site-navigation.js");
 
 assert.doesNotThrow(() => new Function(source), "rebuilt browser UI must contain valid JavaScript");
 assert.doesNotThrow(() => new Function(guardSource), "browser notification guard must contain valid JavaScript");
+assert.doesNotThrow(() => new Function(navigationSource), "direct site navigation must contain valid JavaScript");
 assert.doesNotMatch(source, /new\s+MutationObserver\s*\(/, "browser UI must use lifecycle events");
 
 for (const phrase of [
@@ -106,15 +108,16 @@ const html = read("index.html");
 assert.match(html, /personal-browser-ui-v2\.css/, "rebuilt browser stylesheet must be connected");
 assert.match(html, /src\/personal-browser-ui-v2\.js/, "rebuilt browser UI must be connected");
 assert.match(html, /src\/personal-browser-notification-guard\.js/, "browser notification guard must be connected");
-assert.match(html, /src\/browser-site-router\.js/, "unified site router must be connected");
+assert.match(html, /src\/browser-direct-site-navigation\.js/, "direct site navigation must be connected");
 assert.doesNotMatch(html, /personal-browser-immersion/, "obsolete immersion patch must stay removed");
 assert.doesNotMatch(html, /personal-browser-diegetic-guard/, "obsolete routing guard must stay disconnected");
+assert.doesNotMatch(html, /src\/browser-site-router\.js/, "obsolete address-guessing router must stay disconnected");
 assert.ok(
   html.indexOf("src/personal-browser.js") < html.indexOf("src/personal-browser-ui-v2.js") &&
   html.indexOf("src/personal-browser-ui-v2.js") < html.indexOf("src/personal-browser-notification-guard.js") &&
-  html.indexOf("src/personal-browser-notification-guard.js") < html.indexOf("src/browser-site-router.js") &&
-  html.indexOf("src/browser-site-router.js") < html.indexOf("src/bootstrap.js"),
-  "browser modules must load in mechanics, UI, notification guard, router order"
+  html.indexOf("src/personal-browser-notification-guard.js") < html.indexOf("src/browser-direct-site-navigation.js") &&
+  html.indexOf("src/browser-direct-site-navigation.js") < html.indexOf("src/bootstrap.js"),
+  "browser modules must load in mechanics, UI, notification guard, direct navigation order"
 );
 
 console.log("Rebuilt personal browser UI validation passed.");
