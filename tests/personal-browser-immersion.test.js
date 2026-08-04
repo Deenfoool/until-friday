@@ -53,7 +53,7 @@ assert.equal(api.stripGameTiming("Ответить · 3 мин."), "Ответи
 runtime.notify("Личное время", "Просмотрено видео · 10 мин.");
 assert.equal(notices.length, 0, "personal activity timing toast must be hidden");
 runtime.notify("Почта", "Новое письмо · 3 мин.");
-assert.deepEqual(notices, [{ title: "Почта", text: "Новое письмо" }]);
+assert.deepEqual(notices, [{ title: "Почта", text: "Новое письмо · 3 мин." }], "non-browser notifications must remain untouched");
 
 const html = read("index.html");
 assert.match(html, /personal-browser-immersion\.css/, "immersive browser stylesheet must be connected");
