@@ -37,6 +37,7 @@
     "[data-rb-menu-action]"
   ].join(",");
 
+  const originalNavigate = BrowserUI.navigate.bind(BrowserUI);
   let renderToken = 0;
 
   function browserWindow() {
@@ -88,7 +89,7 @@
     const config = SITE_CONFIG[page];
     if (!config) return false;
 
-    BrowserUI.navigate(page, {
+    originalNavigate(page, {
       url: data.url || config.url,
       title: data.title || config.title,
       query: data.query || ""
@@ -150,7 +151,6 @@
     root.setTimeout?.(renderCurrentSite, 0);
   });
 
-  const originalNavigate = BrowserUI.navigate.bind(BrowserUI);
   BrowserUI.navigate = function directSiteNavigate(page, data = {}, replace = false) {
     const result = originalNavigate(page, data, replace);
     if (SITE_CONFIG[page]) renderSite(page);
