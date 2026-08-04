@@ -6,14 +6,6 @@
   const APP_ID = "browser";
   const APP_TITLE = "Браузер";
   const DAILY_WARNING_MINUTES = 45;
-  const MESSAGES = [
-    { id: "partner-bread", day: 0, contact: "Лена", text: "Не забудь вечером купить хлеб и молоко. Я буду поздно.", replies: [{ id: "remember", text: "Хорошо, запомнил.", result: "Лена: Спасибо." }, { id: "remind", text: "Напомни ближе к вечеру.", result: "Лена: Ладно, напишу ещё раз." }] },
-    { id: "friend-video", day: 0, contact: "Лёха", text: "Скинул тебе ролик про ремонт двери. Глянь, там ровно твоя проблема.", replies: [{ id: "watch", text: "Сейчас посмотрю.", result: "Лёха: Только звук потише на работе." }, { id: "later", text: "После работы посмотрю.", result: "Лёха: Как обычно." }] },
-    { id: "landlord-meter", day: 1, contact: "Хозяин квартиры", text: "Сегодня до вечера пришлите показания счётчиков.", replies: [{ id: "send-evening", text: "Вечером отправлю.", result: "Хозяин квартиры: Хорошо, жду." }, { id: "forgot", text: "Я не дома, отправлю завтра.", result: "Хозяин квартиры: Завтра уже поздно для передачи." }] },
-    { id: "partner-lamp", day: 2, contact: "Лена", text: "Посмотри на маркетплейсе лампу на стол. Только не очень дорогую.", replies: [{ id: "choose", text: "Посмотрю варианты.", result: "Лена: До двух тысяч желательно." }, { id: "weekend", text: "Давай выберем вместе в выходные.", result: "Лена: Договорились." }] },
-    { id: "friend-game", day: 3, contact: "Лёха", text: "Вечером зайдёшь? Мы новую карту начинаем.", replies: [{ id: "join", text: "После девяти зайду.", result: "Лёха: Забронировал тебе место." }, { id: "skip", text: "Сегодня без меня.", result: "Лёха: Понял." }] },
-    { id: "partner-weekend", day: 4, contact: "Лена", text: "Ты сегодня вовремя освободишься? Надо решить, что делаем в выходные.", replies: [{ id: "on-time", text: "Постараюсь выйти вовремя.", result: "Лена: Тогда жду сообщения." }, { id: "unknown", text: "Пока не знаю, день странный.", result: "Лена: Хорошо. Просто не пропадай." }] }
-  ];
 
   let browserWindow = null;
   let taskButton = null;
@@ -26,19 +18,18 @@
 
   function createDefaultPersonalState() {
     return {
-      version: 2,
+      version: 3,
       balance: 8420,
       favorites: [],
       cart: [],
       purchases: [],
       compared: [],
-      replies: {},
       completed: [],
       history: [],
       dailyMinutes: {},
       excessiveDays: [],
       clearedBefore: null,
-      bookmarks: ["market", "videotok", "messages"],
+      bookmarks: ["market", "videotok", "min"],
       settings: {},
       downloads: [],
       videotok: {}
@@ -51,15 +42,17 @@
     return {
       ...base,
       ...source,
+      version: 3,
       balance: Number.isFinite(Number(source.balance)) ? Math.max(0, Number(source.balance)) : base.balance,
       favorites: uniqueStrings(source.favorites),
       cart: uniqueStrings(source.cart),
       purchases: uniqueStrings(source.purchases),
       compared: uniqueStrings(source.compared),
       completed: uniqueStrings(source.completed),
-      bookmarks: uniqueStrings(source.bookmarks).map((item) => item === "video" ? "videotok" : item),
+      bookmarks: uniqueStrings(source.bookmarks)
+        .map((item) => item === "video" ? "videotok" : item === "messages" ? "min" : item)
+        .filter((item) => ["market", "videotok", "min"].includes(item)),
       excessiveDays: uniqueStrings((source.excessiveDays || []).map(String)).map(Number),
-      replies: source.replies && typeof source.replies === "object" ? { ...source.replies } : {},
       dailyMinutes: source.dailyMinutes && typeof source.dailyMinutes === "object" ? { ...source.dailyMinutes } : {},
       history: Array.isArray(source.history) ? source.history.filter((item) => item && typeof item === "object").slice(-300) : [],
       downloads: Array.isArray(source.downloads) ? source.downloads.slice(-100) : [],
@@ -130,18 +123,16 @@
     return value.history.filter((item) => Number(item.dayIndex) > Number(cleared.dayIndex) || (Number(item.dayIndex) === Number(cleared.dayIndex) && Number(item.minute) > Number(cleared.minute)));
   }
 
-  function unreadMessageCount(state = stateNow()) {
-    if (!state) return 0;
-    const personal = personalState(state);
-    return MESSAGES.filter((item) => item.day <= state.dayIndex && !personal.replies[item.id]).length;
+  function unreadMessageCount() {
+    return Number(root.UntilFridayMinMessenger?.unreadCount?.() || 0);
   }
 
   function updateLaunchers() {
     const count = unreadMessageCount();
     document.querySelectorAll("[data-browser-badge]").forEach((badge) => {
       badge.hidden = count <= 0;
-      badge.textContent = count > 9 ? "9+" : String(count);
-      badge.setAttribute("aria-label", `Непрочитанных личных сообщений: ${count}`);
+      badge.textContent = count > 99 ? "99+" : String(count);
+      badge.setAttribute("aria-label", `Непрочитанных сообщений МИН: ${count}`);
     });
   }
 
@@ -198,7 +189,7 @@
   }
 
   function openBrowser() {
-    if (browserWindow?.isConnected) { focusBrowser(); root.UntilFridayPersonalBrowserUIV3?.render?.(); return; }
+    if (browserWindow?.isConnected) { focusBrowser(); root.UntilFridayPersonalBrowserUIV4?.render?.(); return; }
     const template = document.querySelector("#window-template");
     const layer = document.querySelector("#windows-layer");
     if (!template || !layer) return;
@@ -228,13 +219,13 @@
 
   root.addEventListener?.("until-friday-app-ready", () => { installLaunchers(); updateLaunchers(); });
   root.addEventListener?.("until-friday-state-change", updateLaunchers);
+  root.addEventListener?.("until-friday-min-state-change", updateLaunchers);
   document.addEventListener("DOMContentLoaded", () => { if (root.__UNTIL_FRIDAY_V2_READY__) installLaunchers(); }, { once: true });
 
   root.UntilFridayPersonalBrowser = {
     APP_ID,
     DAILY_WARNING_MINUTES,
     PRODUCTS: [],
-    MESSAGES,
     createDefaultPersonalState,
     normalizePersonalState,
     personalState,
@@ -242,6 +233,7 @@
     unreadMessageCount,
     performActivity,
     installLaunchers,
+    updateLaunchers,
     openBrowser,
     closeBrowser
   };
