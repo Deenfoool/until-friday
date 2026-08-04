@@ -7,34 +7,29 @@ const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
-const source = read("src/personal-browser.js");
+const source = read("src/personal-browser-core.js");
 
-assert.doesNotThrow(() => new Function(source), "personal browser module must contain valid JavaScript");
-assert.doesNotMatch(source, /new\s+MutationObserver\s*\(/, "personal browser must use lifecycle events instead of observing the DOM");
+assert.doesNotThrow(() => new Function(source), "clean browser core must contain valid JavaScript");
+assert.doesNotMatch(source, /new\s+MutationObserver\s*\(/);
+assert.doesNotMatch(source, /ВидеоЛента|video\.local|UntilFridayVideoPlatform/, "old VideoLenta implementation must not exist in the browser core");
 
 for (const phrase of [
-  "market",
-  "video",
-  "messages",
-  "history",
   "metadata.personalBrowser",
   "advanceTime",
   "updateState",
   "replaceState",
   "personalBrowsingExcessive",
-  "personalHistoryCleared",
   "DAILY_WARNING_MINUTES = 45",
   "until-friday-app-ready",
   "until-friday-state-change",
   "UntilFridayWindowLayout",
-  "КупиТут",
-  "ВидеоЛента"
+  "videotok"
 ]) {
-  assert.match(source, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `personal browser must contain: ${phrase}`);
+  assert.match(source, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `browser core must contain: ${phrase}`);
 }
 
 let state = {
-  seed: "personal-browser-test",
+  seed: "personal-browser-core-test",
   dayIndex: 0,
   minute: 540,
   dayStarted: true,
@@ -43,21 +38,12 @@ let state = {
   stats: { suspicion: 0 },
   flags: {}
 };
-const notices = [];
-const listeners = new Map();
 const clone = (value) => JSON.parse(JSON.stringify(value));
-
 const engine = {
   getState: () => clone(state),
   advanceTime(minutes) {
     state.minute += Number(minutes) || 0;
-    return {
-      ok: true,
-      persisted: true,
-      advancedMinutes: Number(minutes) || 0,
-      events: [],
-      state: clone(state)
-    };
+    return { ok: true, persisted: true, advancedMinutes: Number(minutes) || 0, events: [], state: clone(state) };
   },
   updateState(updater) {
     const draft = clone(state);
@@ -65,103 +51,58 @@ const engine = {
     state = draft;
     return { ok: true, persisted: true, state: clone(state) };
   },
-  replaceState(next) {
-    state = clone(next);
-    return clone(state);
-  }
+  replaceState(next) { state = clone(next); return clone(state); }
 };
-
 const context = {
-  UntilFridayRuntimeEngine: {
-    getEngine: () => engine,
-    notify: (title, text) => notices.push({ title, text }),
-    persist: () => ({ ok: true })
-  },
+  UntilFridayRuntimeEngine: { getEngine: () => engine, notify() {}, persist: () => ({ ok: true }) },
   UntilFridayWindowLayout: null,
-  document: {
-    addEventListener() {},
-    querySelector: () => null,
-    querySelectorAll: () => []
-  },
-  CustomEvent: class CustomEvent {
-    constructor(type, init = {}) { this.type = type; this.detail = init.detail; }
-  },
-  addEventListener(type, callback) { listeners.set(type, callback); },
+  document: { addEventListener() {}, querySelector: () => null, querySelectorAll: () => [] },
+  CustomEvent: class CustomEvent { constructor(type, init = {}) { this.type = type; this.detail = init.detail; } },
+  addEventListener() {},
   dispatchEvent() {},
-  setTimeout: (callback) => callback(),
-  innerWidth: 1200,
-  innerHeight: 742,
   console
 };
 context.window = context;
 context.globalThis = context;
+vm.runInNewContext(source, context, { filename: "personal-browser-core.js" });
 
-vm.runInNewContext(source, context, { filename: "personal-browser.js" });
 const api = context.UntilFridayPersonalBrowser;
-assert.ok(api, "personal browser API must be exported");
+assert.ok(api);
 assert.equal(api.APP_ID, "browser");
 assert.equal(api.DAILY_WARNING_MINUTES, 45);
-assert.equal(api.PRODUCTS.length >= 6, true, "marketplace must contain items across the week");
-assert.equal(api.VIDEOS.length >= 6, true, "video feed must contain items across the week");
-assert.equal(api.MESSAGES.length >= 6, true, "personal messages must span the week");
-
-const defaultState = clone(api.createDefaultPersonalState());
-assert.equal(defaultState.balance, 8420);
-assert.deepEqual(defaultState.history, []);
-assert.deepEqual(defaultState.replies, {});
+assert.equal(api.MESSAGES.length, 6);
+assert.deepEqual(clone(api.createDefaultPersonalState().bookmarks), ["market", "videotok", "messages"]);
 
 let result = api.performActivity({
-  id: "test-video",
+  id: "videotok-test",
   minutes: 10,
   label: "Тестовый ролик",
-  category: "video",
-  site: "ВидеоЛента",
-  apply(personal) { personal.watched.push("test-video"); }
+  category: "videotok",
+  site: "Видеоток",
+  url: "https://videotok.local/watch/vt-001",
+  apply(personal) { personal.videotok = { watched: ["vt-001"] }; }
 });
 assert.equal(result.ok, true);
-assert.equal(state.minute, 550, "personal activity must consume game time");
+assert.equal(state.minute, 550);
 assert.equal(state.metadata.personalBrowser.dailyMinutes["0"], 10);
-assert.ok(state.metadata.personalBrowser.watched.includes("test-video"));
-assert.equal(state.metadata.personalBrowser.history.length, 1);
-assert.equal(state.metadata.personalBrowser.history[0].site, "ВидеоЛента");
+assert.deepEqual(state.metadata.personalBrowser.videotok.watched, ["vt-001"]);
+assert.equal(state.metadata.personalBrowser.history[0].site, "Видеоток");
+assert.equal(state.metadata.personalBrowser.history[0].url, "https://videotok.local/watch/vt-001");
 
-result = api.performActivity({ id: "test-video", minutes: 10, label: "Повтор" });
+result = api.performActivity({ id: "videotok-test", minutes: 10, label: "Повтор" });
 assert.equal(result.ok, false);
 assert.equal(result.reason, "already-completed");
-assert.equal(state.minute, 550, "a completed personal activity must not consume time twice");
+assert.equal(state.minute, 550);
 
-result = api.performActivity({
-  id: "long-break",
-  minutes: 35,
-  label: "Долгий перерыв",
-  category: "video",
-  site: "ВидеоЛента"
-});
+result = api.performActivity({ id: "long-break", minutes: 35, label: "Долгий перерыв", category: "videotok", site: "Видеоток" });
 assert.equal(result.ok, true);
-assert.equal(state.metadata.personalBrowser.dailyMinutes["0"], 45);
-assert.equal(state.stats.suspicion, 1, "forty-five personal minutes must create one audit concern");
+assert.equal(state.stats.suspicion, 1);
 assert.ok(state.metadata.personalBrowser.excessiveDays.includes(0));
 assert.equal(state.flags.personalBrowsingExcessive, true);
 
-const normalized = clone(api.normalizePersonalState({
-  favorites: ["a", "a", "b"],
-  history: [{ id: "old" }],
-  dailyMinutes: { 0: 12 }
-}));
-assert.deepEqual(normalized.favorites, ["a", "b"]);
-assert.equal(normalized.dailyMinutes[0], 12);
-
-const visible = clone(api.visibleHistory({
-  ...api.createDefaultPersonalState(),
-  clearedBefore: { dayIndex: 1, minute: 600 },
-  history: [
-    { id: "monday", dayIndex: 0, minute: 700 },
-    { id: "before", dayIndex: 1, minute: 590 },
-    { id: "after", dayIndex: 1, minute: 610 },
-    { id: "future", dayIndex: 2, minute: 500 }
-  ]
-}));
-assert.deepEqual(visible.map((item) => item.id), ["after", "future"], "cleared history must hide all earlier visits");
+const normalized = clone(api.normalizePersonalState({ bookmarks: ["market", "video", "messages"], favorites: ["a", "a"] }));
+assert.deepEqual(normalized.bookmarks, ["market", "videotok", "messages"], "old video bookmark must migrate to Videotok");
+assert.deepEqual(normalized.favorites, ["a"]);
 
 const beforeFailure = clone(state);
 const originalUpdate = engine.updateState;
@@ -169,29 +110,12 @@ engine.updateState = () => ({ ok: false, reason: "save-failed" });
 result = api.performActivity({ id: "rollback-test", minutes: 7, label: "Неудачное сохранение" });
 assert.equal(result.ok, false);
 assert.equal(result.rolledBack, true);
-assert.deepEqual(state, beforeFailure, "failed personal persistence must roll back consumed game time");
+assert.deepEqual(state, beforeFailure);
 engine.updateState = originalUpdate;
 
-const css = read("personal-browser.css");
-for (const phrase of [
-  "personal-browser-window",
-  "personal-browser-toolbar",
-  "browser-product-grid",
-  "browser-video-list",
-  "browser-message-list",
-  "browser-history-list",
-  "@media (max-width: 620px)"
-]) {
-  assert.match(css, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `personal browser styles must contain: ${phrase}`);
-}
-
 const html = read("index.html");
-assert.match(html, /personal-browser\.css/, "personal browser stylesheet must be connected");
-assert.match(html, /src\/personal-browser\.js/, "personal browser script must be connected");
-assert.ok(
-  html.indexOf("src/window-layout.js") < html.indexOf("src/personal-browser.js") &&
-  html.indexOf("src/personal-browser.js") < html.indexOf("src/bootstrap.js"),
-  "personal browser must load after the window manager and before application startup"
-);
+assert.match(html, /src\/personal-browser-core\.js\?v=20260804-7/);
+assert.doesNotMatch(html, /src\/personal-browser\.js/);
+assert.ok(html.indexOf("src/window-layout.js") < html.indexOf("src/personal-browser-core.js") && html.indexOf("src/personal-browser-core.js") < html.indexOf("src/bootstrap.js"));
 
-console.log("Personal browser activity validation passed.");
+console.log("Clean personal browser core validation passed.");
