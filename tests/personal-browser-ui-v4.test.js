@@ -127,9 +127,10 @@ minuteHandler({ detail: { reason: "time" } });
 assert.equal(minMounts, beforeMinutes, "passive minute must not remount MIN");
 
 const html = read("index.html");
-assert.match(html, /src\/personal-browser-ui-v4\.js\?v=20260804-9/);
-assert.match(html, /personal-browser-ui-v4\.css\?v=20260804-9/);
+assert.match(html, /src\/personal-browser-ui-v4\.js\?v=20260804-10/);
+assert.match(html, /personal-browser-ui-v4\.css\?v=20260804-10/);
+assert.match(html, /src\/min-messenger-p2p\.js\?v=20260804-10/);
 assert.doesNotMatch(html, /personal-browser-ui-v3\.js|personal-browser-ui-v3\.css/);
-assert.ok(html.indexOf("src/min-messenger.js") < html.indexOf("src/personal-browser-ui-v4.js"));
+assert.ok(html.indexOf("src/min-messenger.js") < html.indexOf("src/min-messenger-p2p.js") && html.indexOf("src/min-messenger-p2p.js") < html.indexOf("src/personal-browser-ui-v4.js"));
 
 console.log("Browser UI v4 direct MIN route validation passed.");
