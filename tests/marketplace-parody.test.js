@@ -49,9 +49,9 @@ const css = read("marketplace-parody.css");
 for (const phrase of [".kp-header", ".kp-category-bar", ".kp-hero", ".kp-grid", ".kp-card", ".kp-catalog", ".kp-drawer", ".kp-modal", "@media(max-width:720px)"]) assert.match(css, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 
 const html = read("index.html");
-assert.match(html, /marketplace-parody\.css\?v=20260804-9/);
-assert.match(html, /src\/marketplace-parody\.js\?v=20260804-9/);
-assert.match(html, /src\/personal-browser-ui-v4\.js\?v=20260804-9/);
+assert.match(html, /marketplace-parody\.css\?v=20260804-10/);
+assert.match(html, /src\/marketplace-parody\.js\?v=20260804-10/);
+assert.match(html, /src\/personal-browser-ui-v4\.js\?v=20260804-10/);
 assert.doesNotMatch(html, /browser-direct-site-navigation|browser-site-router|personal-browser-ui-v3\.js/);
 assert.ok(
   html.indexOf("src/browser-site-listener-gate.js") < html.indexOf("src/marketplace-parody.js") &&
