@@ -66,8 +66,8 @@ jobs:
         run: node tests/window-layout.test.js
       - name: Validate personal browser activities
         run: node tests/personal-browser.test.js
-      - name: Validate diegetic personal browser
-        run: node tests/personal-browser-immersion.test.js
+      - name: Validate rebuilt personal browser UI
+        run: node tests/personal-browser-ui-v2.test.js
       - name: Validate passive game clock
         run: node tests/passive-clock.test.js
       - name: Validate notification history
