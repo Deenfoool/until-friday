@@ -51,8 +51,9 @@
   root.addEventListener?.("until-friday-ui-render", (event) => {
     if (event.detail?.appId === "browser") refreshBrowser();
   });
+
   document.addEventListener("click", (event) => {
-    if (event.target.closest?.(".personal-browser-window, [data-personal-browser-launcher]")) {
+    if (event.target.closest?.("[data-personal-browser-launcher]")) {
       root.setTimeout?.(refreshBrowser, 0);
     }
   }, true);
