@@ -91,9 +91,10 @@ const html = read("index.html");
 assert.match(html, /marketplace-parody\.css/, "marketplace stylesheet must be connected");
 assert.match(html, /src\/marketplace-parody\.js/, "marketplace module must be connected");
 assert.ok(
-  html.indexOf("src/personal-browser-ui-v2.js") < html.indexOf("src/marketplace-parody.js") &&
-  html.indexOf("src/marketplace-parody.js") < html.indexOf("src/personal-browser-diegetic-guard.js"),
-  "marketplace must load after browser UI and before the diegetic guard"
+  html.indexOf("src/browser-site-listener-gate.js") < html.indexOf("src/marketplace-parody.js") &&
+  html.indexOf("src/marketplace-parody.js") < html.indexOf("src/browser-site-listener-gate-close.js") &&
+  html.indexOf("src/browser-site-listener-gate-close.js") < html.indexOf("src/browser-site-router.js"),
+  "marketplace must load inside the shared site listener gate and before the unified router"
 );
 
 console.log("Kupitut marketplace parody validation passed.");
