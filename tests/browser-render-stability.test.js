@@ -137,12 +137,13 @@ for (const file of [
   assert.match(index, new RegExp(file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `${file} must be connected`);
 }
 assert.ok(
-  index.indexOf("src/personal-browser.js") < index.indexOf("src/browser-state-render-gate.js") &&
-  index.indexOf("src/browser-state-render-gate.js") < index.indexOf("src/personal-browser-ui-v2.js") &&
+  index.indexOf("src/window-layout.js") < index.indexOf("src/browser-state-render-gate.js") &&
+  index.indexOf("src/browser-state-render-gate.js") < index.indexOf("src/personal-browser.js") &&
+  index.indexOf("src/personal-browser.js") < index.indexOf("src/personal-browser-ui-v2.js") &&
   index.indexOf("src/personal-browser-diegetic-guard.js") < index.indexOf("src/video-route-hardener.js") &&
   index.indexOf("src/video-route-hardener.js") < index.indexOf("src/browser-state-render-gate-close.js") &&
   index.indexOf("src/browser-state-render-gate-close.js") < index.indexOf("src/ui-runtime-guards.js"),
-  "browser render gate must wrap only browser module registration"
+  "browser render gate must wrap legacy and modern browser module registration only"
 );
 
 console.log("Browser passive-clock stability and VideoLenta routing validation passed.");
