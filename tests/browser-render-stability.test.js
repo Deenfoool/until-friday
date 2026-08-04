@@ -21,6 +21,8 @@ for (const [name, source] of [
   assert.doesNotThrow(() => new Function(source), `${name} must contain valid JavaScript`);
   assert.doesNotMatch(source, /new\s+MutationObserver\s*\(/, `${name} must not add a DOM observer`);
 }
+assert.doesNotMatch(routeSource, /stopImmediatePropagation|preventDefault\s*\(/, "VideoLenta routing must not block the browser's own link handlers");
+assert.doesNotMatch(routeSource, /document\.addEventListener\(\"click\"[\s\S]*?,\s*true\s*\)/, "VideoLenta link post-processing must not run in capture phase");
 
 const registered = new Map();
 function originalAddEventListener(type, listener) {
@@ -146,4 +148,4 @@ assert.ok(
   "browser render gate must wrap legacy and modern browser module registration only"
 );
 
-console.log("Browser passive-clock stability and VideoLenta routing validation passed.");
+console.log("Browser passive-clock stability and clickable VideoLenta routing validation passed.");
