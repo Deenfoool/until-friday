@@ -15,21 +15,16 @@
   let activeModal = null;
   let observer = null;
 
-  function icon(name, size = 22) {
-    return `${ICON_ROOT}/${size}/${name}.png`;
-  }
-
-  function escapeHtml(value) {
-    return String(value ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
+  const icon = (name, size = 22) => `${ICON_ROOT}/${size}/${name}.png`;
+  const escapeHtml = (value) => String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
   function safeUsername(value) {
-    const transliterated = String(value || "")
+    const result = String(value || "")
       .trim()
       .toLowerCase()
       .split("")
@@ -39,7 +34,7 @@
       .replace(/[^a-z0-9_.-]/g, "")
       .replace(/^[_.-]+|[_.-]+$/g, "")
       .slice(0, 32);
-    return transliterated || `contact_${Date.now().toString(36).slice(-6)}`;
+    return result || `contact_${Date.now().toString(36).slice(-6)}`;
   }
 
   function safePeerId(value) {
@@ -51,12 +46,10 @@
     return `${prefix}-${random}`;
   }
 
-  function stateSnapshot() {
-    const Min = root.UntilFridayMinMessenger;
+  function readState() {
     let raw = null;
-    try {
-      raw = JSON.parse(root.localStorage?.getItem(STORAGE_KEY) || "null");
-    } catch {}
+    try { raw = JSON.parse(root.localStorage?.getItem(STORAGE_KEY) || "null"); } catch {}
+    const Min = root.UntilFridayMinMessenger;
     if (Min?.normalize) return Min.normalize(raw);
     return raw && typeof raw === "object" ? raw : { users: [], contacts: [], chats: [], messages: [], folders: [], settings: {} };
   }
@@ -88,9 +81,7 @@
     const json = JSON.stringify(state);
     root.localStorage?.setItem(STORAGE_KEY, json);
     dispatchStorage(json);
-    try {
-      root.dispatchEvent(new CustomEvent("until-friday-min-state-change", { detail: { reason } }));
-    } catch {}
+    try { root.dispatchEvent(new CustomEvent("until-friday-min-state-change", { detail: { reason } })); } catch {}
     root.UntilFridayMinMessenger?.refreshAll?.();
     return state;
   }
@@ -105,7 +96,7 @@
     if (!name) throw new Error("Введите имя контакта.");
 
     const username = safeUsername(payload.username || name);
-    const state = stateSnapshot();
+    const state = readState();
     state.users = Array.isArray(state.users) ? state.users : [];
     state.contacts = Array.isArray(state.contacts) ? state.contacts : [];
     state.chats = Array.isArray(state.chats) ? state.chats : [];
@@ -275,9 +266,6 @@
       convertP2PButton(header);
       groupHeaderActions(header);
     });
-    app.querySelectorAll("button").forEach((button) => {
-      if (!button.hasAttribute("type")) button.type = "button";
-    });
   }
 
   function decorateAll() {
@@ -291,7 +279,7 @@
       closeModal();
       return;
     }
-    if (event.target.matches?.("[data-min-polish-backdrop]") || event.target.dataset?.minPolishBackdrop) {
+    if (event.target === activeModal) {
       closeModal();
       return;
     }
