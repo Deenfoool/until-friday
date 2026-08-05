@@ -44,6 +44,23 @@
       }
     }
 
+    const lateTruth = story.actions?.["tue-friend-tell-late"];
+    if (lateTruth) {
+      lateTruth.effects ||= {};
+      lateTruth.effects.setFlags ||= {};
+      lateTruth.effects.setFlags.toldFriend = true;
+    }
+
+    const morningRumor = story.events?.["tue-friend-rumor"];
+    if (morningRumor) {
+      morningRumor.requires = {
+        all: [
+          { flag: "toldFriend" },
+          { notFlag: "toldFriendLate" }
+        ]
+      };
+    }
+
     story.metadata[PATCH_KEY] = VERSION;
     return story;
   }
