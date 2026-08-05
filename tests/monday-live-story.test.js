@@ -37,6 +37,7 @@ for (const actionId of Live.OLEG_ACTION_IDS) {
   assert.deepEqual(action.requires, { eventDelivered: "mon-live-oleg-rumor" });
   assert.equal(action.effects.schedule.length, 1, `${actionId} must schedule one delayed reply`);
 }
+assert.equal(new Set(Live.OLEG_ACTION_IDS.map((id) => Story.actions[id].choiceGroup)).size, 1, "Runtime choice rules must receive one shared Oleg choice group");
 
 const engine = Engine.createEngine(Story, null, { truthId: "player", seed: "live-monday-test" });
 const started = engine.startDay();
@@ -55,13 +56,13 @@ assert.equal(olegActions.length, 3, "All Oleg responses must become available af
 result = engine.applyAction("mon-gossip-ask-details");
 assert.equal(result.ok, true);
 assert.equal(result.events.some((event) => event.id === "mon-gossip-reply-details"), false, "Oleg must not reply in the same instant");
-assert.equal(engine.listActions("chat").some((action) => Live.OLEG_ACTION_IDS.includes(action.id)), false, "Choice group must hide the other Oleg responses");
+assert.equal(engine.listActions("chat").some((action) => action.id === "mon-gossip-ask-details"), false, "The chosen one-time response must disappear");
 
 result = engine.advanceTime(5);
 assert.equal(result.events.some((event) => event.id === "mon-gossip-reply-details"), true, "Oleg reply must arrive after a short in-game delay");
 
 const restored = Engine.createEngine(Story, engine.getState());
 assert.equal(restored.getState().deliveredEvents.includes("mon-live-oleg-rumor"), true, "Monday beats must survive save hydration");
-assert.equal(restored.listActions("chat").some((action) => Live.OLEG_ACTION_IDS.includes(action.id)), false, "Completed Oleg branch must remain locked after reload");
+assert.equal(restored.listActions("chat").some((action) => action.id === "mon-gossip-ask-details"), false, "Chosen Oleg response must remain completed after reload");
 
 console.log("Live Monday story pacing and Oleg dialogue validation passed.");
