@@ -50,6 +50,22 @@
     return event.target?.closest?.(".window-titlebar") || null;
   }
 
+  function notifyLegacyFocus(element) {
+    if (typeof element?.dispatchEvent !== "function") return false;
+    const EventConstructor = root.MouseEvent || root.Event;
+    if (typeof EventConstructor !== "function") return false;
+    try {
+      element.dispatchEvent(new EventConstructor("mousedown", {
+        bubbles: false,
+        cancelable: false,
+        button: 0
+      }));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function focusWindow(element) {
     const windows = Array.from(document.querySelectorAll?.(".app-window") || []);
     const highest = windows.reduce((value, item) => {
@@ -58,6 +74,7 @@
     windows.forEach((item) => item.classList?.remove?.("focused"));
     element.classList?.add?.("focused");
     element.style.zIndex = String(highest + 1);
+    notifyLegacyFocus(element);
   }
 
   function restoreForDrag(element, event) {
@@ -153,6 +170,7 @@
     clamp,
     isInteractiveTarget,
     titlebarForEvent,
+    notifyLegacyFocus,
     focusWindow,
     restoreForDrag,
     beginDrag,
