@@ -167,10 +167,12 @@
   }
 
   function insertMessage(beat, state) {
-    const contact = CONTACTS[beat.contact];
+    const record = directorData(state).delivered[beat.id] || {};
+    const contact = CONTACTS[record.contact || beat.contact];
     if (!contact) return false;
     const messageId = `monday-director-${beat.id}`;
-    const text = String(beat.text(state) || "").trim();
+    const text = String(record.text || beat.text(state) || "").trim();
+    const minute = Number(record.minute ?? state.minute ?? beat.minute);
     if (!text) return false;
 
     return mutateMinState((minState) => {
@@ -182,7 +184,7 @@
         chatId: contact.chatId,
         senderId: contact.userId,
         text,
-        createdAt: createdAt(state.minute),
+        createdAt: createdAt(minute),
         editedAt: null,
         deleted: false,
         pinned: false,
@@ -199,9 +201,21 @@
     }, "monday-director-message");
   }
 
+  function repairMessages(state) {
+    if (!state) return 0;
+    const delivered = directorData(state).delivered;
+    let repaired = 0;
+    Object.keys(delivered).forEach((beatId) => {
+      const beat = BEATS.find((item) => item.id === beatId);
+      if (beat && insertMessage(beat, state)) repaired += 1;
+    });
+    return repaired;
+  }
+
   function claimBeat(beat, state) {
     const current = Runtime.getEngine?.();
     if (!current) return null;
+    const text = String(beat.text(state) || "").trim();
     const result = current.updateState((draft) => {
       draft.metadata ||= {};
       const director = draft.metadata.mondayDirector && typeof draft.metadata.mondayDirector === "object"
@@ -209,7 +223,12 @@
         : { version: VERSION, delivered: {} };
       director.version = VERSION;
       director.delivered ||= {};
-      director.delivered[beat.id] ||= { dayIndex: 0, minute: Number(state.minute || 0), contact: beat.contact };
+      director.delivered[beat.id] ||= {
+        dayIndex: 0,
+        minute: Number(state.minute || 0),
+        contact: beat.contact,
+        text
+      };
       draft.metadata.mondayDirector = director;
     }, "monday-director-beat");
     return result?.ok ? result.state : null;
@@ -239,6 +258,7 @@
   function evaluate(state) {
     if (processing) return false;
     const currentState = state || Runtime.getEngine?.()?.getState?.();
+    repairMessages(currentState);
     const beat = dueBeats(currentState)[0];
     return beat ? deliverBeat(beat, currentState) : false;
   }
@@ -255,6 +275,7 @@
     if (processing || event.detail?.reason === "monday-director-beat") return;
     evaluate(event.detail?.state);
   });
+  root.addEventListener?.("until-friday-min-state-change", () => scheduleEvaluate(50));
   root.addEventListener?.("until-friday-app-ready", () => scheduleEvaluate(100));
   root.addEventListener?.("DOMContentLoaded", () => scheduleEvaluate(150), { once: true });
 
@@ -272,6 +293,7 @@
     lateWorkText,
     dueBeats,
     insertMessage,
+    repairMessages,
     claimBeat,
     deliverBeat,
     evaluate
