@@ -26,7 +26,10 @@
   }
 
   function applyAvatar(element, label) {
-    if (!element || element.dataset.minSecurityAvatar === AVATAR) return;
+    if (!element) return;
+    const currentImage = element.querySelector?.("img");
+    const currentSource = currentImage?.getAttribute?.("src") || currentImage?.src || "";
+    if (element.dataset.minSecurityAvatar === AVATAR && String(currentSource).endsWith(AVATAR)) return;
     element.dataset.minSecurityAvatar = AVATAR;
     element.classList.add("min-avatar-image");
     element.textContent = "";
