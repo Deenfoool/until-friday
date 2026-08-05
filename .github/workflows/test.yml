@@ -30,6 +30,10 @@ jobs:
         run: node tests/scheduled-event-rollback.test.js
       - name: Validate Monday core requirement
         run: node tests/monday-requirement.test.js
+      - name: Validate live Monday story pacing
+        run: node tests/monday-live-story.test.js
+      - name: Validate reactive Monday office director
+        run: node tests/monday-office-director.test.js
       - name: Validate base story graph
         run: node tests/story-validation.test.js
       - name: Validate fully extended story graph
