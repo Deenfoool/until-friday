@@ -80,6 +80,8 @@ jobs:
         run: node tests/min-messenger-p2p.test.js
       - name: Validate standalone desktop MIN
         run: node tests/min-desktop-integration.test.js
+      - name: Validate branching MIN NPC dialogues
+        run: node tests/min-npc-dialogues.test.js
       - name: Open Videotok through browser UI v4
         run: node tests/browser-videotok-open.test.js
       - name: Validate populated Kupitut marketplace
