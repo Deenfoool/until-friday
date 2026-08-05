@@ -19,6 +19,7 @@ const initialState = {
     { id: "work-dima", name: "Дима Орлов", workContact: true },
     { id: "work-oleg", name: "Олег Казанцев", workContact: true },
     { id: "work-roman", name: "Роман Белов", workContact: true },
+    { id: "work-marina", name: "Марина Лебедева", workContact: true },
     { id: "work-andrey", name: "Андрей Соколов", workContact: true }
   ],
   chats: [
@@ -28,6 +29,7 @@ const initialState = {
     { id: "work-chat-dima", type: "private", title: "Дима Орлов", pinned: true, archived: false, workChat: true },
     { id: "work-chat-oleg", type: "private", title: "Олег Казанцев", pinned: true, archived: false, workChat: true },
     { id: "work-chat-roman", type: "private", title: "Роман Белов", pinned: true, archived: false, workChat: true },
+    { id: "work-chat-marina", type: "private", title: "Марина Лебедева", pinned: true, archived: false, workChat: true },
     { id: "work-chat-andrey", type: "private", title: "Андрей Соколов", pinned: true, archived: false, workChat: true }
   ],
   messages: [],
@@ -131,6 +133,7 @@ assert.deepEqual(workFolder.chatIds, [
   "work-chat-dima",
   "work-chat-oleg",
   "work-chat-roman",
+  "work-chat-marina",
   "work-chat-andrey"
 ]);
 assert.equal(state.folders[2].id, "work", "Работа folder must be placed after unread chats");
@@ -140,11 +143,13 @@ assert.equal(pins.saved, true, "Избранное must remain pinned");
 assert.equal(pins["chat-lena"], true, "Лена must remain pinned");
 assert.equal(pins["group-mods"], false, "other personal chats must be unpinned");
 assert.equal(pins["work-chat-dima"], false, "work chats must start unpinned");
+assert.equal(pins["work-chat-marina"], false, "Marina work chat must start unpinned");
 assert.equal(pins["work-chat-andrey"], false, "all work chats must start unpinned");
 
 assert.equal(state.users.find((user) => user.id === "work-dima").avatar, "assets/avatar-friend.png");
 assert.equal(state.users.find((user) => user.id === "work-oleg").avatar, "assets/avatar-tattler.png");
 assert.equal(state.users.find((user) => user.id === "work-roman").avatar, "assets/avatar-sysadmin.png");
+assert.equal(state.users.find((user) => user.id === "work-marina").avatar, "assets/avatar-accountant.png");
 assert.equal(state.users.find((user) => user.id === "work-andrey").avatar, "assets/avatar-director.png");
 
 api.setChatPinned("work-chat-dima", true);
@@ -179,6 +184,7 @@ for (const asset of [
   "assets/avatar-friend.png",
   "assets/avatar-tattler.png",
   "assets/avatar-sysadmin.png",
+  "assets/avatar-accountant.png",
   "assets/avatar-director.png",
   "assets/avatar-default-user.png"
 ]) {
