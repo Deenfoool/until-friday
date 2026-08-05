@@ -44,6 +44,8 @@ jobs:
         run: node tests/wednesday-office-director.test.js
       - name: Validate MIN security officer contact
         run: node tests/min-security-contact.test.js
+      - name: Validate live Thursday consequences
+        run: node tests/thursday-live-story.test.js
       - name: Validate base story graph
         run: node tests/story-validation.test.js
       - name: Validate fully extended story graph
