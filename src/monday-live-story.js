@@ -16,15 +16,15 @@
   const PATCH_KEY = "mondayLiveStoryVersion";
 
   const FIXED_EVENT_IDS = [
-    "mon-live-support-brief",
     "mon-live-oleg-rumor",
-    "mon-live-supplier-letter",
-    "mon-live-accounting-register",
-    "mon-live-admin-memo",
-    "mon-live-document-sort",
-    "mon-live-invoice-check",
-    "mon-live-courier-register",
-    "mon-live-hr-redaction"
+    "mon-live-room-booking",
+    "mon-live-roman-rights",
+    "mon-live-workspace-move"
+  ];
+
+  const CONDITIONAL_EVENT_IDS = [
+    "mon-live-oleg-followup-details",
+    "mon-live-oleg-followup-encouraged"
   ];
 
   const OLEG_ACTION_IDS = [
@@ -52,26 +52,18 @@
   }
 
   function mailEvent(id, minute, source, title, text, extra = {}) {
-    return {
-      id,
-      dayIndex: 0,
-      minute,
-      type: "mail",
-      source,
-      title,
-      text,
-      ...extra
-    };
+    return { id, dayIndex: 0, minute, type: "mail", source, title, text, ...extra };
   }
 
   function chatEvent(id, minute, source, title, text, extra = {}) {
+    const keys = { "Олег Казанцев": "oleg", "Роман Белов": "roman" };
     return {
       id,
       dayIndex: 0,
       minute,
       type: "chat",
       source,
-      contactKey: source === "Олег Казанцев" ? "oleg" : undefined,
+      contactKey: keys[source],
       title,
       text,
       ...extra
@@ -103,14 +95,6 @@
     story.metadata ||= {};
     if (Number(story.metadata[PATCH_KEY] || 0) >= VERSION) return story;
 
-    addEvent(story, mailEvent(
-      "mon-live-support-brief",
-      534,
-      "Служба поддержки",
-      "Сводка обращений за утро",
-      "В приложении «Задачи» опубликована утренняя сводка. Нужно сверить обращения четырёх отделов и заполнить итоговую строку."
-    ));
-
     addEvent(story, chatEvent(
       "mon-live-oleg-rumor",
       552,
@@ -120,59 +104,27 @@
     ));
 
     addEvent(story, mailEvent(
-      "mon-live-supplier-letter",
-      565,
-      "ООО «Север Комплект»",
-      "Подтверждение поставки КС-18",
-      "Просим подтвердить получение партии кабеля КС-18 до 12:00. В поставке 24 бухты, сопроводительные документы переданы курьеру."
-    ));
-
-    addEvent(story, mailEvent(
-      "mon-live-accounting-register",
-      609,
-      "Марина Лебедева",
-      "Пропуск в платёжном реестре",
-      "В реестре на 84 200 рублей отсутствует сумма по канцелярии. Восстанови значение по остальным строкам и общему итогу."
-    ));
-
-    addEvent(story, mailEvent(
-      "mon-live-admin-memo",
-      659,
-      "Административный отдел",
-      "Вычитка служебной записки",
-      "Перед отправкой в хозяйственный отдел исправь орфографию и пунктуацию в записке о переезде. Смысл текста менять не нужно."
-    ));
-
-    addEvent(story, mailEvent(
-      "mon-live-document-sort",
-      729,
-      "Документооборот",
-      "Неразобранные счета на общем диске",
-      "Пять входящих файлов остались без папок назначения. Разложи документы по разделам «Связь», «Аренда» и «Канцелярия»."
+      "mon-live-room-booking",
+      620,
+      "Секретарь директора",
+      "Переговорная №1 недоступна в пятницу",
+      "В пятницу с 16:30 до 18:30 переговорная №1 зарезервирована руководством и отделом кадров. Просьба перенести внутренние встречи."
     ));
 
     addEvent(story, chatEvent(
-      "mon-live-invoice-check",
-      805,
-      "Андрей Соколов",
-      "Счёт №7814",
-      "Посмотри счёт 7814. В итоговой сумме явно лишний ноль. Мне нужен не только исправленный расчёт, но и решение, как оформить ошибку."
+      "mon-live-roman-rights",
+      710,
+      "Роман Белов",
+      "Обновление прав на общем диске",
+      "Сегодня пересобираю группы доступа. Если какая-то рабочая папка пропадёт, не запрашивай права повторно десять раз — напиши мне."
     ));
 
     addEvent(story, mailEvent(
-      "mon-live-courier-register",
-      883,
-      "Секретариат",
-      "Курьер Север Комплекта",
-      "В 11:40 был курьер Павел Ершов с УПД №418. Перенеси данные в журнал регистрации, чтобы закрыть доставку."
-    ));
-
-    addEvent(story, mailEvent(
-      "mon-live-hr-redaction",
-      961,
-      "Отдел кадров",
-      "Обезличивание заявки подрядчику",
-      "Перед отправкой заявки на пропуск удали телефон и паспортные данные сотрудника. Имя и рабочую цель оставь."
+      "mon-live-workspace-move",
+      850,
+      "Административный отдел",
+      "Подготовка двух рабочих мест",
+      "До конца недели нужно освободить два стола у окна и проверить комплектность техники. Конкретные сотрудники будут указаны позже."
     ));
 
     addAction(story, olegAction({
@@ -223,11 +175,7 @@
       "Олег Казанцев",
       "Источник Олега",
       "Самих бумаг не видел. Секретарь несла красную папку из кадров, а потом Андрей попросил не занимать переговорную в пятницу. Делай выводы сам.",
-      {
-        dialogueId: "oleg-monday-rumor",
-        replyToAction: "mon-gossip-ask-details",
-        requires: { actionDone: "mon-gossip-ask-details" }
-      }
+      { dialogueId: "oleg-monday-rumor", replyToAction: "mon-gossip-ask-details", requires: { actionDone: "mon-gossip-ask-details" } }
     ));
 
     addEvent(story, chatEvent(
@@ -236,11 +184,7 @@
       "Олег Казанцев",
       "Олег отступил",
       "Да я вообще молчу. Это люди сами всё замечают. Но ладно, от меня сегодня больше ничего не услышишь.",
-      {
-        dialogueId: "oleg-monday-rumor",
-        replyToAction: "mon-gossip-stop-rumor",
-        requires: { actionDone: "mon-gossip-stop-rumor" }
-      }
+      { dialogueId: "oleg-monday-rumor", replyToAction: "mon-gossip-stop-rumor", requires: { actionDone: "mon-gossip-stop-rumor" } }
     ));
 
     addEvent(story, chatEvent(
@@ -249,11 +193,25 @@
       "Олег Казанцев",
       "Олег обещал сообщить",
       "Вот это правильный подход. Если всплывёт фамилия, ты узнаешь раньше половины отдела.",
-      {
-        dialogueId: "oleg-monday-rumor",
-        replyToAction: "mon-gossip-play-along",
-        requires: { actionDone: "mon-gossip-play-along" }
-      }
+      { dialogueId: "oleg-monday-rumor", replyToAction: "mon-gossip-play-along", requires: { actionDone: "mon-gossip-play-along" } }
+    ));
+
+    addEvent(story, chatEvent(
+      "mon-live-oleg-followup-details",
+      950,
+      "Олег Казанцев",
+      "Олег нашёл ещё одну деталь",
+      "Красная папка всё ещё у Андрея. Секретарь сказала, что вернёт её в кадры только после пятничной встречи. Фамилию я так и не видел.",
+      { requires: { flag: "questionedOlegRumor" } }
+    ));
+
+    addEvent(story, chatEvent(
+      "mon-live-oleg-followup-encouraged",
+      950,
+      "Олег Казанцев",
+      "Новая версия Олега",
+      "Говорят, освобождают сразу два места у окна. Совпадает с письмом административного отдела, но ты пока никому не пересылай.",
+      { requires: { flag: "encouragedOlegRumor" } }
     ));
 
     story.metadata[PATCH_KEY] = VERSION;
@@ -265,6 +223,7 @@
   return {
     VERSION,
     FIXED_EVENT_IDS,
+    CONDITIONAL_EVENT_IDS,
     OLEG_ACTION_IDS,
     OLEG_REPLY_IDS,
     patchStory
