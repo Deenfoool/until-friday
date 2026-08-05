@@ -74,6 +74,8 @@ jobs:
         run: node tests/personal-browser-ui-v4.test.js
       - name: Validate functional MIN messenger
         run: node tests/min-messenger.test.js
+      - name: Validate MIN protagonist profile synchronization
+        run: node tests/min-game-profile-sync.test.js
       - name: Validate MIN reactions and custom folders
         run: node tests/min-messenger-ui-fixes.test.js
       - name: Validate MIN peer-to-peer network
