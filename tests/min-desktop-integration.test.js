@@ -66,7 +66,7 @@ for (const phrase of [
 
 const html = read("index.html");
 assert.match(html, /min-desktop-integration\.css\?v=20260804-1/);
-assert.match(html, /src\/min-desktop-integration\.js\?v=20260804-1/);
+assert.match(html, /src\/min-desktop-integration\.js\?v=20260805-2/);
 assert.ok(
   html.indexOf("src/min-messenger.js") < html.indexOf("src/min-desktop-integration.js") &&
   html.indexOf("src/min-messenger-p2p.js") < html.indexOf("src/min-desktop-integration.js") &&
