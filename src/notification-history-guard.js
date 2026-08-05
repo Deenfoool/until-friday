@@ -6,6 +6,7 @@
   if (root.UntilFridayNotificationHistoryGuard) return;
 
   let queued = false;
+  let observer = null;
 
   function readJson(key, fallback) {
     try {
@@ -72,8 +73,8 @@
     const item = matchInboxItem(state, notificationText(element));
     if (!item) return;
 
-    // Сообщения коллег должны существовать только внутри МИН. Отдельный тост
-    // превращает компьютер в рассказчика и ломает ощущение рабочего интерфейса.
+    // Реплики коллег существуют только внутри МИН. Удаляем тост сразу после
+    // добавления в DOM, до следующего кадра отрисовки рабочего стола.
     if (belongsInsideApp(item)) {
       element.remove();
       return;
@@ -88,6 +89,12 @@
 
     history.ids.push(key);
     writeHistory(history);
+  }
+
+  function inspectAddedNode(node) {
+    if (!node) return;
+    if (node.matches?.(".notification")) inspectNotification(node);
+    node.querySelectorAll?.(".notification").forEach(inspectNotification);
   }
 
   function inspect() {
@@ -106,11 +113,30 @@
     });
   }
 
-  document.addEventListener("DOMContentLoaded", queue, { once: true });
+  function observeNotifications() {
+    const container = document.querySelector?.("#notifications");
+    if (!container || typeof root.MutationObserver !== "function") return false;
+
+    observer?.disconnect?.();
+    observer = new root.MutationObserver((records) => {
+      records.forEach((record) => {
+        Array.from(record.addedNodes || []).forEach(inspectAddedNode);
+      });
+    });
+    observer.observe(container, { childList: true, subtree: true });
+    return true;
+  }
+
+  function start() {
+    observeNotifications();
+    queue();
+  }
+
+  document.addEventListener("DOMContentLoaded", start, { once: true });
   root.addEventListener?.("until-friday-state-change", queue);
   root.addEventListener?.("until-friday-ui-render", queue);
   root.addEventListener?.("until-friday-app-ready", queue);
-  queue();
+  start();
 
   root.UntilFridayNotificationHistoryGuard = {
     HISTORY_KEY,
@@ -119,7 +145,9 @@
     itemKey,
     belongsInsideApp,
     inspectNotification,
+    inspectAddedNode,
     inspect,
-    queue
+    queue,
+    observeNotifications
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
