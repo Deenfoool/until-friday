@@ -43,6 +43,14 @@ assert.match(source, /\.app-window\[data-window-id=/, "stale Connection window m
 assert.match(source, /contactForAction/, "story actions must be routed to work contacts");
 assert.match(source, /storyMessage: true/, "story messages must be marked inside MIN storage");
 assert.match(source, /P2P доступен в настройках/, "desktop status must preserve real messenger networking");
+assert.match(source, /pinned: Boolean\(chat\?\.pinned\)/, "story synchronization must preserve the user's chat pin state");
+assert.match(source, /archived: Boolean\(chat\?\.archived\)/, "story synchronization must preserve archived work chats");
+assert.match(source, /muted: Boolean\(chat\?\.muted\)/, "story synchronization must preserve muted work chats");
+assert.doesNotMatch(
+  source.match(/function ensureChat[\s\S]*?function upsertStoryMessage/)?.[0] || "",
+  /pinned: true/,
+  "work chat synchronization must never temporarily repin chats"
+);
 
 const css = read("min-desktop-integration.css");
 for (const phrase of [
