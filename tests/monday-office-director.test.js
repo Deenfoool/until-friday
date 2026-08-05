@@ -11,17 +11,17 @@ let activeState = null;
 let badgeUpdates = 0;
 
 function normalizeMin(raw) {
-  const source = raw && typeof raw === "object" ? raw : {};
+  const sourceState = raw && typeof raw === "object" ? raw : {};
   return {
-    users: Array.isArray(source.users) ? source.users : [],
-    contacts: Array.isArray(source.contacts) ? source.contacts : [],
-    chats: Array.isArray(source.chats) ? source.chats : [],
-    messages: Array.isArray(source.messages) ? source.messages : [],
-    drafts: source.drafts && typeof source.drafts === "object" ? source.drafts : {},
-    folders: Array.isArray(source.folders) ? source.folders : [],
-    settings: source.settings && typeof source.settings === "object" ? source.settings : {},
-    profile: source.profile && typeof source.profile === "object" ? source.profile : {},
-    updatedAt: source.updatedAt || ""
+    users: Array.isArray(sourceState.users) ? sourceState.users : [],
+    contacts: Array.isArray(sourceState.contacts) ? sourceState.contacts : [],
+    chats: Array.isArray(sourceState.chats) ? sourceState.chats : [],
+    messages: Array.isArray(sourceState.messages) ? sourceState.messages : [],
+    drafts: sourceState.drafts && typeof sourceState.drafts === "object" ? sourceState.drafts : {},
+    folders: Array.isArray(sourceState.folders) ? sourceState.folders : [],
+    settings: sourceState.settings && typeof sourceState.settings === "object" ? sourceState.settings : {},
+    profile: sourceState.profile && typeof sourceState.profile === "object" ? sourceState.profile : {},
+    updatedAt: sourceState.updatedAt || ""
   };
 }
 
@@ -79,6 +79,7 @@ vm.runInContext(source, context, { filename: "monday-office-director.js" });
 const Director = context.UntilFridayMondayOfficeDirector;
 assert.ok(Director, "Monday office director API must be exported");
 assert.equal(Director.BEATS.length, 7, "Monday director must have seven reactive beats");
+assert.match(source, /if \(pending\.has\(beatId\)\) return;/, "MIN recovery must not bypass an active typing delay");
 
 function state(overrides = {}) {
   return {
@@ -141,18 +142,33 @@ assert.match(Director.dimaEveningText(state({ flags: { hidConcernFromFriend: tru
 activeState = state({ minute: 600 });
 const morningBeat = Director.BEATS.find((beat) => beat.id === "morning-stalled");
 const claimed = Director.claimBeat(morningBeat, activeState);
-assert.ok(claimed.metadata.mondayDirector.delivered["morning-stalled"], "Claimed beat must be persisted in engine metadata");
+const record = claimed.metadata.mondayDirector.delivered["morning-stalled"];
+assert.ok(record, "Claimed beat must be persisted in engine metadata");
+assert.equal(record.minute, 600, "The exact in-game delivery minute must be saved");
+assert.equal(record.contact, "andrey");
+assert.equal(record.text, morningBeat.text(activeState), "The exact message text must be saved for later MIN recovery");
 assert.equal(Director.dueBeats(claimed).some((beat) => beat.id === "morning-stalled"), false, "Persisted beat must not repeat after reload");
 
 assert.equal(Director.insertMessage(morningBeat, claimed), true, "Director must insert the reaction into MIN");
 let minState = JSON.parse(storage.get("until-friday-min-messenger-v1"));
-assert.equal(minState.messages.filter((message) => message.id === "monday-director-morning-stalled").length, 1);
-assert.equal(minState.messages[0].senderId, "work-andrey");
+let message = minState.messages.find((item) => item.id === "monday-director-morning-stalled");
+assert.ok(message);
+assert.equal(message.senderId, "work-andrey");
+assert.equal(message.text, record.text);
+assert.equal(message.createdAt, new Date(Date.UTC(2026, 7, 3, 0, 0, 0) + 600 * 60000).toISOString());
 assert.equal(minState.chats.find((chat) => chat.id === "work-chat-andrey").unread, 1);
 assert.ok(badgeUpdates > 0, "New director messages must update the MIN unread badge");
 
 Director.insertMessage(morningBeat, claimed);
 minState = JSON.parse(storage.get("until-friday-min-messenger-v1"));
-assert.equal(minState.messages.filter((message) => message.id === "monday-director-morning-stalled").length, 1, "Stable message IDs must prevent duplicate MIN messages");
+assert.equal(minState.messages.filter((item) => item.id === "monday-director-morning-stalled").length, 1, "Stable message IDs must prevent duplicate MIN messages");
+
+storage.delete("until-friday-min-messenger-v1");
+assert.equal(Director.repairMessages(claimed), 1, "Cleared MIN data must be repaired from the main game save");
+minState = JSON.parse(storage.get("until-friday-min-messenger-v1"));
+message = minState.messages.find((item) => item.id === "monday-director-morning-stalled");
+assert.equal(message.text, record.text, "Recovered MIN message must keep its original text");
+assert.equal(message.createdAt, new Date(Date.UTC(2026, 7, 3, 0, 0, 0) + 600 * 60000).toISOString(), "Recovered MIN message must keep its original game time");
+assert.equal(Director.repairMessages(claimed), 0, "A second recovery pass must not duplicate the message");
 
 console.log("Reactive Monday office director validation passed.");
