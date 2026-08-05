@@ -84,6 +84,8 @@ jobs:
         run: node tests/min-desktop-integration.test.js
       - name: Validate MIN work folder, pins and employee avatars
         run: node tests/min-workspace.test.js
+      - name: Validate responsive MIN settings and contacts
+        run: node tests/min-responsive-layout.test.js
       - name: Validate branching MIN NPC dialogues
         run: node tests/min-npc-dialogues.test.js
       - name: Open Videotok through browser UI v4
