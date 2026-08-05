@@ -1,0 +1,800 @@
+/* MIN interface polish: container-based responsiveness, compact controls and subtle motion. */
+.min-app {
+  --min-motion-fast: 120ms;
+  --min-motion: 180ms;
+  --min-motion-slow: 260ms;
+  --min-ease: cubic-bezier(.2, .7, .2, 1);
+  --min-focus: 0 0 0 3px rgba(44, 120, 210, .2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.min-app,
+.min-app *,
+.min-app *::before,
+.min-app *::after {
+  box-sizing: border-box;
+}
+
+/* Pages without a chat list must use all remaining width, not the old chat-list column. */
+.min-app:not(:has(.min-chat-list)) {
+  grid-template-columns: 78px minmax(0, 1fr);
+}
+
+.min-app > *,
+.min-main,
+.min-page,
+.min-page > header,
+.min-page > header > div,
+.min-page-actions,
+.min-chat-list,
+.min-conversation,
+.min-contact-grid,
+.min-services,
+.min-settings,
+.min-settings > section {
+  min-width: 0;
+}
+
+.min-main {
+  overflow: hidden;
+}
+
+.min-page {
+  animation: minPageEnter var(--min-motion) var(--min-ease) both;
+  scrollbar-gutter: stable;
+}
+
+.min-page > header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.min-page > header > div:first-child {
+  min-width: 0;
+}
+
+.min-page h1,
+.min-page header p {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.min-page h1 {
+  font-size: clamp(18px, 2.1cqw, 22px);
+  line-height: 1.1;
+}
+
+.min-page header p {
+  font-size: clamp(10px, 1.3cqw, 13px);
+  line-height: 1.25;
+}
+
+.min-page-actions {
+  display: flex;
+  min-width: 0;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.min-page-actions > button,
+.min-page > header > button {
+  min-width: 0;
+  max-width: 220px;
+  min-height: 38px;
+  justify-content: center;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.min-page-actions > button img,
+.min-page > header > button img {
+  flex: 0 0 auto;
+}
+
+.min-contact-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
+}
+
+.min-contact-grid > button,
+.min-services > button,
+.min-call-list article,
+.min-settings > section,
+.min-p2p-settings {
+  transition:
+    transform var(--min-motion) var(--min-ease),
+    border-color var(--min-motion) ease,
+    box-shadow var(--min-motion) ease,
+    background-color var(--min-motion) ease;
+}
+
+.min-contact-grid > button > div,
+.min-call-list article > div,
+.min-services button > div {
+  min-width: 0;
+}
+
+.min-contact-grid b,
+.min-contact-grid span,
+.min-contact-grid small,
+.min-services b,
+.min-services p,
+.min-call-list b,
+.min-call-list span {
+  overflow-wrap: anywhere;
+}
+
+/* Universal controls */
+.min-app button,
+.min-app input,
+.min-app textarea,
+.min-app select {
+  transition:
+    transform var(--min-motion-fast) var(--min-ease),
+    color var(--min-motion) ease,
+    background-color var(--min-motion) ease,
+    border-color var(--min-motion) ease,
+    box-shadow var(--min-motion) ease,
+    opacity var(--min-motion) ease;
+}
+
+.min-app button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.min-app button:focus-visible,
+.min-app input:focus-visible,
+.min-app textarea:focus-visible,
+.min-app select:focus-visible {
+  outline: none;
+  box-shadow: var(--min-focus);
+}
+
+.min-app button:active:not(:disabled) {
+  transform: scale(.97);
+}
+
+.min-app button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.min-app button img {
+  transition: transform var(--min-motion) var(--min-ease), opacity var(--min-motion) ease;
+}
+
+.min-nav nav button,
+.min-nav footer > button,
+.min-folders button,
+.min-chat-row,
+.min-conversation > header button,
+.min-composer > button,
+.min-info button,
+.min-settings-actions button,
+.min-action-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.min-nav nav button::after,
+.min-folders button::after,
+.min-action-button::after {
+  content: "";
+  position: absolute;
+  inset: auto 50% 0;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0;
+  transform: translateX(-50%) scaleX(.2);
+  transition: opacity var(--min-motion) ease, transform var(--min-motion) var(--min-ease);
+}
+
+.min-nav nav button.active::after,
+.min-folders button.active::after {
+  opacity: .65;
+  transform: translateX(-50%) scaleX(1);
+  width: 34%;
+}
+
+.min-chat-row {
+  transition:
+    transform var(--min-motion-fast) var(--min-ease),
+    background-color var(--min-motion) ease,
+    box-shadow var(--min-motion) ease;
+}
+
+.min-chat-row.active {
+  box-shadow: inset 3px 0 var(--min-blue);
+}
+
+.min-chat-row .min-avatar,
+.min-contact-grid .min-avatar,
+.min-info-profile .min-avatar {
+  transition: transform var(--min-motion) var(--min-ease), box-shadow var(--min-motion) ease;
+}
+
+.min-bubble {
+  transition: transform var(--min-motion) var(--min-ease), box-shadow var(--min-motion) ease;
+}
+
+.min-pinned-bar {
+  transition: background-color var(--min-motion) ease, box-shadow var(--min-motion) ease;
+}
+
+.min-page-search,
+.min-composer textarea,
+.min-modal input,
+.min-modal textarea,
+.min-modal select,
+.min-polish-form input {
+  transition: border-color var(--min-motion) ease, background-color var(--min-motion) ease, box-shadow var(--min-motion) ease;
+}
+
+.min-page-search:focus-within,
+.min-composer textarea:focus,
+.min-polish-form input:focus {
+  border-color: #6b9fd2;
+  box-shadow: var(--min-focus);
+}
+
+/* Proper animated switches */
+.min-settings input[type="checkbox"] {
+  position: relative;
+  width: 42px;
+  min-width: 42px;
+  height: 24px;
+  margin: 0;
+  appearance: none;
+  border: 1px solid #b8c4cb;
+  border-radius: 999px;
+  background: #d7dfe4;
+  cursor: pointer;
+}
+
+.min-settings input[type="checkbox"]::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(25, 45, 58, .24);
+  transition: transform var(--min-motion) var(--min-ease), box-shadow var(--min-motion) ease;
+}
+
+.min-settings input[type="checkbox"]:checked {
+  border-color: var(--min-blue);
+  background: var(--min-blue);
+}
+
+.min-settings input[type="checkbox"]:checked::before {
+  transform: translateX(18px);
+}
+
+/* Polished modal used by Add contact and P2P connect. */
+.min-polish-modal-backdrop {
+  position: absolute;
+  z-index: 190;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(21, 36, 46, .38);
+  opacity: 0;
+  backdrop-filter: blur(2px);
+  transition: opacity var(--min-motion) ease;
+}
+
+.min-polish-modal-backdrop.visible {
+  opacity: 1;
+}
+
+.min-polish-modal {
+  width: min(430px, 100%);
+  max-height: min(560px, 94%);
+  overflow: hidden auto;
+  border: 1px solid #bac8d0;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 22px 65px rgba(18, 34, 45, .32);
+  transform: translateY(10px) scale(.98);
+  animation: minModalEnter var(--min-motion-slow) var(--min-ease) forwards;
+}
+
+.min-polish-modal > header {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--min-border);
+  padding: 13px 14px;
+}
+
+.min-polish-modal > header > div {
+  min-width: 0;
+}
+
+.min-polish-modal > header h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.min-polish-modal > header p {
+  margin: 3px 0 0;
+  color: var(--min-muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.min-polish-modal-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 12px;
+  background: #e7f1fb;
+}
+
+.min-polish-modal-icon img {
+  width: 22px;
+  height: 22px;
+}
+
+.min-polish-modal > header > button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.min-polish-modal > header > button img {
+  width: 18px;
+  height: 18px;
+}
+
+.min-polish-modal-body {
+  padding: 14px;
+}
+
+.min-polish-form {
+  display: grid;
+  gap: 12px;
+}
+
+.min-polish-form label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.min-polish-form label > span {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.min-polish-form input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  border: 1px solid #c4d0d7;
+  border-radius: 9px;
+  outline: 0;
+  padding: 0 11px;
+  background: #f8fafb;
+  color: var(--min-text);
+}
+
+.min-polish-input-prefix {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid #c4d0d7;
+  border-radius: 9px;
+  background: #f8fafb;
+}
+
+.min-polish-input-prefix:focus-within {
+  border-color: #6b9fd2;
+  box-shadow: var(--min-focus);
+}
+
+.min-polish-input-prefix b {
+  justify-self: center;
+  color: var(--min-blue);
+}
+
+.min-polish-input-prefix input {
+  border: 0;
+  border-left: 1px solid #d6dfe4;
+  border-radius: 0;
+  box-shadow: none !important;
+}
+
+.min-polish-form small {
+  color: var(--min-muted);
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.min-polish-peer-note {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  border-radius: 10px;
+  padding: 10px;
+  background: #edf5fb;
+  color: #496476;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.min-polish-peer-note img {
+  width: 19px;
+  height: 19px;
+}
+
+.min-polish-form-error {
+  margin: 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fae6e6;
+  color: #a33b3b;
+  font-size: 10px;
+}
+
+.min-polish-form footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--min-border);
+  margin: 2px -14px -14px;
+  padding: 11px 14px;
+}
+
+.min-polish-form footer button {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #bdc9d0;
+  border-radius: 8px;
+  padding: 7px 13px;
+  background: #fff;
+}
+
+.min-polish-form footer button.primary {
+  border-color: var(--min-blue);
+  background: var(--min-blue);
+  color: #fff;
+}
+
+.min-polish-form footer button img {
+  width: 17px;
+  height: 17px;
+}
+
+.min-polish-form footer button.primary img {
+  filter: brightness(0) invert(1);
+}
+
+.min-polish-toast {
+  position: absolute;
+  z-index: 210;
+  right: 16px;
+  bottom: 16px;
+  display: grid;
+  max-width: min(340px, calc(100% - 32px));
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #bad8c7;
+  border-radius: 11px;
+  padding: 10px 12px;
+  background: #f1fbf5;
+  color: #285f40;
+  box-shadow: 0 12px 34px rgba(22, 45, 34, .2);
+  animation: minToastEnter var(--min-motion-slow) var(--min-ease) both;
+}
+
+.min-polish-toast.error {
+  border-color: #e4bcbc;
+  background: #fff2f2;
+  color: #963d3d;
+}
+
+.min-polish-toast.leaving {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.min-polish-toast img {
+  width: 21px;
+  height: 21px;
+}
+
+.min-p2p-status > span.online {
+  animation: minOnlinePulse 2.2s ease-in-out infinite;
+}
+
+/* Dark theme additions */
+.min-app.dark .min-polish-modal,
+.min-app.dark .min-polish-form footer,
+.min-app.dark .min-polish-form footer button {
+  background: #202d36;
+  color: #e8f0f5;
+}
+
+.min-app.dark .min-polish-modal-icon,
+.min-app.dark .min-polish-peer-note {
+  background: #293c49;
+  color: #bbcad3;
+}
+
+.min-app.dark .min-polish-form input,
+.min-app.dark .min-polish-input-prefix {
+  border-color: #41545f;
+  background: #263640;
+  color: #e8f0f5;
+}
+
+.min-app.dark .min-polish-input-prefix input {
+  border-left-color: #41545f;
+}
+
+/* Container-based layout for resizable desktop windows. */
+@container min-messenger (max-width: 980px) {
+  .min-app:has(.min-chat-list) {
+    grid-template-columns: 66px minmax(235px, 32%) minmax(0, 1fr);
+  }
+
+  .min-app:not(:has(.min-chat-list)) {
+    grid-template-columns: 66px minmax(0, 1fr);
+  }
+
+  .min-nav span {
+    font-size: 8px;
+  }
+}
+
+@container min-messenger (max-width: 760px) {
+  .min-app:has(.min-chat-list) {
+    grid-template-columns: 58px minmax(210px, 36%) minmax(0, 1fr);
+  }
+
+  .min-app:not(:has(.min-chat-list)) {
+    grid-template-columns: 58px minmax(0, 1fr);
+  }
+
+  .min-logo {
+    height: 58px;
+  }
+
+  .min-logo b {
+    font-size: 17px;
+  }
+
+  .min-nav nav button,
+  .min-nav footer > button {
+    min-height: 48px;
+  }
+
+  .min-page > header {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    padding: 12px 14px;
+  }
+
+  .min-page-actions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+    justify-content: stretch;
+  }
+
+  .min-page-actions > button,
+  .min-page > header > button {
+    width: 100%;
+    max-width: none;
+  }
+
+  .min-contact-grid,
+  .min-services {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container min-messenger (max-width: 640px) {
+  .min-app {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .min-nav {
+    display: none;
+  }
+
+  .min-chat-list {
+    position: absolute;
+    z-index: 15;
+    inset: 0;
+    width: 100%;
+    border-right: 0;
+  }
+
+  .min-app:has(.min-conversation) .min-chat-list {
+    display: none;
+  }
+
+  .min-main {
+    grid-column: 1;
+    width: 100%;
+    height: 100%;
+  }
+
+  .min-conversation > header {
+    padding-left: 9px;
+  }
+
+  .min-conversation > header::before {
+    content: "";
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    background: url("https://img.icons8.com/fluency-systems-regular/20/back.png") center/contain no-repeat;
+  }
+
+  .min-page-search,
+  .min-settings > section,
+  .min-p2p-settings {
+    margin-inline: 12px;
+  }
+
+  .min-contact-grid,
+  .min-services,
+  .min-call-list {
+    padding-inline: 12px;
+  }
+}
+
+@container min-messenger (max-width: 440px) {
+  .min-page > header {
+    gap: 9px;
+    padding: 10px 12px;
+  }
+
+  .min-page-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .min-page-actions > button {
+    min-height: 36px;
+    border-radius: 9px !important;
+    padding: 7px 10px !important;
+  }
+
+  .min-contact-grid > button {
+    min-height: 62px;
+    grid-template-columns: 38px minmax(0, 1fr) 20px;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .min-composer {
+    grid-template-columns: 30px minmax(0, 1fr) 30px 30px 34px;
+    gap: 2px;
+    padding: 7px 6px;
+  }
+
+  .min-composer > button {
+    width: 30px;
+    height: 30px;
+  }
+
+  .min-composer img {
+    width: 18px;
+    height: 18px;
+  }
+
+  .min-message {
+    max-width: 94%;
+  }
+
+  .min-polish-modal-backdrop {
+    padding: 8px;
+  }
+
+  .min-polish-modal > header {
+    grid-template-columns: 36px minmax(0, 1fr) 30px;
+    gap: 8px;
+    padding: 11px;
+  }
+
+  .min-polish-modal-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+
+  .min-polish-form footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .min-polish-form footer button {
+    width: 100%;
+  }
+}
+
+@media (hover: hover) {
+  .min-app button:hover:not(:disabled) img {
+    transform: scale(1.07);
+  }
+
+  .min-chat-row:hover,
+  .min-contact-grid > button:hover,
+  .min-services > button:hover {
+    transform: translateY(-1px);
+  }
+
+  .min-contact-grid > button:hover,
+  .min-services > button:hover,
+  .min-settings > section:hover {
+    box-shadow: 0 7px 20px rgba(25, 48, 63, .08);
+  }
+
+  .min-message:hover .min-bubble {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(25, 48, 63, .08);
+  }
+
+  .min-info button:hover,
+  .min-conversation > header button:hover,
+  .min-composer > button:hover {
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes minPageEnter {
+  from { opacity: .55; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes minModalEnter {
+  from { opacity: 0; transform: translateY(10px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes minToastEnter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes minOnlinePulse {
+  50% { box-shadow: 0 0 0 6px rgba(54, 167, 109, .1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .min-app *,
+  .min-app *::before,
+  .min-app *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
