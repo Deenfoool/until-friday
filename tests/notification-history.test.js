@@ -12,11 +12,12 @@ assert.doesNotMatch(source, /new\s+MutationObserver\s*\(/, "notification history
 assert.match(source, /until-friday-state-change/, "new inbox events must trigger duplicate inspection");
 assert.match(source, /until-friday-app-ready/, "restored inbox notifications must be inspected after startup");
 assert.match(source, /until-friday-ui-render/, "notification inspection must follow completed UI rendering");
+assert.match(source, /belongsInsideApp/, "app-owned messages must be filtered from desktop notifications");
 
 const storage = new Map();
 storage.set("until-friday-save-v2", JSON.stringify({
   seed: "week-a",
-  inbox: [{ id: "mail-a", source: "Дима Орлов", text: "Сообщение уже показано." }]
+  inbox: [{ id: "mail-a", type: "mail", source: "Дима Орлов", text: "Сообщение уже показано." }]
 }));
 
 const notifications = [];
@@ -46,6 +47,8 @@ const api = context.UntilFridayNotificationHistoryGuard;
 assert.ok(api, "notification history API must be exported");
 assert.ok(listeners.has("until-friday-state-change"), "state lifecycle listener must be registered");
 assert.ok(listeners.has("until-friday-app-ready"), "startup lifecycle listener must be registered");
+assert.equal(api.belongsInsideApp({ type: "chat" }), true, "chat messages belong inside MIN");
+assert.equal(api.belongsInsideApp({ type: "mail" }), false, "mail messages may use desktop notifications");
 
 function notification(sourceText, bodyText) {
   return {
@@ -63,7 +66,7 @@ function notification(sourceText, bodyText) {
 
 const first = notification("Дима Орлов", "Сообщение уже показано.");
 api.inspectNotification(first);
-assert.equal(first.removed, false, "a newly delivered message must remain visible");
+assert.equal(first.removed, false, "a newly delivered non-chat message must remain visible");
 let history = JSON.parse(storage.get("until-friday-notification-history-v1"));
 assert.deepEqual(history.ids, ["mail-a"]);
 
@@ -72,8 +75,24 @@ api.inspectNotification(repeated);
 assert.equal(repeated.removed, true, "the same inbox message must be suppressed after reload");
 
 storage.set("until-friday-save-v2", JSON.stringify({
+  seed: "week-chat",
+  inbox: [{
+    id: "mon-friend-reply-changes",
+    type: "chat",
+    source: "Дима Орлов",
+    text: "Людей тасуют между проектами, Андрей дважды закрывался с кадровиком, а Роман чистит права на общем диске. Может, обычная реорганизация."
+  }]
+}));
+const chatToast = notification(
+  "Дима Орлов",
+  "Людей тасуют между проектами, Андрей дважды закрывался с кадровиком, а Роман чистит права на общем диске. Может, обычная реорганизация."
+);
+api.inspectNotification(chatToast);
+assert.equal(chatToast.removed, true, "MIN chat messages must never appear as desktop narrator toasts");
+
+storage.set("until-friday-save-v2", JSON.stringify({
   seed: "week-b",
-  inbox: [{ id: "mail-a", source: "Дима Орлов", text: "Сообщение уже показано." }]
+  inbox: [{ id: "mail-a", type: "mail", source: "Дима Орлов", text: "Сообщение уже показано." }]
 }));
 const newWeek = notification("Дима Орлов", "Сообщение уже показано.");
 api.inspectNotification(newWeek);
