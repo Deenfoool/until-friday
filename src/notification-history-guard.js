@@ -59,6 +59,10 @@
     return String(item.id || `${item.dayIndex}:${item.minute}:${item.source}:${item.title}:${item.text}`);
   }
 
+  function belongsInsideApp(item) {
+    return String(item?.type || "").toLowerCase() === "chat";
+  }
+
   function inspectNotification(element) {
     if (!element?.matches?.(".notification") || element.dataset.historyChecked === "true") return;
     element.dataset.historyChecked = "true";
@@ -67,6 +71,13 @@
     if (!state.seed) return;
     const item = matchInboxItem(state, notificationText(element));
     if (!item) return;
+
+    // Сообщения коллег должны существовать только внутри МИН. Отдельный тост
+    // превращает компьютер в рассказчика и ломает ощущение рабочего интерфейса.
+    if (belongsInsideApp(item)) {
+      element.remove();
+      return;
+    }
 
     const history = readHistory(String(state.seed));
     const key = itemKey(item);
@@ -106,6 +117,7 @@
     readHistory,
     matchInboxItem,
     itemKey,
+    belongsInsideApp,
     inspectNotification,
     inspect,
     queue
