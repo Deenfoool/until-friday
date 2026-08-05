@@ -7,6 +7,15 @@
   box-shadow: 2px 3px 12px rgba(0, 0, 0, .3);
 }
 
+.app-window .window-titlebar {
+  cursor: grab;
+  touch-action: none;
+}
+
+.app-window[data-window-dragging="true"] .window-titlebar {
+  cursor: grabbing;
+}
+
 .window-controls .window-layout-maximize {
   font-size: 17px;
   line-height: 1;
@@ -30,7 +39,9 @@
 }
 
 body.window-resizing,
-body.window-resizing * {
+body.window-resizing *,
+body.window-dragging,
+body.window-dragging * {
   user-select: none !important;
 }
 
@@ -85,5 +96,10 @@ body.window-resizing * {
 
   .app-window.window-layout-managed {
     cursor: default !important;
+  }
+
+  .app-window .window-titlebar {
+    cursor: default;
+    touch-action: auto;
   }
 }
