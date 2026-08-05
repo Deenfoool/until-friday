@@ -4,12 +4,19 @@ const assert = require("node:assert/strict");
 const Engine = require("../src/engine.js");
 const story = require("../src/story-v2.js");
 const Dialogues = require("../src/min-npc-dialogues.js");
+const Schedules = require("../src/min-npc-dialogue-schedules.js");
 
 Dialogues.patchStory(story);
 
 assert.equal(story.metadata.minNpcDialoguesVersion, Dialogues.VERSION, "Dialogue patch version must be stored on the story");
 for (const id of Dialogues.ACTION_IDS) assert(story.actions[id], `Missing MIN dialogue action: ${id}`);
 for (const id of Dialogues.EVENT_IDS) assert(story.events[id], `Missing MIN dialogue event: ${id}`);
+for (const [actionId, reply] of Object.entries(Schedules.REPLY_SCHEDULES)) {
+  assert(
+    story.actions[actionId]?.effects?.schedule?.some((item) => item.eventId === reply.eventId),
+    `Dialogue action ${actionId} must schedule reply ${reply.eventId}`
+  );
+}
 
 {
   const engine = Engine.createEngine(story, null, { seed: "min-dialogue-monday", truthId: "player" });
