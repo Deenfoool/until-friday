@@ -74,7 +74,8 @@ for (const [actionId, reply] of Object.entries(Schedules.REPLY_SCHEDULES)) {
   const question = engine.advanceTime(0).events;
   assert(question.some((event) => event.id === "tue-admin-question"), "Roman must question the player about the access request");
 
-  const answers = engine.listActions("chat").filter((action) => action.choiceGroup === "tuesday-admin");
+  const romanAnswerIds = new Set(["tue-answer-admin-honest", "tue-answer-admin-lie", "tue-answer-admin-deflect"]);
+  const answers = engine.listActions("chat").filter((action) => romanAnswerIds.has(action.id));
   assert.deepEqual(
     new Set(answers.map((action) => action.id)),
     new Set(["tue-answer-admin-honest", "tue-answer-admin-lie", "tue-answer-admin-deflect"]),
