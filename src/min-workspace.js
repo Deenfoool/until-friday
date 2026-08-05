@@ -18,6 +18,7 @@
     "work-dima": "assets/avatar-friend.png",
     "work-oleg": "assets/avatar-tattler.png",
     "work-roman": "assets/avatar-sysadmin.png",
+    "work-marina": "assets/avatar-accountant.png",
     "work-andrey": "assets/avatar-director.png"
   });
 
@@ -25,6 +26,7 @@
     "work-chat-dima": WORK_AVATARS_BY_USER["work-dima"],
     "work-chat-oleg": WORK_AVATARS_BY_USER["work-oleg"],
     "work-chat-roman": WORK_AVATARS_BY_USER["work-roman"],
+    "work-chat-marina": WORK_AVATARS_BY_USER["work-marina"],
     "work-chat-andrey": WORK_AVATARS_BY_USER["work-andrey"]
   });
 

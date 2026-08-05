@@ -20,6 +20,7 @@ for (const phrase of [
   "work-chat-dima",
   "work-chat-oleg",
   "work-chat-roman",
+  "work-chat-marina",
   "work-chat-andrey",
   "syncStoryMessages",
   "deliveredEvents",
@@ -40,7 +41,9 @@ for (const phrase of [
 
 assert.match(source, /button\.replaceWith\(clone\)/, "old Connection launchers must be cloned without their old listeners");
 assert.match(source, /\.app-window\[data-window-id=/, "stale Connection window must be removed");
-assert.match(source, /contactForAction/, "story actions must be routed to work contacts");
+assert.match(source, /action\?\.contactKey \? knownContactByKey\(action\.contactKey\)/, "story actions must prefer explicit contactKey routing");
+assert.match(source, /action\.messageText \|\| action\.label/, "sent story messages must use the full authored player line");
+assert.match(source, /action\.optionLabel \|\| action\.label/, "story choice buttons must use a short option label when available");
 assert.match(source, /storyMessage: true/, "story messages must be marked inside MIN storage");
 assert.match(source, /P2P доступен в настройках/, "desktop status must preserve real messenger networking");
 assert.match(source, /pinned: Boolean\(chat\?\.pinned\)/, "story synchronization must preserve the user's chat pin state");
@@ -66,7 +69,7 @@ for (const phrase of [
 
 const html = read("index.html");
 assert.match(html, /min-desktop-integration\.css\?v=20260804-1/);
-assert.match(html, /src\/min-desktop-integration\.js\?v=20260805-2/);
+assert.match(html, /src\/min-desktop-integration\.js\?v=20260805-3/);
 assert.ok(
   html.indexOf("src/min-messenger.js") < html.indexOf("src/min-desktop-integration.js") &&
   html.indexOf("src/min-messenger-p2p.js") < html.indexOf("src/min-desktop-integration.js") &&
