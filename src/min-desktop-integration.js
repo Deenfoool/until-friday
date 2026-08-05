@@ -19,6 +19,7 @@
     { key: "dima", userId: "work-dima", chatId: "work-chat-dima", name: "Дима Орлов", username: "d.orlov", role: "соседний стол", color: "#4e9a72", status: "внутренняя сеть" },
     { key: "oleg", userId: "work-oleg", chatId: "work-chat-oleg", name: "Олег Казанцев", username: "o.kazantsev", role: "отдел продаж", color: "#b87849", status: "внутренняя сеть" },
     { key: "roman", userId: "work-roman", chatId: "work-chat-roman", name: "Роман Белов", username: "r.belov", role: "системный администратор", color: "#4f8ca8", status: "внутренняя сеть" },
+    { key: "marina", userId: "work-marina", chatId: "work-chat-marina", name: "Марина Лебедева", username: "m.lebedeva", role: "бухгалтерия", color: "#a06472", status: "внутренняя сеть" },
     { key: "andrey", userId: "work-andrey", chatId: "work-chat-andrey", name: "Андрей Соколов", username: "a.sokolov", role: "начальник отдела", color: "#7c62a7", status: "внутренняя сеть" }
   ];
 
@@ -116,6 +117,10 @@
     return WORK_CONTACTS.find((item) => item.name === name) || null;
   }
 
+  function knownContactByKey(key) {
+    return WORK_CONTACTS.find((item) => item.key === key) || null;
+  }
+
   function contactForSource(name) {
     const known = knownContactByName(name);
     if (known) return known;
@@ -133,6 +138,10 @@
   }
 
   function contactForAction(actionId) {
+    const action = Story.actions?.[actionId] || null;
+    const explicit = action?.contactKey ? knownContactByKey(action.contactKey) : null;
+    if (explicit) return explicit;
+
     const id = String(actionId || "");
     if (id.includes("admin")) return knownContactByName("Роман Белов");
     if (id.includes("friend") || id.includes("blame")) return knownContactByName("Дима Орлов");
@@ -258,7 +267,7 @@
         ensureChat(state, contact);
         upsertStoryMessage(state, contact, {
           id: `sent-${actionId}`,
-          text: action.label,
+          text: action.messageText || action.label,
           dayIndex: Number(completed?.dayIndex ?? gameState.dayIndex),
           minute: Number(completed?.minute ?? gameState.minute),
           side: "me"
@@ -327,7 +336,7 @@
     actions.forEach((action) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.innerHTML = `<span>${escapeHtml(action.label)}</span><small>${Math.max(0, Number(action.minutes || 0))} мин.</small>`;
+      button.innerHTML = `<span>${escapeHtml(action.optionLabel || action.label)}</span><small>${Math.max(0, Number(action.minutes || 0))} мин.</small>`;
       button.addEventListener("click", () => performStoryAction(action.id));
       list.appendChild(button);
     });
@@ -585,6 +594,7 @@
     APP_ID,
     APP_TITLE,
     WORK_CONTACTS,
+    knownContactByKey,
     contactForAction,
     syncStoryMessages,
     ensureLaunchers,
