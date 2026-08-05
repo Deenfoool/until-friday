@@ -8,7 +8,7 @@ const vm = require("node:vm");
 const root = path.resolve(__dirname, "..");
 const source = fs.readFileSync(path.join(root, "src/notification-history-guard.js"), "utf8");
 assert.doesNotThrow(() => new Function(source), "notification history guard must contain valid JavaScript");
-assert.doesNotMatch(source, /new\s+MutationObserver\s*\(/, "notification history must use state and startup lifecycle events");
+assert.match(source, /MutationObserver/, "notification history must inspect toasts added after state events");
 assert.match(source, /until-friday-state-change/, "new inbox events must trigger duplicate inspection");
 assert.match(source, /until-friday-app-ready/, "restored inbox notifications must be inspected after startup");
 assert.match(source, /until-friday-ui-render/, "notification inspection must follow completed UI rendering");
@@ -22,11 +22,35 @@ storage.set("until-friday-save-v2", JSON.stringify({
 
 const notifications = [];
 const listeners = new Map();
+const notificationsContainer = {};
+let observerCallback = null;
+let observedTarget = null;
+let observedOptions = null;
+
 const documentStub = {
   documentElement: {},
   addEventListener() {},
-  querySelectorAll() { return notifications.filter((item) => !item.removed); }
+  querySelector(selector) {
+    return selector === "#notifications" ? notificationsContainer : null;
+  },
+  querySelectorAll() {
+    return notifications.filter((item) => !item.removed);
+  }
 };
+
+class MutationObserverStub {
+  constructor(callback) {
+    observerCallback = callback;
+  }
+
+  observe(target, options) {
+    observedTarget = target;
+    observedOptions = options;
+  }
+
+  disconnect() {}
+}
+
 const context = {
   UntilFridayMigration: { ENGINE_SAVE_KEY: "until-friday-save-v2" },
   localStorage: {
@@ -35,6 +59,7 @@ const context = {
     removeItem: (key) => storage.delete(key)
   },
   document: documentStub,
+  MutationObserver: MutationObserverStub,
   queueMicrotask: (callback) => callback(),
   addEventListener(type, callback) { listeners.set(type, callback); },
   console,
@@ -47,6 +72,8 @@ const api = context.UntilFridayNotificationHistoryGuard;
 assert.ok(api, "notification history API must be exported");
 assert.ok(listeners.has("until-friday-state-change"), "state lifecycle listener must be registered");
 assert.ok(listeners.has("until-friday-app-ready"), "startup lifecycle listener must be registered");
+assert.equal(observedTarget, notificationsContainer, "desktop notification container must be observed");
+assert.deepEqual(observedOptions, { childList: true, subtree: true });
 assert.equal(api.belongsInsideApp({ type: "chat" }), true, "chat messages belong inside MIN");
 assert.equal(api.belongsInsideApp({ type: "mail" }), false, "mail messages may use desktop notifications");
 
@@ -60,6 +87,7 @@ function notification(sourceText, bodyText) {
       if (selector === "span") return { textContent: bodyText };
       return null;
     },
+    querySelectorAll() { return []; },
     remove() { this.removed = true; }
   };
 }
@@ -74,21 +102,27 @@ const repeated = notification("Дима Орлов", "Сообщение уже 
 api.inspectNotification(repeated);
 assert.equal(repeated.removed, true, "the same inbox message must be suppressed after reload");
 
+const chatText = "Я и не собирался рассказывать. Но если начнут спрашивать напрямую, врать за тебя не буду.";
 storage.set("until-friday-save-v2", JSON.stringify({
   seed: "week-chat",
   inbox: [{
-    id: "mon-friend-reply-changes",
+    id: "mon-friend-reply-silence",
     type: "chat",
     source: "Дима Орлов",
-    text: "Людей тасуют между проектами, Андрей дважды закрывался с кадровиком, а Роман чистит права на общем диске. Может, обычная реорганизация."
+    text: chatText
   }]
 }));
-const chatToast = notification(
-  "Дима Орлов",
-  "Людей тасуют между проектами, Андрей дважды закрывался с кадровиком, а Роман чистит права на общем диске. Может, обычная реорганизация."
-);
-api.inspectNotification(chatToast);
-assert.equal(chatToast.removed, true, "MIN chat messages must never appear as desktop narrator toasts");
+const chatToast = notification("Дима Орлов", chatText);
+observerCallback([{ addedNodes: [chatToast] }]);
+assert.equal(chatToast.removed, true, "a MIN chat toast must be removed immediately after DOM insertion");
+
+storage.set("until-friday-save-v2", JSON.stringify({
+  seed: "week-system",
+  inbox: []
+}));
+const systemToast = notification("Система", "Прогресс сохранён.");
+observerCallback([{ addedNodes: [systemToast] }]);
+assert.equal(systemToast.removed, false, "ordinary system toasts must remain visible");
 
 storage.set("until-friday-save-v2", JSON.stringify({
   seed: "week-b",
@@ -99,10 +133,6 @@ api.inspectNotification(newWeek);
 assert.equal(newWeek.removed, false, "a new game seed must start a clean notification history");
 history = JSON.parse(storage.get("until-friday-notification-history-v1"));
 assert.equal(history.seed, "week-b");
-
-const unrelated = notification("Система", "Прогресс сохранён.");
-api.inspectNotification(unrelated);
-assert.equal(unrelated.removed, false, "ordinary system toasts must not be mistaken for inbox events");
 
 const queued = notification("Дима Орлов", "Сообщение уже показано.");
 notifications.push(queued);
