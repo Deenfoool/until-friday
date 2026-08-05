@@ -1,0 +1,271 @@
+/* Responsive layout for MIN inside resizable desktop windows.
+   Container queries intentionally follow the messenger window width,
+   not the browser viewport width. */
+.min-app {
+  container-name: min-messenger;
+  container-type: inline-size;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.min-main,
+.min-page,
+.min-settings,
+.min-p2p-settings,
+.min-page > header,
+.min-page > header > div,
+.min-contact-grid,
+.min-contact-grid > button,
+.min-contact-grid > button > div {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.min-page {
+  overflow-x: hidden;
+}
+
+.min-page > header {
+  gap: 10px;
+}
+
+.min-page > header > div:first-child {
+  min-width: 0;
+}
+
+.min-page > header > button,
+.min-page > header > .min-p2p-contact-button {
+  min-width: 0;
+  max-width: 100%;
+  justify-content: center;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.15;
+}
+
+.min-contact-grid > button > div {
+  overflow: hidden;
+}
+
+.min-contact-grid b,
+.min-contact-grid span,
+.min-contact-grid small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.min-p2p-settings {
+  width: auto;
+  max-width: none;
+}
+
+.min-p2p-settings > label,
+.min-p2p-settings > label > div:first-child {
+  min-width: 0;
+}
+
+.min-p2p-settings > label > div:first-child {
+  flex: 1 1 180px;
+}
+
+.min-p2p-copy,
+.min-p2p-connect {
+  width: min(420px, 100%);
+  min-width: 0;
+  flex: 1 1 310px;
+}
+
+.min-p2p-copy input,
+.min-p2p-connect input {
+  width: 0;
+  min-width: 0;
+}
+
+.min-p2p-copy button {
+  flex: 0 0 38px;
+}
+
+.min-p2p-connect button {
+  min-width: 88px;
+  flex: 0 1 108px;
+  white-space: normal;
+}
+
+@container min-messenger (max-width: 720px) {
+  .min-page > header {
+    min-height: 0;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding: 12px 16px;
+  }
+
+  .min-page > header > div:first-child {
+    flex: 1 1 100%;
+  }
+
+  .min-page > header > button,
+  .min-page > header > .min-p2p-contact-button {
+    min-height: 38px;
+    flex: 1 1 140px;
+    padding: 8px 10px !important;
+  }
+
+  .min-page-search {
+    width: auto;
+    max-width: none;
+    margin: 12px 16px;
+  }
+
+  .min-contact-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0 16px 20px;
+  }
+
+  .min-contact-grid > button {
+    min-height: 68px;
+    grid-template-columns: 42px minmax(0, 1fr) 22px;
+    gap: 9px;
+  }
+
+  .min-contact-grid .min-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .min-settings > section,
+  .min-p2p-settings {
+    width: auto;
+    max-width: none;
+    margin: 12px 16px;
+  }
+
+  .min-p2p-settings > label {
+    display: grid;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .min-p2p-settings > label > div:first-child {
+    width: 100%;
+  }
+
+  .min-p2p-copy,
+  .min-p2p-connect {
+    width: 100%;
+    max-width: none;
+  }
+
+  .min-settings > section > label {
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .min-settings input[type="url"] {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+@container min-messenger (max-width: 480px) {
+  .min-page > header {
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .min-page h1 {
+    font-size: 19px;
+  }
+
+  .min-page header p {
+    margin-top: 3px;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .min-page > header > button,
+  .min-page > header > .min-p2p-contact-button {
+    min-height: 36px;
+    flex-basis: calc(50% - 4px);
+    gap: 5px !important;
+    border-radius: 10px !important;
+    font-size: 10px;
+  }
+
+  .min-page > header > button img,
+  .min-page > header > .min-p2p-contact-button img {
+    width: 17px !important;
+    height: 17px !important;
+  }
+
+  .min-page-search,
+  .min-settings > section,
+  .min-p2p-settings {
+    margin-right: 12px;
+    margin-left: 12px;
+  }
+
+  .min-contact-grid {
+    padding-right: 12px;
+    padding-bottom: 16px;
+    padding-left: 12px;
+  }
+
+  .min-contact-grid > button {
+    min-height: 64px;
+    grid-template-columns: 38px minmax(0, 1fr) 20px;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .min-contact-grid .min-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+  }
+
+  .min-p2p-settings > h2 {
+    padding: 11px 12px;
+  }
+
+  .min-p2p-status,
+  .min-p2p-settings > label {
+    padding: 10px 12px;
+  }
+
+  .min-p2p-settings > p {
+    padding: 10px 12px;
+  }
+
+  .min-p2p-copy input,
+  .min-p2p-connect input {
+    font-size: 9px;
+  }
+}
+
+@container min-messenger (max-width: 340px) {
+  .min-page > header > button,
+  .min-page > header > .min-p2p-contact-button {
+    flex-basis: 100%;
+  }
+
+  .min-p2p-connect {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .min-p2p-connect input,
+  .min-p2p-connect button {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid #c5d0d7;
+    border-radius: 7px;
+  }
+
+  .min-p2p-connect button {
+    min-height: 34px;
+  }
+}
