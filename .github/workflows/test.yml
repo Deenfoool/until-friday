@@ -38,6 +38,12 @@ jobs:
         run: node tests/tuesday-live-story.test.js
       - name: Validate reusable Tuesday office director
         run: node tests/tuesday-office-director.test.js
+      - name: Validate live Wednesday security story
+        run: node tests/wednesday-live-story.test.js
+      - name: Validate reactive Wednesday office director
+        run: node tests/wednesday-office-director.test.js
+      - name: Validate MIN security officer contact
+        run: node tests/min-security-contact.test.js
       - name: Validate base story graph
         run: node tests/story-validation.test.js
       - name: Validate fully extended story graph
