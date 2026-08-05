@@ -61,18 +61,18 @@
   }
 
   function restoreForDrag(element, event) {
+    if (element.dataset.windowMaximized !== "true") return currentBounds(element);
+
     const area = workspace();
     const pointerX = event.clientX - area.left;
     const ratio = clamp(pointerX / Math.max(1, area.width), 0.08, 0.92);
     const layout = root.UntilFridayWindowLayout;
 
-    if (element.dataset.windowMaximized === "true") {
-      if (typeof layout?.restore === "function") {
-        layout.restore(element);
-      } else {
-        element.dataset.windowMaximized = "false";
-        element.classList?.remove?.("window-maximized");
-      }
+    if (typeof layout?.restore === "function") {
+      layout.restore(element);
+    } else {
+      element.dataset.windowMaximized = "false";
+      element.classList?.remove?.("window-maximized");
     }
 
     const bounds = currentBounds(element);
