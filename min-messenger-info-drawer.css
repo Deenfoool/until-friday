@@ -1,0 +1,87 @@
+/* Telegram-like chat information drawer.
+   The drawer overlays the current conversation instead of becoming
+   an extra grid column and pushing the chat out of view. */
+.min-app {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.min-info {
+  position: absolute !important;
+  z-index: 80;
+  inset: 0 0 0 auto;
+  display: flex;
+  width: clamp(310px, 32cqw, 390px);
+  max-width: 100%;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  border-left: 1px solid var(--min-border);
+  background: #fff;
+  box-shadow: -14px 0 36px rgba(22, 41, 55, .22);
+  overflow: hidden;
+  animation: minInfoDrawerIn .18s ease-out both;
+}
+
+.min-info > header {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  background: inherit;
+}
+
+.min-info-profile,
+.min-info > nav,
+.min-info > footer {
+  flex: 0 0 auto;
+}
+
+.min-info > section {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.min-info > footer {
+  margin-top: auto;
+  background: inherit;
+}
+
+.min-app.dark .min-info {
+  background: #202d36;
+  color: #e8f0f5;
+  box-shadow: -14px 0 36px rgba(0, 0, 0, .42);
+}
+
+@keyframes minInfoDrawerIn {
+  from {
+    transform: translateX(18px);
+    opacity: .35;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@container min-messenger (max-width: 720px) {
+  .min-info {
+    width: min(350px, 100%);
+  }
+}
+
+@container min-messenger (max-width: 480px) {
+  .min-info {
+    width: 100%;
+    border-left: 0;
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .min-info {
+    animation: none;
+  }
+}
