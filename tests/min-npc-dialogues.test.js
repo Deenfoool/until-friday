@@ -62,6 +62,10 @@ for (const [actionId, reply] of Object.entries(Schedules.REPLY_SCHEDULES)) {
   assert(!events.some((event) => event.id === "tue-friend-rumor"), "The confidential rumor branch must not appear when the player never told Dima");
   const options = hidden.listActions("chat").filter((action) => action.choiceGroup === "tuesday-dima-hidden");
   assert.equal(options.length, 2, "The hidden-concern route must offer a late confession or another refusal");
+  const lateTruth = hidden.applyAction("tue-friend-tell-late");
+  assert.equal(lateTruth.ok, true);
+  assert.equal(lateTruth.state.flags.toldFriend, true, "A late confession must count as telling Dima for later consequences");
+  assert(!lateTruth.events.some((event) => event.id === "tue-friend-rumor"), "A late confession must not retroactively trigger the morning rumor");
 }
 
 {
