@@ -2,7 +2,7 @@
   "use strict";
 
   if (root.UntilFridayBrowserOnlineIconFallback) return;
-  const FALLBACK = "https://img.icons8.com/fluency/96/package.png";
+  const FALLBACK = "assets/icons/marketplace/package.svg";
 
   document.addEventListener("error", (event) => {
     const image = event.target;

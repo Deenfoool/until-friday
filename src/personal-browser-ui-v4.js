@@ -243,6 +243,7 @@
     if (!win || !state) return false;
     const oldPage = win.querySelector(".rb-page");
     const oldScroll = oldPage ? { top: oldPage.scrollTop, left: oldPage.scrollLeft } : { top: 0, left: 0 };
+    const marketView = root.UntilFridayMarketplaceParody?.captureView?.(oldPage);
     const user = personal(state);
     const current = entry();
     win.dataset.browserV4 = "true";
@@ -254,6 +255,7 @@
     bindChrome(win.querySelector(".window-content"), user);
     const page = win.querySelector(".rb-page");
     renderPage(page, state, user, current);
+    if (current.url === lastUrl && current.page === "market") root.UntilFridayMarketplaceParody?.restoreView?.(page, marketView);
     if (current.url === lastUrl && current.page !== "min") { page.scrollTop = oldScroll.top; page.scrollLeft = oldScroll.left; }
     else if (current.page !== "min") page.scrollTop = 0;
     lastUrl = current.url;

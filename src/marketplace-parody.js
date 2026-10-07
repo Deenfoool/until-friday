@@ -6,8 +6,7 @@
   const Runtime = root.UntilFridayRuntimeEngine;
   if (!Browser || !Runtime) return;
 
-  const ICON_HOST = "https://img.icons8.com";
-  const icon = (name, size = 32, style = "fluency") => `${ICON_HOST}/${style}/${size}/${name}.png`;
+  const icon = (name) => `assets/icons/marketplace/${name}.svg`;
 
   const CATEGORIES = [
     { id: "women", label: "Женщинам", icon: "dress-front-view" },
@@ -49,44 +48,7 @@
     shoes: [
       ["s-sneakers-run", "Кроссовки «Убежать с планёрки»", "Fast Exit", 2890, 6990, 4.8, 2821, "trainers", "Хит"],
       ["s-slippers-home", "Тапочки домашние «Официально занят»", "Soft Status", 690, 1590, 4.9, 7112, "slippers", "Тёплые"],
-      ["s-boots-puddle", "Ботинки непромокаемые для дороги на работу", "Monday Road", 3490, 7990, 4.7, 1008, "boots", "Осень"],
-      ["s-shoes-meeting", "Туфли «Срочно в переговорную»", "Quiet Step", 2690, 6490, 4.6, 778, "mens-shoe", "Тихая подошва"],
-      ["s-socks-slides", "Шлёпанцы с носками, комплект смелого сотрудника", "Dress Code?", 990, 2290, 4.5, 503, "flip-flops", "Скандал"]
-    ],
-    home: [
-      ["h-chair", "Кресло офисное «Спина ещё пригодится»", "Linea Compact", 7390, 12990, 4.7, 938, "office-chair-2", "Бестселлер"],
-      ["h-lamp", "Лампа настольная «Свет в конце отчёта»", "Aurora", 1890, 3990, 4.9, 2441, "desk-lamp", "3 режима"],
-      ["h-mug", "Кружка 450 мл «Это не третий кофе»", "Mugshot", 490, 990, 4.8, 10012, "coffee-cup", "Хит"],
-      ["h-blanket", "Плед для удалёнки и отрицания реальности", "Warm Deadline", 1590, 3490, 4.9, 3310, "blanket", "Мягкий"],
-      ["h-organizer", "Органайзер «Положил и забыл где»", "Order-ish", 890, 1890, 4.6, 1876, "organizer", "12 секций"]
-    ],
-    beauty: [
-      ["b-eye", "Патчи под глаза «Я просто рано встал»", "Morning Lie", 390, 890, 4.7, 8120, "eye-makeup", "60 шт."],
-      ["b-cream", "Крем для рук после восьми часов клавиатуры", "Soft Keys", 290, 690, 4.8, 6411, "cream-tube", "Быстро впитывается"],
-      ["b-perfume", "Парфюм «Запах квартальной премии»", "Bonus Dream", 1290, 3990, 4.5, 1308, "perfume-bottle", "Туалетная вода"],
-      ["b-shampoo", "Шампунь против последствий понедельника", "Clean Start", 490, 1090, 4.8, 5590, "shampoo", "500 мл"],
-      ["b-mask", "Маска для лица «Камера выключена»", "No Video", 350, 790, 4.9, 7201, "face-mask", "Увлажнение"]
-    ],
-    electronics: [
-      ["e-headphones", "Беспроводные наушники Volna H3", "Volna", 4990, 8990, 4.8, 5421, "headphones", "38 часов"],
-      ["e-keyboard", "Клавиатура тихая, чтобы начальник не слышал", "Silent Type", 2190, 4890, 4.7, 2011, "keyboard", "Тихая"],
-      ["e-mouse", "Мышь беспроводная «Закрыть вкладку вовремя»", "Quick Alt", 1190, 2490, 4.8, 6280, "mouse", "2.4 ГГц"],
-      ["e-powerbank", "Пауэрбанк 20000 мАч «До пятницы хватит»", "Last Percent", 1990, 4290, 4.9, 8470, "power-bank", "Быстрая зарядка"],
-      ["e-drive", "Флешка 64 ГБ «Точно рабочие файлы»", "No Evidence", 790, 1690, 4.6, 999, "usb-memory-stick", "USB 3.0"]
-    ],
-    auto: [
-      ["a-holder", "Держатель телефона «Навигатор не осуждает»", "Road Clip", 690, 1490, 4.8, 6810, "phone-holder", "Магнитный"],
-      ["a-compressor", "Компрессор автомобильный «Давление как на работе»", "Pressure Pro", 2190, 4890, 4.7, 1510, "air-pump", "12 В"],
-      ["a-vacuum", "Пылесос автомобильный для крошек и надежд", "Clean Route", 1690, 3490, 4.6, 2108, "vacuum-cleaner", "Компактный"],
-      ["a-cover", "Чехол на руль «Держись»", "Grip Day", 790, 1590, 4.8, 4300, "steering-wheel", "Экокожа"],
-      ["a-kit", "Набор инструмента Master 46", "Master", 3290, 5990, 4.9, 6104, "toolbox", "46 предметов"]
-    ],
-    sport: [
-      ["sp-mat", "Коврик для йоги и лежания после смены", "Horizontal", 1190, 2490, 4.8, 3901, "yoga-mat", "Не скользит"],
-      ["sp-dumbbell", "Гантели 2×5 кг «Поднять показатели»", "KPI Fit", 1990, 3990, 4.7, 1880, "dumbbell", "10 кг"],
-      ["sp-bottle", "Бутылка для воды «Совещание переживу»", "Hydrate Now", 590, 1290, 4.9, 8104, "water-bottle", "1 литр"],
-      ["sp-band", "Фитнес-резинки для сопротивления системе", "Resistance", 690, 1490, 4.8, 5170, "resistance-band", "5 уровней"],
-      ["sp-bag", "Спортивная сумка «После работы точно пойду»", "Maybe Gym", 1490, 3290, 4.6, 942, "duffel-bag", "35 литров"]
+      …2259 tokens truncated…430я сумка «После работы точно пойду»", "Maybe Gym", 1490, 3290, 4.6, 942, "duffel-bag", "35 литров"]
     ],
     pets: [
       ["p-bed", "Лежанка для кота, который работает удалённо", "Boss Cat", 1290, 2790, 4.9, 7022, "cat-bed", "50 см"],
@@ -131,6 +93,37 @@
   let quickProductId = null;
   let queued = false;
 
+  function closePanels() {
+    const productId = quickProductId;
+    const launcher = catalogOpen ? "[data-kp-catalog]" : "[data-kp-cart]";
+    catalogOpen = false;
+    cartOpen = false;
+    quickProductId = null;
+    renderMarketplace();
+    const page = document.querySelector(".personal-browser-window .rb-page");
+    page?.querySelector(productId ? `[data-kp-quick="${productId}"]` : launcher)?.focus({ preventScroll: true });
+  }
+
+  function captureView(page) {
+    if (!page?.querySelector(".kp-app")) return null;
+    const input = page.querySelector("[data-kp-search] input");
+    const active = document.activeElement;
+    const focused = active === input;
+    return { top: page.scrollTop, left: page.scrollLeft, draft: input?.value,
+      focused, start: focused ? input.selectionStart : null, end: focused ? input.selectionEnd : null };
+  }
+
+  function restoreView(page, view) {
+    if (!view) return;
+    page.scrollTop = view.top;
+    page.scrollLeft = view.left;
+    const input = page.querySelector("[data-kp-search] input");
+    if (input && view.draft != null) {
+      input.value = view.draft;
+      if (view.focused) { input.focus({ preventScroll: true }); input.setSelectionRange(view.start, view.end); }
+    }
+  }
+
   function stateNow() { return Runtime.getEngine?.()?.getState?.() || null; }
   function personal(state = stateNow()) { return Browser.personalState?.(state) || {}; }
   function esc(value) { return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
@@ -157,7 +150,7 @@
     });
   }
 
-  function renderMarketplace() {
+  function renderMarketplace(options = {}) {
     queued = false;
     const windowElement = document.querySelector(".personal-browser-window");
     if (!windowElement) return;
@@ -171,6 +164,7 @@
     const user = personal(state);
     const page = windowElement.querySelector(".rb-page");
     if (!page) return;
+    const view = captureView(page);
 
     windowElement.dataset.marketplaceActive = "true";
     windowElement.querySelector(".window-title").textContent = "КупиТут — KONTUR Web";
@@ -187,13 +181,14 @@
         <section class="kp-heading"><div><h1>${favoritesOnly ? "Избранное" : category === "all" ? "Хиты КупиТут" : esc(CATEGORIES.find((item) => item.id === category)?.label)}</h1><p>${all.length} товаров · выдача обновлена только что</p></div><div class="kp-tools"><button data-kp-filter><img src="${icon("filter", 20, "fluency-systems-regular")}" alt="">Фильтры</button><select data-kp-sort><option value="popular" ${sort === "popular" ? "selected" : ""}>По популярности</option><option value="cheap" ${sort === "cheap" ? "selected" : ""}>Сначала дешевле</option><option value="expensive" ${sort === "expensive" ? "selected" : ""}>Сначала дороже</option><option value="rating" ${sort === "rating" ? "selected" : ""}>По рейтингу</option><option value="discount" ${sort === "discount" ? "selected" : ""}>По скидке</option></select></div></section>
         ${shown.length ? `<div class="kp-grid">${shown.map((product) => productCard(product, user)).join("")}</div>` : emptyState()}
         ${shown.length < all.length ? `<button class="kp-more" data-kp-more>Показать ещё ${Math.min(20, all.length - shown.length)}</button>` : ""}
-        <footer class="kp-footer"><div><b>КупиТут</b><span>ягодно выгодно, местами странно</span></div><p>Иконки интерфейса: Icons8. <a href="assets/marketplace/credits.html" target="_blank" rel="noopener">Источники фотографий</a>.</p></footer>
+        <footer class="kp-footer"><div><b>КупиТут</b><span>ягодно выгодно, местами странно</span></div><p><a href="assets/marketplace/credits.html" target="_blank" rel="noopener">Источники фотографий</a>.</p></footer>
       </main>
       ${catalogOpen ? catalogPanel() : ""}
       ${cartOpen ? cartDrawer(user) : ""}
       ${quickProductId ? productModal(PRODUCTS.find((item) => item.id === quickProductId), user) : ""}
     </section>`;
     bindMarketplace(page, user);
+    restoreView(page, options.resetSearch ? { ...view, draft: query } : view);
   }
 
   function header(user) {
@@ -211,7 +206,7 @@
   function productCard(product, user) {
     const favorite = user.favorites?.includes(product.id);
     const inCart = user.cart?.includes(product.id);
-    return `<article class="kp-card"><div class="kp-picture" data-kp-quick="${product.id}"><img src="${product.image}" alt="${esc(product.title)}" loading="lazy" decoding="async" width="600" height="600"><span class="kp-discount">-${discount(product)}%</span><span class="kp-badge">${esc(product.badge)}</span><button class="kp-heart ${favorite ? "active" : ""}" data-kp-favorite="${product.id}" aria-label="Избранное"><img src="${icon(favorite ? "heart-with-pulse" : "heart", 24, "fluency-systems-regular")}" alt=""></button></div><div class="kp-price"><strong>${money(product.price)}</strong><del>${money(product.oldPrice)}</del></div><h3><b>${esc(product.brand)}</b> / ${esc(product.title)}</h3><div class="kp-rating"><span>★ ${product.rating}</span><em>${product.reviews.toLocaleString("ru-RU")} отзывов</em></div><p class="kp-delivery"><img src="${icon("delivery", 18, "fluency-systems-regular")}" alt="">${product.delivery} в пункт выдачи</p><button class="kp-cart-button ${inCart ? "in-cart" : ""}" data-kp-cart-item="${product.id}">${inCart ? "В корзине" : "В корзину"}</button></article>`;
+    return `<article class="kp-card"><div class="kp-picture"><img src="${product.image}" alt="${esc(product.title)}" loading="lazy" decoding="async" width="600" height="600"><button class="kp-quick" data-kp-quick="${product.id}" aria-label="Открыть: ${esc(product.title)}"></button><span class="kp-discount">-${discount(product)}%</span><span class="kp-badge">${esc(product.badge)}</span><button class="kp-heart ${favorite ? "active" : ""}" data-kp-favorite="${product.id}" aria-label="Избранное"><img src="${icon(favorite ? "heart-with-pulse" : "heart", 24, "fluency-systems-regular")}" alt=""></button></div><div class="kp-price"><strong>${money(product.price)}</strong><del>${money(product.oldPrice)}</del></div><h3><b>${esc(product.brand)}</b> / ${esc(product.title)}</h3><div class="kp-rating"><span>★ ${product.rating}</span><em>${product.reviews.toLocaleString("ru-RU")} отзывов</em></div><p class="kp-delivery"><img src="${icon("delivery", 18, "fluency-systems-regular")}" alt="">${product.delivery} в пункт выдачи</p><button class="kp-cart-button ${inCart ? "in-cart" : ""}" data-kp-cart-item="${product.id}">${inCart ? "В корзине" : "В корзину"}</button></article>`;
   }
 
   function emptyState() {
@@ -236,20 +231,27 @@
   }
 
   function bindMarketplace(page, user) {
-    page.querySelector("[data-kp-search]")?.addEventListener("submit", (event) => { event.preventDefault(); query = event.currentTarget.querySelector("input").value.trim(); visibleCount = 20; favoritesOnly = false; renderMarketplace(); });
-    page.querySelectorAll("[data-kp-category]").forEach((button) => button.addEventListener("click", () => { category = button.dataset.kpCategory; query = ""; favoritesOnly = false; visibleCount = 20; catalogOpen = false; renderMarketplace(); }));
+    page.onkeydown = (event) => {
+      if (event.key === "Escape" && (catalogOpen || cartOpen || quickProductId)) {
+        event.preventDefault();
+        event.stopPropagation();
+        closePanels();
+      }
+    };
+    page.querySelector("[data-kp-search]")?.addEventListener("submit", (event) => { event.preventDefault(); query = event.currentTarget.querySelector("input").value.trim(); visibleCount = 20; favoritesOnly = false; renderMarketplace({ resetSearch: true }); });
+    page.querySelectorAll("[data-kp-category]").forEach((button) => button.addEventListener("click", () => { category = button.dataset.kpCategory; query = ""; favoritesOnly = false; visibleCount = 20; catalogOpen = false; renderMarketplace({ resetSearch: true }); }));
     page.querySelector("[data-kp-sort]")?.addEventListener("change", (event) => { sort = event.currentTarget.value; renderMarketplace(); });
     page.querySelector("[data-kp-more]")?.addEventListener("click", () => { visibleCount += 20; renderMarketplace(); });
     page.querySelector("[data-kp-catalog]")?.addEventListener("click", () => { catalogOpen = true; renderMarketplace(); });
     page.querySelector("[data-kp-cart]")?.addEventListener("click", () => { cartOpen = true; renderMarketplace(); });
-    page.querySelector("[data-kp-favorites]")?.addEventListener("click", () => { favoritesOnly = !favoritesOnly; category = "all"; visibleCount = 20; renderMarketplace(); });
-    page.querySelector("[data-kp-home]")?.addEventListener("click", () => { category = "all"; query = ""; favoritesOnly = false; visibleCount = 20; renderMarketplace(); });
-    page.querySelectorAll("[data-kp-close]").forEach((button) => button.addEventListener("click", () => { catalogOpen = false; cartOpen = false; quickProductId = null; renderMarketplace(); }));
-    page.querySelectorAll("[data-kp-overlay]").forEach((overlay) => overlay.addEventListener("click", (event) => { if (event.target === overlay) { catalogOpen = false; cartOpen = false; quickProductId = null; renderMarketplace(); } }));
-    page.querySelectorAll("[data-kp-quick]").forEach((element) => element.addEventListener("click", (event) => { if (event.target.closest("button")) return; quickProductId = element.dataset.kpQuick; renderMarketplace(); }));
+    page.querySelector("[data-kp-favorites]")?.addEventListener("click", () => { favoritesOnly = !favoritesOnly; category = "all"; query = ""; visibleCount = 20; renderMarketplace({ resetSearch: true }); });
+    page.querySelector("[data-kp-home]")?.addEventListener("click", () => { category = "all"; query = ""; favoritesOnly = false; visibleCount = 20; renderMarketplace({ resetSearch: true }); });
+    page.querySelectorAll("[data-kp-close]").forEach((button) => button.addEventListener("click", closePanels));
+    page.querySelectorAll("[data-kp-overlay]").forEach((overlay) => overlay.addEventListener("click", (event) => { if (event.target === overlay) closePanels(); }));
+    page.querySelectorAll("[data-kp-quick]").forEach((element) => element.addEventListener("click", () => { quickProductId = element.dataset.kpQuick; renderMarketplace(); page.querySelector(".kp-modal-close")?.focus({ preventScroll: true }); }));
     page.querySelectorAll("[data-kp-favorite]").forEach((button) => button.addEventListener("click", (event) => { event.stopPropagation(); toggleFavorite(button.dataset.kpFavorite, user); }));
     page.querySelectorAll("[data-kp-cart-item]").forEach((button) => button.addEventListener("click", () => toggleCart(button.dataset.kpCartItem, user)));
-    page.querySelector("[data-kp-reset]")?.addEventListener("click", () => { category = "all"; query = ""; favoritesOnly = false; sort = "popular"; visibleCount = 20; renderMarketplace(); });
+    page.querySelector("[data-kp-reset]")?.addEventListener("click", () => { category = "all"; query = ""; favoritesOnly = false; sort = "popular"; visibleCount = 20; renderMarketplace({ resetSearch: true }); });
     page.querySelector("[data-kp-checkout]")?.addEventListener("click", () => Runtime.notify?.("КупиТут", "Оформление заказа временно недоступно: курьер ушёл на обед."));
   }
 
@@ -274,9 +276,6 @@
     else root.setTimeout?.(renderMarketplace, 0);
   }
 
-  root.addEventListener?.("until-friday-app-ready", schedule);
-  root.addEventListener?.("until-friday-state-change", (event) => { if (event.detail?.reason !== "time") schedule(); });
-  root.addEventListener?.("until-friday-ui-render", (event) => { if (event.detail?.appId === "browser") schedule(); });
-
-  root.UntilFridayMarketplaceParody = { CATEGORIES, PRODUCTS, icon, renderMarketplace, schedule };
+  // Browser UI owns runtime refreshes; marketplace interactions render here directly.
+  root.UntilFridayMarketplaceParody = { CATEGORIES, PRODUCTS, icon, renderMarketplace, schedule, captureView, restoreView };
 })(typeof globalThis !== "undefined" ? globalThis : window);
