@@ -106,6 +106,7 @@ function makeClassList(initial = []) {
     add: (value) => values.add(value),
     remove: (value) => values.delete(value),
     contains: (value) => values.has(value),
+    toggle(value, force) { if (force ?? !values.has(value)) values.add(value); else values.delete(value); },
     has: (value) => values.has(value)
   };
 }
@@ -193,11 +194,13 @@ assert.equal(dragApi.beginDrag(downEvent), true, "a titlebar pointer press must 
 assert.equal(prevented, true, "dragging must suppress legacy mouse handlers");
 assert.equal(dragWindow.style.left, "100px", "a normal window must not jump horizontally when grabbed");
 assert.equal(dragWindow.style.top, "80px", "a normal window must not jump vertically when grabbed");
-assert.equal(dragBodyClasses.has("window-dragging"), true, "desktop must enter dragging mode");
+assert.equal(dragBodyClasses.has("window-dragging"), false, "a titlebar click alone must not enter dragging mode");
+assert.equal(dragApi.dragActive({ pointerId: 7, buttons: 1, clientX: 163, clientY: 102 }), false, "small pointer jitter must not start dragging");
 
 assert.equal(dragApi.dragActive({ pointerId: 7, clientX: 360, clientY: 260, preventDefault() {} }), true);
 assert.equal(dragWindow.style.left, "300px");
 assert.equal(dragWindow.style.top, "240px");
+assert.equal(dragBodyClasses.has("window-dragging"), true, "desktop must enter dragging mode after real movement");
 assert.equal(dragApi.endDrag({ pointerId: 7 }), true);
 assert.equal(dragBodyClasses.has("window-dragging"), false, "dragging mode must end on pointer release");
 assert.deepEqual(
@@ -212,6 +215,61 @@ dragApi.dragActive({ pointerId: 7, clientX: -500, clientY: -500, preventDefault(
 assert.equal(dragWindow.style.left, "6px", "a window cannot be dragged beyond the left edge");
 assert.equal(dragWindow.style.top, "6px", "a window cannot be dragged above the desktop");
 dragApi.endDrag({ pointerId: 7 });
+
+let restores = 0;
+dragContext.UntilFridayWindowLayout = { restore(element) {
+  restores++;
+  element.dataset.windowMaximized = "false";
+  element.style.width = "500px";
+  element.style.height = "320px";
+} };
+dragWindow.dataset.windowMaximized = "true";
+dragWindow.style.width = "1188px";
+dragWindow.style.height = "688px";
+const maximizedDown = { ...downEvent, clientX: 500, clientY: 20 };
+const savedRestoreBounds = dragWindow.dataset.windowRestoreBounds;
+dragApi.beginDrag(maximizedDown);
+dragApi.dragActive({ pointerId: 7, buttons: 1, clientX: 502, clientY: 21 });
+dragApi.endDrag({ pointerId: 7 });
+assert.equal(restores, 0, "clicking a maximized titlebar must preserve its size");
+assert.equal(dragWindow.dataset.windowMaximized, "true");
+assert.equal(dragWindow.dataset.windowRestoreBounds, savedRestoreBounds, "click must not overwrite restore bounds");
+dragApi.beginDrag(maximizedDown);
+dragApi.dragActive({ pointerId: 8, buttons: 1, clientX: 550, clientY: 70 });
+assert.equal(restores, 0, "another pointer must not move the window");
+dragApi.dragActive({ pointerId: 7, buttons: 1, clientX: 550, clientY: 70 });
+assert.equal(restores, 1, "real dragging must restore a maximized window exactly once");
+const movedLeft = dragWindow.style.left;
+dragApi.dragActive({ pointerId: 7, buttons: 0, clientX: 700, clientY: 200 });
+assert.equal(dragApi.isDragging(), false, "missed pointerup must recover when the button is released");
+assert.equal(dragWindow.style.left, movedLeft, "released cursor movement must not move a window");
+dragApi.beginDrag(downEvent);
+dragApi.dragActive({ pointerId: 7, buttons: 1, clientX: 600, clientY: 200 });
+dragListeners.get("window:blur")();
+assert.equal(dragApi.isDragging(), false, "leaving the browser must stop dragging");
+
+dragWindow.querySelector = () => null;
+dragWindow.style.left = "100px";
+dragWindow.style.top = "80px";
+dragWindow.dataset.windowMaximized = "true";
+const edgeTarget = { closest(selector) { return selector === ".app-window.window-layout-managed" ? dragWindow : null; } };
+const edgeDown = { ...downEvent, target: edgeTarget, clientX: 600, clientY: 400, pointerId: 12 };
+listeners.get("pointerdown")(edgeDown);
+listeners.get("pointermove")({ ...edgeDown, buttons: 1, clientX: 602, clientY: 401 });
+listeners.get("pointerup")({ pointerId: 12 });
+assert.equal(dragWindow.dataset.windowMaximized, "true", "clicking an edge must not restore a maximized window");
+assert.equal(dragWindow.style.width, "500px");
+listeners.get("pointerdown")(edgeDown);
+listeners.get("pointermove")({ ...edgeDown, buttons: 1, clientX: 650, clientY: 430 });
+assert.equal(dragWindow.style.width, "550px", "a held edge drag must resize the window");
+assert.equal(bodyClasses.has("window-resizing"), true);
+listeners.get("pointermove")({ ...edgeDown, buttons: 0, clientX: 700, clientY: 500 });
+assert.equal(dragWindow.style.width, "550px", "released pointer must not keep resizing");
+assert.equal(bodyClasses.has("window-resizing"), false);
+listeners.get("pointerdown")({ ...edgeDown, clientX: 650, clientY: 430 });
+listeners.get("pointermove")({ ...edgeDown, buttons: 1, clientX: 700, clientY: 450 });
+listeners.get("blur")({});
+assert.equal(bodyClasses.has("window-resizing"), false, "leaving the browser must cancel resizing");
 
 const css = read("window-layout.css");
 for (const phrase of [

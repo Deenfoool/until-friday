@@ -14,6 +14,7 @@
   ]);
   const MARGIN = 6;
   const EDGE_SIZE = 9;
+  const RESIZE_THRESHOLD = 5;
   const MIN_WIDTH = 360;
   const MIN_HEIGHT = 240;
 
@@ -230,6 +231,8 @@
     const start = currentBounds(element);
     activeResize = {
       element,
+      pointerId: event.pointerId,
+      started: false,
       direction,
       startX: event.clientX,
       startY: event.clientY,
@@ -238,9 +241,6 @@
       right: start.left + start.width,
       bottom: start.top + start.height
     };
-    setMaximized(element, false);
-    document.body.classList.add("window-resizing");
-    document.body.style.cursor = cursorFor(direction);
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
@@ -248,6 +248,8 @@
 
   function resizeActive(event) {
     if (!activeResize) return;
+    if (activeResize.pointerId !== undefined && event.pointerId !== undefined && activeResize.pointerId !== event.pointerId) return;
+    if (typeof event.buttons === "number" && !(event.buttons & 1)) { endResize(); return; }
     const { element, direction, startX, startY } = activeResize;
     if (!element.isConnected) {
       endResize();
@@ -259,6 +261,13 @@
     const minimumHeight = Math.min(MIN_HEIGHT, Math.max(0, area.height - MARGIN * 2));
     const deltaX = event.clientX - startX;
     const deltaY = event.clientY - startY;
+    if (!activeResize.started) {
+      if (Math.hypot(deltaX, deltaY) < RESIZE_THRESHOLD) return;
+      activeResize.started = true;
+      setMaximized(element, false);
+      document.body.classList.add("window-resizing");
+      document.body.style.cursor = cursorFor(direction);
+    }
     let left = activeResize.left;
     let right = activeResize.right;
     let top = activeResize.top;
@@ -286,16 +295,18 @@
     event.preventDefault();
   }
 
-  function endResize() {
+  function endResize(event) {
     if (!activeResize) return;
+    if (event && activeResize.pointerId !== undefined && event.pointerId !== undefined && activeResize.pointerId !== event.pointerId) return;
     const element = activeResize.element;
-    if (element?.isConnected) rememberRestoreBounds(element, currentBounds(element));
+    if (element?.isConnected && activeResize.started) rememberRestoreBounds(element, currentBounds(element));
     activeResize = null;
     document.body.classList.remove("window-resizing");
     document.body.style.cursor = "";
   }
 
   document.addEventListener("pointerdown", (event) => {
+    if (event.isPrimary === false || Number(event.button) !== 0) return;
     const maximizeButton = event.target.closest?.("[data-window-layout-action='maximize']");
     if (maximizeButton) return;
     const element = event.target.closest?.(".app-window.window-layout-managed");
@@ -319,6 +330,7 @@
 
   root.addEventListener?.("pointerup", endResize);
   root.addEventListener?.("pointercancel", endResize);
+  root.addEventListener?.("blur", endResize);
 
   document.addEventListener("click", (event) => {
     const button = event.target.closest?.("[data-window-layout-action='maximize']");

@@ -5,6 +5,7 @@
 
   const MARGIN = 6;
   const TITLEBAR_GRAB_Y = 18;
+  const DRAG_THRESHOLD = 5;
   let activeDrag = null;
 
   function compactViewport() {
@@ -106,18 +107,19 @@
     const element = titlebar?.closest?.(".app-window");
     if (!element || element.classList?.contains?.("minimized")) return false;
 
-    const bounds = restoreForDrag(element, event);
+    const bounds = currentBounds(element);
     const area = workspace();
     activeDrag = {
       element,
       pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      started: false,
       offsetX: clamp(event.clientX - area.left - bounds.left, 0, bounds.width),
       offsetY: clamp(event.clientY - area.top - bounds.top, 0, bounds.height)
     };
 
     focusWindow(element);
-    element.dataset.windowDragging = "true";
-    document.body?.classList?.add?.("window-dragging");
     event.preventDefault?.();
     event.stopPropagation?.();
     event.stopImmediatePropagation?.();
@@ -127,17 +129,30 @@
   function dragActive(event) {
     if (!activeDrag) return false;
     if (activeDrag.pointerId !== undefined && event.pointerId !== undefined && event.pointerId !== activeDrag.pointerId) return false;
+    if (typeof event.buttons === "number" && !(event.buttons & 1)) { endDrag(event); return false; }
 
-    const { element, offsetX, offsetY } = activeDrag;
+    const { element } = activeDrag;
     if (!element?.isConnected) {
       endDrag();
       return false;
     }
 
     const area = workspace();
+    if (!activeDrag.started) {
+      if (Math.hypot(event.clientX - activeDrag.startX, event.clientY - activeDrag.startY) < DRAG_THRESHOLD) return false;
+      if (element.dataset.windowMaximized === "true") {
+        const restored = restoreForDrag(element, event);
+        activeDrag.offsetX = clamp(event.clientX - area.left - restored.left, 0, restored.width);
+        activeDrag.offsetY = clamp(event.clientY - area.top - restored.top, 0, restored.height);
+      }
+      activeDrag.started = true;
+      element.dataset.windowDragging = "true";
+      document.body?.classList?.add?.("window-dragging");
+    }
+    const { offsetX: moveOffsetX, offsetY: moveOffsetY } = activeDrag;
     const bounds = currentBounds(element);
-    const left = clamp(event.clientX - area.left - offsetX, MARGIN, area.width - MARGIN - bounds.width);
-    const top = clamp(event.clientY - area.top - offsetY, MARGIN, area.height - MARGIN - bounds.height);
+    const left = clamp(event.clientX - area.left - moveOffsetX, MARGIN, area.width - MARGIN - bounds.width);
+    const top = clamp(event.clientY - area.top - moveOffsetY, MARGIN, area.height - MARGIN - bounds.height);
     element.style.left = `${Math.round(left)}px`;
     element.style.top = `${Math.round(top)}px`;
     event.preventDefault?.();
@@ -149,7 +164,7 @@
     if (event && activeDrag.pointerId !== undefined && event.pointerId !== undefined && event.pointerId !== activeDrag.pointerId) return false;
 
     const element = activeDrag.element;
-    if (element?.isConnected) {
+    if (element?.isConnected && activeDrag.started) {
       delete element.dataset.windowDragging;
       element.dataset.windowRestoreBounds = JSON.stringify(currentBounds(element));
     }
@@ -176,6 +191,6 @@
     beginDrag,
     dragActive,
     endDrag,
-    isDragging: () => Boolean(activeDrag)
+    isDragging: () => Boolean(activeDrag?.started)
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
