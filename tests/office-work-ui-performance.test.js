@@ -89,3 +89,5 @@ assert.match(mailRenderer, /dispatchEvent[\s\S]*appId: "mail"/, "every mail rend
 
 const tasksRenderer = appSource.slice(appSource.indexOf("  function renderTasks(element)"), appSource.indexOf("  function appendActionButton("));
 assert.match(tasksRenderer, /dispatchEvent[\s\S]*appId: "tasks"/, "task refresh must notify extensions");
+
+assert.match(fs.readFileSync(path.join(__dirname, "../src/bootstrap.js"), "utf8"), /app-v2\.js\?rev=20261007-work-apps4/, "bootstrap must load the updated mail and task render lifecycle");
