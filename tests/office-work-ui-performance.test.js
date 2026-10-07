@@ -78,3 +78,7 @@ assert.match(view.innerHTML, /Поручение выполнено/, "refresh m
 list.children[0].click();
 assert.equal(mailWindow.dataset.officeMailSelection, undefined, "opening base mail must release the office selection");
 console.log("office work UI performance: ok");
+
+const appSource = fs.readFileSync(path.join(__dirname, "../src/app-v2.js"), "utf8");
+const mailRenderer = appSource.slice(appSource.indexOf("  function renderMail(element)"), appSource.indexOf("  function buildMailMessages()"));
+assert.match(mailRenderer, /dispatchEvent[\s\S]*appId: "mail"/, "every mail render must notify extensions, including refresh and base selection");

@@ -589,6 +589,9 @@
       renderMail(element);
     });
     $(".window-status", element).textContent = `${messages.length} писем`;
+    window.dispatchEvent(new CustomEvent("until-friday-ui-render", {
+      detail: { appId: "mail", element }
+    }));
   }
 
   function buildMailMessages() {
