@@ -128,14 +128,17 @@
   let cartOpen = false;
   let favoritesOnly = false;
   let quickProductId = null;
+  let filtersOpen = false;
+  let filters = { minPrice: 0, maxPrice: null, minRating: 0 };
   let queued = false;
 
   function closePanels() {
     const productId = quickProductId;
-    const launcher = catalogOpen ? "[data-kp-catalog]" : "[data-kp-cart]";
+    const launcher = filtersOpen ? "[data-kp-filter]" : catalogOpen ? "[data-kp-catalog]" : "[data-kp-cart]";
     catalogOpen = false;
     cartOpen = false;
     quickProductId = null;
+    filtersOpen = false;
     renderMarketplace();
     const page = document.querySelector(".personal-browser-window .rb-page");
     page?.querySelector(productId ? `[data-kp-quick="${productId}"]` : launcher)?.focus({ preventScroll: true });
@@ -148,7 +151,7 @@
     const focused = active === input;
     let control = null;
     if (!focused && active) {
-      for (const attribute of ["data-kp-close", "data-kp-cart", "data-kp-catalog", "data-kp-cart-item", "data-kp-favorite", "data-kp-quick", "data-kp-sort"]) {
+      for (const attribute of ["data-kp-close", "data-kp-cart", "data-kp-catalog", "data-kp-cart-item", "data-kp-favorite", "data-kp-quick", "data-kp-sort", "data-kp-filter", "data-kp-filter-field"]) {
         const value = active.getAttribute?.(attribute);
         if (value == null) continue;
         const selector = `[${attribute}="${value}"]`;
@@ -157,7 +160,12 @@
         break;
       }
     }
-    return { top: page.scrollTop, left: page.scrollLeft, draft: input?.value,
+    const filterDraft = {};
+    for (const name of ["minPrice", "maxPrice", "minRating"]) {
+      const field = page.querySelector(`[data-kp-filter-field="${name}"]`);
+      if (field) filterDraft[name] = field.value;
+    }
+    return { top: page.scrollTop, left: page.scrollLeft, draft: input?.value, filterDraft,
       focused, control, start: focused ? input.selectionStart : null, end: focused ? input.selectionEnd : null };
   }
 
@@ -171,6 +179,10 @@
       if (view.focused) { input.focus({ preventScroll: true }); input.setSelectionRange(view.start, view.end); }
     }
     if (view.control) page.querySelectorAll(view.control.selector)[view.control.index]?.focus({ preventScroll: true });
+    for (const [name, value] of Object.entries(view.filterDraft || {})) {
+      const field = page.querySelector(`[data-kp-filter-field="${name}"]`);
+      if (field) field.value = value;
+    }
   }
 
   function stateNow() { return Runtime.getEngine?.()?.getState?.() || null; }
@@ -183,18 +195,19 @@
     return address.includes("kupitut.local");
   }
 
-  function filteredProducts(user) {
-    let list = PRODUCTS.filter((product) => category === "all" || product.category === category);
-    if (favoritesOnly) list = list.filter((product) => user.favorites?.includes(product.id));
-    if (query) {
-      const needle = query.toLowerCase();
-      list = list.filter((product) => `${product.title} ${product.brand} ${product.categoryLabel}`.toLowerCase().includes(needle));
+  function selectProducts(products, options, user = {}) {
+    let list = products.filter((product) => options.category === "all" || product.category === options.category);
+    if (options.favoritesOnly) list = list.filter((product) => user.favorites?.includes(product.id));
+    list = list.filter((product) => product.price >= options.minPrice && (options.maxPrice == null || product.price <= options.maxPrice) && product.rating >= options.minRating);
+    if (options.query) {
+      const needle = options.query.toLowerCase().replaceAll("ё", "е");
+      list = list.filter((product) => `${product.title} ${product.brand} ${product.categoryLabel}`.toLowerCase().replaceAll("ё", "е").includes(needle));
     }
     return list.slice().sort((a, b) => {
-      if (sort === "cheap") return a.price - b.price;
-      if (sort === "expensive") return b.price - a.price;
-      if (sort === "rating") return b.rating - a.rating || b.reviews - a.reviews;
-      if (sort === "discount") return discount(b) - discount(a);
+      if (options.sort === "cheap") return a.price - b.price;
+      if (options.sort === "expensive") return b.price - a.price;
+      if (options.sort === "rating") return b.rating - a.rating || b.reviews - a.reviews;
+      if (options.sort === "discount") return discount(b) - discount(a);
       return b.reviews - a.reviews;
     });
   }
@@ -219,7 +232,7 @@
     windowElement.querySelector(".window-title").textContent = "КупиТут — KONTUR Web";
     windowElement.querySelector(".window-status").textContent = "Защищённое соединение · kupitut.local";
 
-    const all = filteredProducts(user);
+    const all = selectProducts(PRODUCTS, { category, query, sort, favoritesOnly, ...filters }, user);
     const shown = all.slice(0, visibleCount);
     page.innerHTML = `<section class="kp-app">
       ${header(user)}
@@ -227,13 +240,15 @@
       ${hero()}
       <main class="kp-main">
         <div class="kp-breadcrumbs">Главная　/　${category === "all" ? "Все товары" : esc(CATEGORIES.find((item) => item.id === category)?.label || "Каталог")}</div>
-        <section class="kp-heading"><div><h1>${favoritesOnly ? "Избранное" : category === "all" ? "Хиты КупиТут" : esc(CATEGORIES.find((item) => item.id === category)?.label)}</h1><p>${all.length} товаров · выдача обновлена только что</p></div><div class="kp-tools"><button data-kp-filter><img src="${icon("filter", 20, "fluency-systems-regular")}" alt="">Фильтры</button><select data-kp-sort><option value="popular" ${sort === "popular" ? "selected" : ""}>По популярности</option><option value="cheap" ${sort === "cheap" ? "selected" : ""}>Сначала дешевле</option><option value="expensive" ${sort === "expensive" ? "selected" : ""}>Сначала дороже</option><option value="rating" ${sort === "rating" ? "selected" : ""}>По рейтингу</option><option value="discount" ${sort === "discount" ? "selected" : ""}>По скидке</option></select></div></section>
+        <section class="kp-heading"><div><h1>${favoritesOnly ? "Избранное" : category === "all" ? "Хиты КупиТут" : esc(CATEGORIES.find((item) => item.id === category)?.label)}</h1><p>${all.length} товаров · выдача обновлена только что</p></div><div class="kp-tools"><button data-kp-filter><img src="${icon("filter", 20, "fluency-systems-regular")}" alt="">Фильтры${filterCount() ? ` (${filterCount()})` : ""}</button><select data-kp-sort><option value="popular" ${sort === "popular" ? "selected" : ""}>По популярности</option><option value="cheap" ${sort === "cheap" ? "selected" : ""}>Сначала дешевле</option><option value="expensive" ${sort === "expensive" ? "selected" : ""}>Сначала дороже</option><option value="rating" ${sort === "rating" ? "selected" : ""}>По рейтингу</option><option value="discount" ${sort === "discount" ? "selected" : ""}>По скидке</option></select></div></section>
+        ${filterSummary()}
         ${shown.length ? `<div class="kp-grid">${shown.map((product) => productCard(product, user)).join("")}</div>` : emptyState()}
         ${shown.length < all.length ? `<button class="kp-more" data-kp-more>Показать ещё ${Math.min(20, all.length - shown.length)}</button>` : ""}
         <footer class="kp-footer"><div><b>КупиТут</b><span>ягодно выгодно, местами странно</span></div><p><a href="assets/marketplace/credits.html" target="_blank" rel="noopener">Источники фотографий</a>.</p></footer>
       </main>
       ${catalogOpen ? catalogPanel() : ""}
       ${cartOpen ? cartDrawer(user) : ""}
+      ${filtersOpen ? filterPanel() : ""}
       ${quickProductId ? productModal(PRODUCTS.find((item) => item.id === quickProductId), user) : ""}
     </section>`;
     bindMarketplace(page, user);
@@ -262,6 +277,23 @@
     return `<div class="kp-empty"><img src="${icon("nothing-found", 96)}" alt=""><h2>Ничего не нашлось</h2><p>Попробуйте другой запрос или загляните в каталог.</p><button data-kp-reset>Сбросить фильтры</button></div>`;
   }
 
+  function filterCount() {
+    return Number(filters.minPrice > 0) + Number(filters.maxPrice != null) + Number(filters.minRating > 0);
+  }
+
+  function filterSummary() {
+    if (!filterCount()) return "";
+    const labels = [];
+    if (filters.minPrice > 0) labels.push(`От ${money(filters.minPrice)}`);
+    if (filters.maxPrice != null) labels.push(`До ${money(filters.maxPrice)}`);
+    if (filters.minRating > 0) labels.push(`Рейтинг от ${filters.minRating}`);
+    return `<div class="kp-filter-summary" aria-label="Активные фильтры">${labels.map((label) => `<span>${label}</span>`).join("")}<button data-kp-clear-filters>Сбросить фильтры</button></div>`;
+  }
+
+  function filterPanel() {
+    return `<div class="kp-overlay" data-kp-overlay><aside class="kp-drawer kp-filter-panel" role="dialog" aria-modal="true" aria-labelledby="kp-filter-title"><header><strong id="kp-filter-title">Фильтры</strong><button data-kp-close aria-label="Закрыть фильтры"><img src="${icon("delete-sign")}" alt=""></button></header><form data-kp-filter-form><fieldset><legend>Цена, ₽</legend><div class="kp-price-range"><label>От<input type="number" name="minPrice" data-kp-filter-field="minPrice" min="0" max="1000000" step="1" inputmode="numeric" value="${filters.minPrice || ""}" placeholder="0"></label><label>До<input type="number" name="maxPrice" data-kp-filter-field="maxPrice" min="0" max="1000000" step="1" inputmode="numeric" value="${filters.maxPrice ?? ""}" placeholder="Без ограничений"></label></div></fieldset><label class="kp-rating-filter">Рейтинг<select name="minRating" data-kp-filter-field="minRating">${[[0, "Любой"], [4.5, "От 4,5"], [4.7, "От 4,7"], [4.8, "От 4,8"], [4.9, "От 4,9"]].map(([value, label]) => `<option value="${value}" ${filters.minRating === value ? "selected" : ""}>${label}</option>`).join("")}</select></label><p class="kp-filter-error" data-kp-filter-error role="alert"></p><footer><button type="button" data-kp-clear-filters>Сбросить</button><button type="submit" class="primary">Показать товары</button></footer></form></aside></div>`;
+  }
+
   function catalogPanel() {
     return `<div class="kp-overlay" data-kp-overlay><aside class="kp-catalog"><header><strong>Каталог</strong><button data-kp-close><img src="${icon("delete-sign", 22, "fluency-systems-regular")}" alt="Закрыть"></button></header><button data-kp-category="all" class="${category === "all" ? "active" : ""}"><img src="${icon("squared-menu", 30)}" alt="">Все товары</button>${CATEGORIES.map((item) => `<button data-kp-category="${item.id}" class="${category === item.id ? "active" : ""}"><img src="${icon(item.icon, 32)}" alt=""><span><b>${item.label}</b><small>${PRODUCTS.filter((product) => product.category === item.id).length} товаров</small></span><img class="kp-chevron" src="${icon("chevron-right", 18, "fluency-systems-regular")}" alt=""></button>`).join("")}</aside></div>`;
   }
@@ -281,12 +313,39 @@
 
   function bindMarketplace(page, user) {
     page.onkeydown = (event) => {
-      if (event.key === "Escape" && (catalogOpen || cartOpen || quickProductId)) {
+      if (event.key === "Tab" && (catalogOpen || cartOpen || quickProductId || filtersOpen)) {
+        const overlay = page.querySelector(".kp-modal-overlay, .kp-overlay");
+        const controls = Array.from(overlay?.querySelectorAll("button, input, select, textarea, a[href]") || []).filter((element) => !element.disabled);
+        const first = controls[0];
+        const last = controls.at(-1);
+        if (first && (event.shiftKey ? document.activeElement === first : document.activeElement === last)) {
+          event.preventDefault();
+          (event.shiftKey ? last : first).focus({ preventScroll: true });
+        }
+      }
+      if (event.key === "Escape" && (catalogOpen || cartOpen || quickProductId || filtersOpen)) {
         event.preventDefault();
         event.stopPropagation();
         closePanels();
       }
     };
+    page.querySelector("[data-kp-filter]")?.addEventListener("click", () => { filtersOpen = true; renderMarketplace(); page.querySelector('[data-kp-filter-field="minPrice"]')?.focus({ preventScroll: true }); });
+    page.querySelector("[data-kp-filter-form]")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const read = (name) => form.querySelector(`[name="${name}"]`).value.trim();
+      const next = { minPrice: Number(read("minPrice") || 0), maxPrice: read("maxPrice") === "" ? null : Number(read("maxPrice")), minRating: Number(read("minRating")) };
+      const error = form.querySelector("[data-kp-filter-error]");
+      if (!Number.isFinite(next.minPrice) || next.minPrice < 0 || (next.maxPrice != null && (!Number.isFinite(next.maxPrice) || next.maxPrice < next.minPrice))) {
+        error.textContent = "Цена «До» должна быть не меньше цены «От».";
+        form.querySelector('[name="maxPrice"]').focus();
+        return;
+      }
+      filters = next;
+      visibleCount = 20;
+      closePanels();
+    });
+    page.querySelectorAll("[data-kp-clear-filters]").forEach((button) => button.addEventListener("click", () => { filters = { minPrice: 0, maxPrice: null, minRating: 0 }; visibleCount = 20; if (filtersOpen) closePanels(); else renderMarketplace(); }));
     page.querySelector("[data-kp-search]")?.addEventListener("submit", (event) => { event.preventDefault(); query = event.currentTarget.querySelector("input").value.trim(); visibleCount = 20; favoritesOnly = false; renderMarketplace({ resetSearch: true }); });
     page.querySelectorAll("[data-kp-category]").forEach((button) => button.addEventListener("click", () => { category = button.dataset.kpCategory; query = ""; favoritesOnly = false; visibleCount = 20; catalogOpen = false; renderMarketplace({ resetSearch: true }); }));
     page.querySelector("[data-kp-sort]")?.addEventListener("change", (event) => { sort = event.currentTarget.value; renderMarketplace(); });
@@ -300,7 +359,7 @@
     page.querySelectorAll("[data-kp-quick]").forEach((element) => element.addEventListener("click", () => { quickProductId = element.dataset.kpQuick; renderMarketplace(); page.querySelector(".kp-modal-close")?.focus({ preventScroll: true }); }));
     page.querySelectorAll("[data-kp-favorite]").forEach((button) => button.addEventListener("click", (event) => { event.stopPropagation(); toggleFavorite(button.dataset.kpFavorite, user); }));
     page.querySelectorAll("[data-kp-cart-item]").forEach((button) => button.addEventListener("click", () => toggleCart(button.dataset.kpCartItem, user)));
-    page.querySelector("[data-kp-reset]")?.addEventListener("click", () => { category = "all"; query = ""; favoritesOnly = false; sort = "popular"; visibleCount = 20; renderMarketplace({ resetSearch: true }); });
+    page.querySelector("[data-kp-reset]")?.addEventListener("click", () => { category = "all"; query = ""; favoritesOnly = false; sort = "popular"; filters = { minPrice: 0, maxPrice: null, minRating: 0 }; visibleCount = 20; renderMarketplace({ resetSearch: true }); });
     page.querySelector("[data-kp-checkout]")?.addEventListener("click", () => Runtime.notify?.("КупиТут", "Оформление заказа временно недоступно: курьер ушёл на обед."));
   }
 
@@ -326,5 +385,5 @@
   }
 
   // Browser UI owns runtime refreshes; marketplace interactions render here directly.
-  root.UntilFridayMarketplaceParody = { CATEGORIES, PRODUCTS, icon, renderMarketplace, schedule, captureView, restoreView };
+  root.UntilFridayMarketplaceParody = { CATEGORIES, PRODUCTS, icon, renderMarketplace, schedule, captureView, restoreView, selectProducts };
 })(typeof globalThis !== "undefined" ? globalThis : window);
