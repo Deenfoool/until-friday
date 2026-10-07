@@ -296,9 +296,7 @@
     const current = engine();
     if (!current) return;
     const result = current.applyAction(actionId);
-    if (result?.ok) {
-      Runtime.notify?.("МИН", result.result || Story.actions?.[actionId]?.label || "Сообщение отправлено.");
-    } else {
+    if (!result?.ok) {
       Runtime.notify?.("МИН", actionErrorText(result?.reason));
     }
     syncStoryMessages();
@@ -348,7 +346,7 @@
     panel.className = "min-desktop-story-actions";
     panel.dataset.minStoryActions = "true";
     panel.dataset.actionSignature = signature;
-    panel.innerHTML = `<header><div><b>Служебные варианты ответа</b><small>Эти ответы влияют на сюжет и рабочее время.</small></div></header><div></div>`;
+    panel.innerHTML = `<header><div><b>Ответить</b></div></header><div></div>`;
     const list = panel.querySelector("div:last-child");
     actions.forEach((action) => {
       const button = document.createElement("button");

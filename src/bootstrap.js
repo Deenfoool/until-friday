@@ -28,7 +28,7 @@
     Loading?.showScreen("Загрузка корпоративной системы...");
 
     const script = document.createElement("script");
-    script.src = "src/app-v2.js?rev=20261007";
+    script.src = "src/app-v2.js?rev=20261007-immersion";
     script.onload = () => {
       v2LoadFinished = true;
       if (fallbackStarted) return;

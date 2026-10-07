@@ -747,7 +747,6 @@
     }
 
     gameState = result.state || engine.getState();
-    notify("Действие выполнено", result.result || Story.actions[actionId]?.label || actionId);
     deliverEvents(result.events || []);
     refreshOpenWindows();
     updateClock();
