@@ -592,6 +592,9 @@
 
     section.querySelectorAll("[data-office-open]").forEach((button) => button.addEventListener("click", () => openTask(button.dataset.officeOpen)));
     list.prepend(section);
+    if (available.length) list.querySelector(".empty-state")?.remove();
+    const status = element.querySelector(".window-status");
+    if (status) status.textContent = `Рабочих поручений: ${available.length} · других действий: ${list.querySelectorAll(".task-card:not(.requirement)").length}`;
     renderedTaskLists.set(list, signature);
     if (focusedId) section.querySelectorAll("[data-office-open]").forEach((button) => {
       if (button.dataset.officeOpen === focusedId) button.focus({ preventScroll: true });

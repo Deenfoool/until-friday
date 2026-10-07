@@ -42,7 +42,11 @@ for (const file of ["office-work-pack.js", "office-work-mail.js"]) vm.runInNewCo
 const pack = context.UntilFridayOfficeWorkPack;
 const mail = context.UntilFridayOfficeWorkMail;
 const taskWindow = new Element(); const taskList = new Element(); taskList.className = "task-list"; taskWindow.appendChild(taskList);
+const taskStatus = new Element(); taskStatus.className = "window-status"; taskWindow.appendChild(taskStatus);
+const empty = new Element(); empty.className = "empty-state"; taskList.appendChild(empty);
 pack.decorateTaskApp(taskWindow);
+assert.equal(taskList.querySelector(".empty-state"), null, "available office work must replace the empty-task message");
+assert.match(taskStatus.textContent, /Рабочих поручений: 1/);
 const section = taskList.querySelector(".office-work-pack");
 const taskButton = section.querySelector("[data-office-open]"); taskButton.focus(); taskList.scrollTop = 123;
 let count = created;
@@ -82,3 +86,6 @@ console.log("office work UI performance: ok");
 const appSource = fs.readFileSync(path.join(__dirname, "../src/app-v2.js"), "utf8");
 const mailRenderer = appSource.slice(appSource.indexOf("  function renderMail(element)"), appSource.indexOf("  function buildMailMessages()"));
 assert.match(mailRenderer, /dispatchEvent[\s\S]*appId: "mail"/, "every mail render must notify extensions, including refresh and base selection");
+
+const tasksRenderer = appSource.slice(appSource.indexOf("  function renderTasks(element)"), appSource.indexOf("  function appendActionButton("));
+assert.match(tasksRenderer, /dispatchEvent[\s\S]*appId: "tasks"/, "task refresh must notify extensions");

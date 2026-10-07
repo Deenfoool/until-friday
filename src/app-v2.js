@@ -729,6 +729,9 @@
       renderTasks(element);
     });
     $(".window-status", element).textContent = `${taskActions.length} доступных действий`;
+    window.dispatchEvent(new CustomEvent("until-friday-ui-render", {
+      detail: { appId: "tasks", element }
+    }));
   }
 
   function appendActionButton(container, action) {

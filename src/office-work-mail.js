@@ -78,6 +78,8 @@
     });
     if (!tasks.some((task) => task.id === element.dataset.officeMailSelection)) delete element.dataset.officeMailSelection;
     list.scrollTop = scrollTop;
+    const status = element.querySelector(".window-status");
+    if (status) status.textContent = `Писем: ${list.querySelectorAll(".mail-item").length}`;
     return true;
   }
 
