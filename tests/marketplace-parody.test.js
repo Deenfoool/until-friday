@@ -38,13 +38,26 @@ for (const category of api.CATEGORIES) {
   const items = api.PRODUCTS.filter((item) => item.category === category.id);
   assert.equal(items.length, 5);
   assert.ok(items.every((item) => item.day === 0));
-  assert.ok(items.every((item) => item.image.startsWith("https://img.icons8.com/")));
+  assert.ok(items.every((item) => item.image === `assets/marketplace/${item.id}.webp`));
+  for (const item of items) {
+    const bytes = fs.readFileSync(path.join(root, item.image));
+    assert.equal(bytes.toString("ascii", 0, 4), "RIFF", `${item.id} must have a real WebP image`);
+    assert.equal(bytes.toString("ascii", 8, 12), "WEBP");
+  }
 }
 
 for (const phrase of ["data-kp-search", "data-kp-category", "data-kp-sort", "data-kp-more", "data-kp-favorite", "data-kp-cart-item", "data-kp-quick", "data-kp-catalog", "data-kp-checkout", "ягодно выгодно", "РАСПРОДАЖА ДО ПЯТНИЦЫ"]) {
   assert.match(source, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 }
 
+const imageSources = JSON.parse(read("assets/marketplace/sources.json"));
+assert.equal(imageSources.length, 60);
+for (const product of api.PRODUCTS) {
+  const credit = imageSources.find((item) => item.productId === product.id);
+  assert.ok(credit?.source && credit?.license && credit?.author, `${product.id} must retain attribution`);
+  assert.equal(credit.file, `${product.id}.webp`);
+}
+assert.match(source, /loading="lazy"/);
 const css = read("marketplace-parody.css");
 for (const phrase of [".kp-header", ".kp-category-bar", ".kp-hero", ".kp-grid", ".kp-card", ".kp-catalog", ".kp-drawer", ".kp-modal", "@media(max-width:720px)"]) assert.match(css, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 

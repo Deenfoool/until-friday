@@ -115,7 +115,7 @@
     id: row[0], title: row[1], brand: row[2], price: row[3], oldPrice: row[4], rating: row[5], reviews: row[6], icon: row[7], badge: row[8],
     category: category.id, categoryLabel: category.label, day: 0, note: `${category.label} · доставка ${index % 3 === 0 ? "сегодня" : index % 3 === 1 ? "завтра" : "послезавтра"}`,
     delivery: index % 3 === 0 ? "Сегодня" : index % 3 === 1 ? "Завтра" : "Послезавтра",
-    image: icon(row[7], 144), article: `KT-${categoryIndex + 1}${String(index + 1).padStart(2, "0")}`,
+    image: `assets/marketplace/${row[0]}.webp`, article: `KT-${categoryIndex + 1}${String(index + 1).padStart(2, "0")}`,
     colors: ["Фиолетовый", "Чёрный", "Серый"], sizes: category.id === "women" || category.id === "men" || category.id === "shoes" ? ["S", "M", "L", "XL"] : []
   })));
 
@@ -187,7 +187,7 @@
         <section class="kp-heading"><div><h1>${favoritesOnly ? "Избранное" : category === "all" ? "Хиты КупиТут" : esc(CATEGORIES.find((item) => item.id === category)?.label)}</h1><p>${all.length} товаров · выдача обновлена только что</p></div><div class="kp-tools"><button data-kp-filter><img src="${icon("filter", 20, "fluency-systems-regular")}" alt="">Фильтры</button><select data-kp-sort><option value="popular" ${sort === "popular" ? "selected" : ""}>По популярности</option><option value="cheap" ${sort === "cheap" ? "selected" : ""}>Сначала дешевле</option><option value="expensive" ${sort === "expensive" ? "selected" : ""}>Сначала дороже</option><option value="rating" ${sort === "rating" ? "selected" : ""}>По рейтингу</option><option value="discount" ${sort === "discount" ? "selected" : ""}>По скидке</option></select></div></section>
         ${shown.length ? `<div class="kp-grid">${shown.map((product) => productCard(product, user)).join("")}</div>` : emptyState()}
         ${shown.length < all.length ? `<button class="kp-more" data-kp-more>Показать ещё ${Math.min(20, all.length - shown.length)}</button>` : ""}
-        <footer class="kp-footer"><div><b>КупиТут</b><span>ягодно выгодно, местами странно</span></div><p>Иконки интерфейса и товаров предоставлены Icons8.</p></footer>
+        <footer class="kp-footer"><div><b>КупиТут</b><span>ягодно выгодно, местами странно</span></div><p>Иконки интерфейса: Icons8. <a href="assets/marketplace/credits.html" target="_blank" rel="noopener">Источники фотографий</a>.</p></footer>
       </main>
       ${catalogOpen ? catalogPanel() : ""}
       ${cartOpen ? cartDrawer(user) : ""}
@@ -211,7 +211,7 @@
   function productCard(product, user) {
     const favorite = user.favorites?.includes(product.id);
     const inCart = user.cart?.includes(product.id);
-    return `<article class="kp-card"><div class="kp-picture" data-kp-quick="${product.id}"><img src="${product.image}" alt="${esc(product.title)}"><span class="kp-discount">-${discount(product)}%</span><span class="kp-badge">${esc(product.badge)}</span><button class="kp-heart ${favorite ? "active" : ""}" data-kp-favorite="${product.id}" aria-label="Избранное"><img src="${icon(favorite ? "heart-with-pulse" : "heart", 24, "fluency-systems-regular")}" alt=""></button></div><div class="kp-price"><strong>${money(product.price)}</strong><del>${money(product.oldPrice)}</del></div><h3><b>${esc(product.brand)}</b> / ${esc(product.title)}</h3><div class="kp-rating"><span>★ ${product.rating}</span><em>${product.reviews.toLocaleString("ru-RU")} отзывов</em></div><p class="kp-delivery"><img src="${icon("delivery", 18, "fluency-systems-regular")}" alt="">${product.delivery} в пункт выдачи</p><button class="kp-cart-button ${inCart ? "in-cart" : ""}" data-kp-cart-item="${product.id}">${inCart ? "В корзине" : "В корзину"}</button></article>`;
+    return `<article class="kp-card"><div class="kp-picture" data-kp-quick="${product.id}"><img src="${product.image}" alt="${esc(product.title)}" loading="lazy" decoding="async" width="600" height="600"><span class="kp-discount">-${discount(product)}%</span><span class="kp-badge">${esc(product.badge)}</span><button class="kp-heart ${favorite ? "active" : ""}" data-kp-favorite="${product.id}" aria-label="Избранное"><img src="${icon(favorite ? "heart-with-pulse" : "heart", 24, "fluency-systems-regular")}" alt=""></button></div><div class="kp-price"><strong>${money(product.price)}</strong><del>${money(product.oldPrice)}</del></div><h3><b>${esc(product.brand)}</b> / ${esc(product.title)}</h3><div class="kp-rating"><span>★ ${product.rating}</span><em>${product.reviews.toLocaleString("ru-RU")} отзывов</em></div><p class="kp-delivery"><img src="${icon("delivery", 18, "fluency-systems-regular")}" alt="">${product.delivery} в пункт выдачи</p><button class="kp-cart-button ${inCart ? "in-cart" : ""}" data-kp-cart-item="${product.id}">${inCart ? "В корзине" : "В корзину"}</button></article>`;
   }
 
   function emptyState() {
