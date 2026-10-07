@@ -603,6 +603,7 @@
     win.style.top = "38px";
     win.style.width = "940px";
     win.style.height = "620px";
+    topZ = Math.max(topZ, ...Array.from(document.querySelectorAll(".app-window"), (item) => Number(item.style.zIndex) || 0));
     win.style.zIndex = String(++topZ);
     win.querySelector(".window-title").textContent = `${task.title} — KONTUR Office`;
     win.querySelector(".window-status").textContent = `${typeLabel(task.type)} · ${task.minutes} минут · результат сохраняется`;
@@ -621,6 +622,7 @@
     if (!win?.isConnected) return;
     document.querySelectorAll(".app-window").forEach((item) => item.classList.remove("focused"));
     win.classList.add("focused");
+    topZ = Math.max(topZ, ...Array.from(document.querySelectorAll(".app-window"), (item) => Number(item.style.zIndex) || 0));
     win.style.zIndex = String(++topZ);
   }
 

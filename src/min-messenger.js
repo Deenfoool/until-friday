@@ -116,6 +116,7 @@
       chats: Array.isArray(source.chats) ? source.chats : seed.chats,
       messages: Array.isArray(source.messages) ? source.messages : seed.messages,
       contacts: Array.isArray(source.contacts) ? [...new Set(source.contacts)] : seed.contacts,
+      gameSeed: source.gameSeed || null,
       drafts: source.drafts && typeof source.drafts === "object" ? { ...source.drafts } : {},
       folders: Array.isArray(source.folders) ? source.folders : seed.folders,
       calls: Array.isArray(source.calls) ? source.calls : []
@@ -608,6 +609,9 @@
     const listScroll = oldList?.scrollTop || 0;
     const messageScroll = oldMessages?.scrollTop || 0;
     const sameChat = container.dataset.minChatId === activeChatId;
+    const focusedInput = container.querySelector("[data-min-text]");
+    const restoreInputFocus = sameChat && focusedInput === document.activeElement;
+    const selection = restoreInputFocus ? [focusedInput.selectionStart, focusedInput.selectionEnd] : null;
 
     const main = route.view === "contacts" ? contactsView() : route.view === "calls" ? callsView() : route.view === "services" ? servicesView() : route.view === "settings" ? settingsView() : activeChat ? conversation(activeChat) : emptyConversation();
     container.dataset.minChatId = activeChatId || "";
@@ -617,6 +621,12 @@
     const newMessages = container.querySelector(".min-message-scroll");
     if (newList) newList.scrollTop = listScroll;
     if (newMessages) newMessages.scrollTop = sameChat ? messageScroll : newMessages.scrollHeight;
+    if (restoreInputFocus) {
+      const input = container.querySelector("[data-min-text]");
+      input?.focus({ preventScroll: true });
+      if (input && selection) input.setSelectionRange(...selection);
+    }
+    root.dispatchEvent?.(new root.CustomEvent("until-friday-min-render", { detail: { container, chatId: activeChatId } }));
     hydrateMedia(container);
     return true;
   }

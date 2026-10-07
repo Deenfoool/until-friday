@@ -14,7 +14,11 @@ const eventDrivenModules = [
   "src/friday-scene-guard.js",
   "src/friday-ending-reopen.js",
   "src/notification-history-guard.js",
-  "src/tuesday-minigames.js"
+  "src/tuesday-minigames.js",
+  "src/work-minigames.js",
+  "src/wednesday-minigames.js",
+  "src/thursday-minigames.js",
+  "src/friday-finale.js"
 ];
 
 for (const file of eventDrivenModules) {

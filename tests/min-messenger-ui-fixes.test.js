@@ -22,7 +22,7 @@ for (const phrase of [
   "420",
   "img.icons8.com/fluency",
   "data-min-reaction",
-  "MutationObserver"
+  "until-friday-min-render"
 ]) {
   assert.match(source, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `UI fixes must contain: ${phrase}`);
 }

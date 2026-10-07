@@ -274,6 +274,7 @@
     element.dataset.assetViewer = file.id;
     element.style.left = `${Math.max(24, 110 + viewerWindows.size * 22)}px`;
     element.style.top = `${Math.max(24, 72 + viewerWindows.size * 18)}px`;
+    topZ = Math.max(topZ, ...Array.from(document.querySelectorAll(".app-window"), (item) => Number(item.style.zIndex) || 0));
     element.style.zIndex = String(++topZ);
     element.innerHTML = `
       <header class="window-titlebar">
@@ -299,7 +300,6 @@
 
     element.querySelector("[data-close]").addEventListener("click", () => closeAssetViewer(file.id));
     element.addEventListener("mousedown", () => focusAssetViewer(element, file.id));
-    makeDraggable(element, element.querySelector(".window-titlebar"));
     layer.appendChild(element);
     viewerWindows.set(file.id, element);
     createViewerTaskButton(file, element);
@@ -327,6 +327,7 @@
     document.querySelectorAll(".task-button").forEach((button) => button.classList.remove("active"));
     element.classList.remove("minimized");
     element.classList.add("focused");
+    topZ = Math.max(topZ, ...Array.from(document.querySelectorAll(".app-window"), (item) => Number(item.style.zIndex) || 0));
     element.style.zIndex = String(++topZ);
     document.querySelector(`[data-asset-viewer-task="${id}"]`)?.classList.add("active");
   }
@@ -337,23 +338,7 @@
     document.querySelector(`[data-asset-viewer-task="${id}"]`)?.remove();
   }
 
-  function makeDraggable(element, handle) {
-    let drag = null;
-    handle.addEventListener("mousedown", (event) => {
-      if (event.target.closest("button")) return;
-      const rect = element.getBoundingClientRect();
-      drag = { x: event.clientX - rect.left, y: event.clientY - rect.top };
-      event.preventDefault();
-    });
-    document.addEventListener("mousemove", (event) => {
-      if (!drag) return;
-      const maxX = Math.max(0, window.innerWidth - element.offsetWidth);
-      const maxY = Math.max(0, window.innerHeight - element.offsetHeight - 42);
-      element.style.left = `${Math.max(0, Math.min(maxX, event.clientX - drag.x))}px`;
-      element.style.top = `${Math.max(0, Math.min(maxY, event.clientY - drag.y))}px`;
-    });
-    document.addEventListener("mouseup", () => { drag = null; });
-  }
+
 
   function updateTrashIcon() {
     const hasItems = document.querySelectorAll(".trash-item").length > 0;
@@ -398,8 +383,10 @@
     return escapeHtml(value);
   }
 
-  const observer = new MutationObserver(queueDecorate);
-  observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+  window.addEventListener("until-friday-ui-render", queueDecorate);
+  window.addEventListener("until-friday-state-change", queueDecorate);
+  window.addEventListener("until-friday-app-ready", queueDecorate);
+  document.addEventListener("click", queueDecorate);
   document.addEventListener("DOMContentLoaded", queueDecorate, { once: true });
   window.addEventListener("load", queueDecorate, { once: true });
   queueDecorate();

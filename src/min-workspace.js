@@ -19,7 +19,8 @@
     "work-oleg": "assets/avatar-tattler.png",
     "work-roman": "assets/avatar-sysadmin.png",
     "work-marina": "assets/avatar-accountant.png",
-    "work-andrey": "assets/avatar-director.png"
+    "work-andrey": "assets/avatar-director.png",
+    "work-security": "assets/avatar-hr-men.png"
   });
 
   const WORK_AVATARS_BY_CHAT = Object.freeze({
@@ -27,7 +28,8 @@
     "work-chat-oleg": WORK_AVATARS_BY_USER["work-oleg"],
     "work-chat-roman": WORK_AVATARS_BY_USER["work-roman"],
     "work-chat-marina": WORK_AVATARS_BY_USER["work-marina"],
-    "work-chat-andrey": WORK_AVATARS_BY_USER["work-andrey"]
+    "work-chat-andrey": WORK_AVATARS_BY_USER["work-andrey"],
+    "work-chat-security": WORK_AVATARS_BY_USER["work-security"]
   });
 
   const DEFAULT_WORK_AVATAR = "assets/avatar-default-user.png";
@@ -282,7 +284,7 @@
 
   function applyAvatar(element, src, label) {
     if (!element || !src) return;
-    if (element.dataset.minAvatarSrc === src) return;
+    if (element.dataset.minAvatarSrc === src && element.querySelector("img")?.getAttribute("src") === src) return;
     element.dataset.minAvatarSrc = src;
     element.classList.add("min-avatar-image");
     element.textContent = "";
@@ -444,10 +446,7 @@
     syncWorkspace({ reason: "min-app-ready" });
   });
 
-  if (typeof root.MutationObserver === "function" && document.documentElement) {
-    const observer = new root.MutationObserver(scheduleDecorate);
-    observer.observe(document.documentElement, { childList: true, subtree: true });
-  }
+  root.addEventListener?.("until-friday-min-render", scheduleDecorate);
 
   syncWorkspace({ reason: "min-workspace-startup" });
   scheduleDecorate();

@@ -61,7 +61,7 @@ function resetClick() {
   let prevented = false;
   let stopped = false;
   clickHandler({
-    target: { closest: (selector) => selector === "#reset-button" ? {} : null },
+    target: { closest: (selector) => selector === "#reset-button, [data-restart]" ? {} : null },
     preventDefault: () => { prevented = true; },
     stopPropagation: () => { stopped = true; },
     stopImmediatePropagation: () => { stopped = true; }
@@ -88,7 +88,7 @@ assert.doesNotThrow(() => new Function(fridaySource));
 assert.doesNotMatch(fridaySource, /beforeunload/);
 assert.match(fridaySource, /until-friday-notification-history-v1/);
 assert.match(fridaySource, /until-friday-auto-continue-v1/);
-assert.match(fridaySource, /data-new-game/);
+assert.match(read("src/onboarding.js"), /UntilFridayFridayReset\?\.clearFinaleData/);
 
 const html = read("index.html");
 assert.ok(

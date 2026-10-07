@@ -70,6 +70,7 @@ assert.equal(engine.getState().stats.evidence, 1);
 
 engine = Engine.createEngine(Story, tuesdayState({
   minute: 699,
+  deliveredEvents: ["tue-accountant-request"],
   flags: { ...Story.initialFlags, answeredAdminHonestly: true }
 }));
 result = engine.advanceTime(1);

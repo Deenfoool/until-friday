@@ -83,7 +83,7 @@
   function decorateImage(container, url, className) {
     if (!container || container.dataset.assetApplied === url) return;
     probe(url).then((exists) => {
-      if (!exists || !container.isConnected) return;
+      if (!exists || !container.isConnected || container.dataset.assetApplied === url) return;
       const image = document.createElement("img");
       image.src = url;
       image.alt = "";
@@ -162,8 +162,9 @@
     decorateContacts();
   }
 
-  const observer = new MutationObserver(decorate);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
+  root.addEventListener("until-friday-ui-render", decorate);
+  root.addEventListener("until-friday-app-ready", decorate);
+  document.addEventListener("click", () => root.requestAnimationFrame(decorate));
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", decorate, { once: true });
   else decorate();
 })(typeof globalThis !== "undefined" ? globalThis : window);

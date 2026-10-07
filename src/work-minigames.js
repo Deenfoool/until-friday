@@ -118,7 +118,6 @@
       windowElement.style.zIndex = String(++zIndex);
       document.querySelectorAll(".app-window").forEach((item) => item.classList.toggle("focused", item === windowElement));
     });
-    makeDraggable(windowElement, windowElement.querySelector(".window-titlebar"));
     layer.appendChild(windowElement);
     activeGame = windowElement;
     return windowElement;
@@ -309,28 +308,13 @@
     button.click();
   }
 
-  function makeDraggable(element, handle) {
-    let drag = null;
-    handle.addEventListener("mousedown", (event) => {
-      if (event.target.closest("button")) return;
-      const rect = element.getBoundingClientRect();
-      drag = { x: event.clientX - rect.left, y: event.clientY - rect.top };
-      event.preventDefault();
-    });
-    document.addEventListener("mousemove", (event) => {
-      if (!drag) return;
-      const maxX = Math.max(0, window.innerWidth - element.offsetWidth);
-      const maxY = Math.max(0, window.innerHeight - element.offsetHeight - 44);
-      element.style.left = `${Math.max(0, Math.min(event.clientX - drag.x, maxX))}px`;
-      element.style.top = `${Math.max(0, Math.min(event.clientY - drag.y, maxY))}px`;
-    });
-    document.addEventListener("mouseup", () => { drag = null; });
-  }
 
-  const observer = new MutationObserver(queueDecorate);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-  document.addEventListener("DOMContentLoaded", queueDecorate, { once: true });
+
+  window.addEventListener("until-friday-ui-render", queueDecorate);
+  window.addEventListener("until-friday-state-change", queueDecorate);
   window.addEventListener("until-friday-app-ready", queueDecorate);
+  document.addEventListener("click", queueDecorate);
+  document.addEventListener("DOMContentLoaded", queueDecorate, { once: true });
   queueDecorate();
 
   root.UntilFridayWorkMinigames = {

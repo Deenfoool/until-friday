@@ -13,7 +13,6 @@
   };
 
   let activeModal = null;
-  let observer = null;
 
   const icon = (name, size = 22) => `${ICON_ROOT}/${size}/${name}.png`;
   const escapeHtml = (value) => String(value ?? "")
@@ -250,13 +249,7 @@
     button.removeAttribute("data-min-p2p-open");
     button.dataset.minPolishP2pOpen = "true";
     button.title = "Подключить реального пользователя по MIN-ID";
-    if (!header.querySelector("[data-min-p2p-sentinel]")) {
-      const sentinel = root.document.createElement("span");
-      sentinel.hidden = true;
-      sentinel.dataset.minP2pOpen = "true";
-      sentinel.dataset.minP2pSentinel = "true";
-      header.appendChild(sentinel);
-    }
+
   }
 
   function decorateApp(app) {
@@ -304,8 +297,7 @@
     root.document.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && activeModal) closeModal();
     });
-    observer = new MutationObserver(decorateAll);
-    observer.observe(root.document.documentElement, { childList: true, subtree: true });
+    root.addEventListener?.("until-friday-min-render", decorateAll);
     decorateAll();
   }
 

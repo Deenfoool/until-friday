@@ -1,38 +1,39 @@
 <!doctype html>
 <html lang="ru">
 <head>
+  <meta name="game-build" content="20261007-stability">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#23496c" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta name="description" content="До пятницы — браузерная психологическая игра о последней рабочей неделе." />
   <title>До пятницы</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="styles-v2.css" />
-  <link rel="stylesheet" href="window-layout.css" />
-  <link rel="stylesheet" href="personal-browser-core.css?v=20260804-10" />
-  <link rel="stylesheet" href="browser-shell.css?v=20260804-10" />
-  <link rel="stylesheet" href="personal-browser-ui-v4.css?v=20260804-10" />
-  <link rel="stylesheet" href="marketplace-parody.css?v=20260804-10" />
-  <link rel="stylesheet" href="videotok.css?v=20260804-10" />
-  <link rel="stylesheet" href="min-messenger.css?v=20260804-10" />
-  <link rel="stylesheet" href="min-messenger-p2p.css?v=20260804-10" />
-  <link rel="stylesheet" href="min-messenger-ui-fixes.css?v=20260804-11" />
-  <link rel="stylesheet" href="min-desktop-integration.css?v=20260804-1" />
-  <link rel="stylesheet" href="min-messenger-responsive.css?v=20260805-1" />
-  <link rel="stylesheet" href="min-messenger-polish.css?v=20260805-1" />
-  <link rel="stylesheet" href="asset-ui.css" />
-  <link rel="stylesheet" href="workflow.css" />
-  <link rel="stylesheet" href="onboarding.css" />
-  <link rel="stylesheet" href="onboarding-settings.css" />
-  <link rel="stylesheet" href="work-minigames.css" />
-  <link rel="stylesheet" href="office-work-pack.css?v=20260805-1" />
-  <link rel="stylesheet" href="office-work-mail.css?v=20260805-1" />
-  <link rel="stylesheet" href="tuesday-minigames.css" />
-  <link rel="stylesheet" href="wednesday-minigames.css" />
-  <link rel="stylesheet" href="thursday-minigames.css" />
-  <link rel="stylesheet" href="friday-finale.css" />
-  <link rel="stylesheet" href="day-end-control.css" />
+  <link rel="stylesheet" href="styles.css?rev=20261007" />
+  <link rel="stylesheet" href="styles-v2.css?rev=20261007" />
+  <link rel="stylesheet" href="window-layout.css?rev=20261007" />
+  <link rel="stylesheet" href="personal-browser-core.css?v=20260804-10&rev=20261007" />
+  <link rel="stylesheet" href="browser-shell.css?v=20260804-10&rev=20261007" />
+  <link rel="stylesheet" href="personal-browser-ui-v4.css?v=20260804-10&rev=20261007" />
+  <link rel="stylesheet" href="marketplace-parody.css?v=20260804-10&rev=20261007" />
+  <link rel="stylesheet" href="videotok.css?v=20260804-10&rev=20261007" />
+  <link rel="stylesheet" href="min-messenger.css?v=20260804-10&rev=20261007" />
+  <link rel="stylesheet" href="min-messenger-p2p.css?v=20260804-10&rev=20261007" />
+  <link rel="stylesheet" href="min-messenger-ui-fixes.css?v=20260804-11&rev=20261007" />
+  <link rel="stylesheet" href="min-desktop-integration.css?v=20260804-1&rev=20261007" />
+  <link rel="stylesheet" href="min-messenger-responsive.css?v=20260805-1&rev=20261007" />
+  <link rel="stylesheet" href="min-messenger-polish.css?v=20260805-1&rev=20261007" />
+  <link rel="stylesheet" href="asset-ui.css?rev=20261007" />
+  <link rel="stylesheet" href="workflow.css?rev=20261007" />
+  <link rel="stylesheet" href="onboarding.css?rev=20261007" />
+  <link rel="stylesheet" href="onboarding-settings.css?rev=20261007" />
+  <link rel="stylesheet" href="work-minigames.css?rev=20261007" />
+  <link rel="stylesheet" href="office-work-pack.css?v=20260805-1&rev=20261007" />
+  <link rel="stylesheet" href="office-work-mail.css?v=20260805-1&rev=20261007" />
+  <link rel="stylesheet" href="tuesday-minigames.css?rev=20261007" />
+  <link rel="stylesheet" href="wednesday-minigames.css?rev=20261007" />
+  <link rel="stylesheet" href="thursday-minigames.css?rev=20261007" />
+  <link rel="stylesheet" href="friday-finale.css?rev=20261007" />
+  <link rel="stylesheet" href="day-end-control.css?rev=20261007" />
 </head>
 <body>
   <noscript>Для запуска игры требуется JavaScript.</noscript>
@@ -99,78 +100,77 @@
     </section>
   </template>
 
-  <script src="src/engine.js"></script>
-  <script src="src/story-v2.js"></script>
-  <script src="src/min-npc-dialogues.js?v=20260805-1"></script>
-  <script src="src/min-npc-dialogue-schedules.js?v=20260805-1"></script>
-  <script src="src/monday-live-story.js?v=20260805-1"></script>
-  <script src="src/tuesday-live-story.js?v=20260805-1"></script>
-  <script src="src/rules-extension.js"></script>
-  <script src="src/state-migration.js"></script>
-  <script src="src/integrity-fixes.js"></script>
-  <script src="src/story-consistency-fixes.js"></script>
-  <script src="src/time-boundary-guard.js"></script>
-  <script src="src/runtime-engine.js"></script>
-  <script src="src/ui-observer-hub.js"></script>
-  <script src="src/passive-clock.js"></script>
-  <script src="src/day-transition-guard.js"></script>
-  <script src="src/day-end-control.js"></script>
-  <script src="src/data.js"></script>
-  <script src="src/asset-registry.js"></script>
-  <script src="src/sprite-atlas.js"></script>
-  <script src="src/asset-ui.js"></script>
-  <script src="src/workflow-extension.js"></script>
-  <script src="src/storage-error-guard.js"></script>
-  <script src="src/notification-history-guard.js"></script>
-  <script src="src/workflow-reset.js"></script>
-  <script src="src/friday-reset.js"></script>
-  <script src="src/loading-indicator.js"></script>
-  <script src="src/onboarding.js"></script>
-  <script src="src/auto-continue.js"></script>
-  <script src="src/return-from-vacation.js"></script>
-  <script src="src/terminal-sync.js"></script>
-  <script src="src/work-minigames.js"></script>
-  <script src="src/tuesday-minigames.js"></script>
-  <script src="src/tuesday-event-guards.js"></script>
-  <script src="src/wednesday-minigames.js"></script>
-  <script src="src/wednesday-live-story.js?v=20260805-1"></script>
-  <script src="src/thursday-minigames.js"></script>
-  <script src="src/thursday-event-guards.js"></script>
-  <script src="src/thursday-live-story.js?v=20260805-2"></script>
-  <script src="src/friday-finale.js"></script>
-  <script src="src/friday-scene-guard.js"></script>
-  <script src="src/friday-clock-guard.js"></script>
-  <script src="src/friday-ending-reopen.js"></script>
-  <script src="src/window-layout.js"></script>
-  <script src="src/window-drag.js"></script>
-  <script src="src/office-work-pack.js?v=20260805-1"></script>
-  <script src="src/office-work-requirements.js?v=20260805-1"></script>
-  <script src="src/office-work-mail.js?v=20260805-1"></script>
-  <script src="src/browser-state-render-gate.js?v=20260804-10"></script>
-  <script src="src/personal-browser-core.js?v=20260804-10"></script>
-  <script src="src/browser-site-listener-gate.js?v=20260804-10"></script>
-  <script src="src/marketplace-parody.js?v=20260804-10"></script>
-  <script src="src/browser-site-listener-gate-close.js?v=20260804-10"></script>
-  <script src="src/videotok.js?v=20260804-10"></script>
-  <script src="src/min-messenger.js?v=20260804-10"></script>
-  <script src="src/min-game-profile-sync.js?v=20260805-1"></script>
-  <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js" crossorigin="anonymous"></script>
-  <script src="src/min-messenger-p2p.js?v=20260804-10"></script>
-  <script src="src/min-messenger-ui-fixes.js?v=20260804-11"></script>
-  <script src="src/min-desktop-integration.js?v=20260805-3"></script>
-  <script src="src/min-workspace.js?v=20260805-2"></script>
-  <script src="src/min-security-contact.js?v=20260805-1"></script>
-  <script src="src/min-ui-polish.js?v=20260805-1"></script>
-  <script src="src/monday-office-director.js?v=20260805-1"></script>
-  <script src="src/office-day-director.js?v=20260805-1"></script>
-  <script src="src/tuesday-office-director.js?v=20260805-1"></script>
-  <script src="src/wednesday-office-director.js?v=20260805-1"></script>
-  <script src="src/thursday-office-director.js?v=20260805-2"></script>
-  <script src="src/personal-browser-ui-v4.js?v=20260804-10"></script>
-  <script src="src/marketplace-scroll-preserver.js?v=20260804-10"></script>
-  <script src="src/browser-online-icon-fallback.js?v=20260804-10"></script>
-  <script src="src/browser-state-render-gate-close.js?v=20260804-10"></script>
-  <script src="src/ui-runtime-guards.js"></script>
-  <script src="src/bootstrap.js"></script>
+  <script src="src/engine.js?rev=20261007"></script>
+  <script src="src/story-v2.js?rev=20261007"></script>
+  <script src="src/min-npc-dialogues.js?v=20260805-1&rev=20261007"></script>
+  <script src="src/min-npc-dialogue-schedules.js?v=20260805-1&rev=20261007"></script>
+  <script src="src/monday-live-story.js?v=20260805-1&rev=20261007"></script>
+  <script src="src/tuesday-live-story.js?v=20260805-1&rev=20261007"></script>
+  <script src="src/rules-extension.js?rev=20261007"></script>
+  <script src="src/state-migration.js?rev=20261007"></script>
+  <script src="src/integrity-fixes.js?rev=20261007"></script>
+  <script src="src/story-consistency-fixes.js?rev=20261007"></script>
+  <script src="src/time-boundary-guard.js?rev=20261007"></script>
+  <script src="src/runtime-engine.js?rev=20261007"></script>
+  <script src="src/passive-clock.js?rev=20261007"></script>
+  <script src="src/day-transition-guard.js?rev=20261007"></script>
+  <script src="src/day-end-control.js?rev=20261007"></script>
+  <script src="src/data.js?rev=20261007"></script>
+  <script src="src/asset-registry.js?rev=20261007"></script>
+  <script src="src/sprite-atlas.js?rev=20261007"></script>
+  <script src="src/asset-ui.js?rev=20261007"></script>
+  <script src="src/workflow-extension.js?rev=20261007"></script>
+  <script src="src/storage-error-guard.js?rev=20261007"></script>
+  <script src="src/notification-history-guard.js?rev=20261007"></script>
+  <script src="src/workflow-reset.js?rev=20261007"></script>
+  <script src="src/friday-reset.js?rev=20261007"></script>
+  <script src="src/loading-indicator.js?rev=20261007"></script>
+  <script src="src/onboarding.js?rev=20261007"></script>
+  <script src="src/auto-continue.js?rev=20261007"></script>
+  <script src="src/return-from-vacation.js?rev=20261007"></script>
+  <script src="src/terminal-sync.js?rev=20261007"></script>
+  <script src="src/work-minigames.js?rev=20261007"></script>
+  <script src="src/tuesday-minigames.js?rev=20261007"></script>
+  <script src="src/tuesday-event-guards.js?rev=20261007"></script>
+  <script src="src/wednesday-minigames.js?rev=20261007"></script>
+  <script src="src/wednesday-live-story.js?v=20260805-1&rev=20261007"></script>
+  <script src="src/thursday-minigames.js?rev=20261007"></script>
+  <script src="src/thursday-event-guards.js?rev=20261007"></script>
+  <script src="src/thursday-live-story.js?v=20260805-2&rev=20261007"></script>
+  <script src="src/friday-finale.js?rev=20261007"></script>
+  <script src="src/friday-scene-guard.js?rev=20261007"></script>
+  <script src="src/friday-clock-guard.js?rev=20261007"></script>
+  <script src="src/friday-ending-reopen.js?rev=20261007"></script>
+  <script src="src/window-layout.js?rev=20261007"></script>
+  <script src="src/window-drag.js?rev=20261007"></script>
+  <script src="src/office-work-pack.js?v=20260805-1&rev=20261007"></script>
+  <script src="src/office-work-requirements.js?v=20260805-1&rev=20261007"></script>
+  <script src="src/office-work-mail.js?v=20260805-1&rev=20261007"></script>
+  <script src="src/browser-state-render-gate.js?v=20260804-10&rev=20261007"></script>
+  <script src="src/personal-browser-core.js?v=20260804-10&rev=20261007"></script>
+  <script src="src/browser-site-listener-gate.js?v=20260804-10&rev=20261007"></script>
+  <script src="src/marketplace-parody.js?v=20260804-10&rev=20261007"></script>
+  <script src="src/browser-site-listener-gate-close.js?v=20260804-10&rev=20261007"></script>
+  <script src="src/videotok.js?v=20260804-10&rev=20261007"></script>
+  <script src="src/min-messenger.js?v=20260804-10&rev=20261007"></script>
+  <script src="src/min-game-profile-sync.js?v=20260805-1&rev=20261007"></script>
+  <script async src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js" crossorigin="anonymous" onload="window.dispatchEvent(new Event('until-friday-peer-ready'))"></script>
+  <script src="src/min-messenger-p2p.js?v=20260804-10&rev=20261007"></script>
+  <script src="src/min-messenger-ui-fixes.js?v=20260804-11&rev=20261007"></script>
+  <script src="src/min-desktop-integration.js?v=20260805-3&rev=20261007"></script>
+  <script src="src/min-workspace.js?v=20260805-2&rev=20261007"></script>
+  <script src="src/min-security-contact.js?v=20260805-1&rev=20261007"></script>
+  <script src="src/min-ui-polish.js?v=20260805-1&rev=20261007"></script>
+  <script src="src/monday-office-director.js?v=20260805-1&rev=20261007"></script>
+  <script src="src/office-day-director.js?v=20260805-1&rev=20261007"></script>
+  <script src="src/tuesday-office-director.js?v=20260805-1&rev=20261007"></script>
+  <script src="src/wednesday-office-director.js?v=20260805-1&rev=20261007"></script>
+  <script src="src/thursday-office-director.js?v=20260805-2&rev=20261007"></script>
+  <script src="src/personal-browser-ui-v4.js?v=20260804-10&rev=20261007"></script>
+  <script src="src/marketplace-scroll-preserver.js?v=20260804-10&rev=20261007"></script>
+  <script src="src/browser-online-icon-fallback.js?v=20260804-10&rev=20261007"></script>
+  <script src="src/browser-state-render-gate-close.js?v=20260804-10&rev=20261007"></script>
+  <script src="src/ui-runtime-guards.js?rev=20261007"></script>
+  <script src="src/bootstrap.js?rev=20261007"></script>
 </body>
 </html>

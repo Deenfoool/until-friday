@@ -73,7 +73,7 @@ assert.ok(api, "notification history API must be exported");
 assert.ok(listeners.has("until-friday-state-change"), "state lifecycle listener must be registered");
 assert.ok(listeners.has("until-friday-app-ready"), "startup lifecycle listener must be registered");
 assert.equal(observedTarget, notificationsContainer, "desktop notification container must be observed");
-assert.deepEqual(observedOptions, { childList: true, subtree: true });
+assert.deepEqual(JSON.parse(JSON.stringify(observedOptions)), { childList: true, subtree: true });
 assert.equal(api.belongsInsideApp({ type: "chat" }), true, "chat messages belong inside MIN");
 assert.equal(api.belongsInsideApp({ type: "mail" }), false, "mail messages may use desktop notifications");
 

@@ -87,6 +87,9 @@
   }
 
   function patchEndings() {
+    // A resignation cannot erase an already established security violation.
+    const caught = ending("caught");
+    if (caught) caught.priority = 110;
     const voluntary = ending("voluntary-exit");
     if (voluntary) {
       voluntary.text = "Заявление подано до объявления решения. Причину встречи сотрудник всё же услышал, но окончательный шаг сделал сам.";

@@ -108,8 +108,8 @@ assert.ok(
 
 const reset = read("src/friday-reset.js");
 assert.match(reset, /until-friday-friday-scene-v1/, "new game and manual reset must clear Friday scene data");
-assert.match(reset, /data-new-game/, "Friday reset must observe new game creation");
-assert.match(reset, /#reset-button/, "Friday reset must observe manual restart");
+assert.match(read("src/onboarding.js"), /UntilFridayFridayReset\?\.clearFinaleData/, "confirmed new game must clear Friday data");
+assert.match(read("src/workflow-reset.js"), /#reset-button, \[data-restart\]/, "manual and finale restart must share confirmed cleanup");
 assert.match(html, /src\/friday-reset\.js/, "Friday reset script must be connected");
 
 console.log("Friday finale stage validation passed.");

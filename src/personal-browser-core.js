@@ -146,7 +146,7 @@
       button.className = "desktop-icon personal-browser-launcher";
       button.dataset.app = APP_ID;
       button.dataset.personalBrowserLauncher = "true";
-      button.innerHTML = `<span class="desktop-icon__glyph personal-browser-glyph" aria-hidden="true">◎</span><span class="desktop-icon__label">${APP_TITLE}</span><span class="personal-browser-badge" data-browser-badge hidden></span>`;
+      button.innerHTML = `<span class="desktop-icon__glyph personal-browser-glyph" aria-hidden="true">◎</span><span class="desktop-icon__label">${APP_TITLE}</span>`;
       button.addEventListener("dblclick", openBrowser);
       button.addEventListener("click", (event) => { document.querySelectorAll(".desktop-icon").forEach((item) => item.classList.remove("selected")); button.classList.add("selected"); if (event.pointerType === "touch") openBrowser(); });
       button.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openBrowser(); } });
@@ -158,7 +158,7 @@
       button.className = "start-app personal-browser-start";
       button.dataset.app = APP_ID;
       button.dataset.personalBrowserLauncher = "true";
-      button.innerHTML = `<span class="desktop-icon__glyph personal-browser-glyph" aria-hidden="true">◎</span><span>${APP_TITLE}</span><span class="personal-browser-badge" data-browser-badge hidden></span>`;
+      button.innerHTML = `<span class="desktop-icon__glyph personal-browser-glyph" aria-hidden="true">◎</span><span>${APP_TITLE}</span>`;
       button.addEventListener("click", () => { document.querySelector("#start-menu")?.classList.add("hidden"); document.querySelector("#start-button")?.classList.remove("active"); openBrowser(); });
       startApps.appendChild(button);
     }
@@ -171,6 +171,7 @@
     document.querySelectorAll(".task-button").forEach((button) => button.classList.remove("active"));
     browserWindow.classList.remove("minimized");
     browserWindow.classList.add("focused");
+    topZ = Math.max(topZ, ...Array.from(document.querySelectorAll(".app-window"), (item) => Number(item.style.zIndex) || 0));
     browserWindow.style.zIndex = String(++topZ);
     taskButton?.classList.add("active");
   }

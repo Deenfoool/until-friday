@@ -87,9 +87,9 @@ assert.throws(() => Polish.connectPeerId("min-self"), /собственному 
 assert.throws(() => Polish.connectPeerId(""), /Введите MIN-ID/);
 
 assert.match(source, /\[data-min-add-contact\]/, "Add button must have a functional delegated handler");
-assert.match(source, /data\.minPolishP2pOpen/, "P2P button must be converted to the polished dialog handler");
+assert.match(source, /dataset\.minPolishP2pOpen/, "P2P button must be converted to the polished dialog handler");
 assert.match(source, /className = "min-page-actions"/, "Header buttons must be grouped separately from heading text");
-assert.match(source, /MutationObserver\(decorateAll\)/, "Polish must survive MIN rerenders");
+assert.match(source, /until-friday-min-render/, "Polish must survive MIN rerenders");
 
 assert.match(css, /\.min-app:not\(:has\(\.min-chat-list\)\)\s*\{[\s\S]*?grid-template-columns:\s*78px\s+minmax\(0,\s*1fr\)/, "Non-chat pages must use the full content width");
 assert.match(css, /\.min-page-actions\s*\{[\s\S]*?flex-wrap:\s*wrap/, "Header actions must wrap without colliding with text");

@@ -275,10 +275,8 @@
   }
 
   root.addEventListener?.("until-friday-app-ready", schedule);
-  root.addEventListener?.("until-friday-state-change", schedule);
+  root.addEventListener?.("until-friday-state-change", (event) => { if (event.detail?.reason !== "time") schedule(); });
   root.addEventListener?.("until-friday-ui-render", (event) => { if (event.detail?.appId === "browser") schedule(); });
-  document.addEventListener("click", (event) => { if (event.target.closest?.(".personal-browser-window")) root.setTimeout?.(schedule, 0); }, true);
-  document.addEventListener("submit", (event) => { if (event.target.closest?.(".personal-browser-window")) root.setTimeout?.(schedule, 0); }, true);
 
   root.UntilFridayMarketplaceParody = { CATEGORIES, PRODUCTS, icon, renderMarketplace, schedule };
 })(typeof globalThis !== "undefined" ? globalThis : window);

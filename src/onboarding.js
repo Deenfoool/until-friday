@@ -58,6 +58,8 @@
   }
 
   function clearGameState() {
+    window.UntilFridayResetGuard?.clearGameData();
+    window.UntilFridayFridayReset?.clearFinaleData();
     [ENGINE_SAVE_KEY, LEGACY_SAVE_KEY, WORKFLOW_KEY, PROFILE_KEY, WELCOME_KEY].forEach((key) => localStorage.removeItem(key));
     localStorage.setItem(INTRO_KEY, "99");
   }
@@ -118,7 +120,7 @@
     stage.querySelector("[data-continue]")?.addEventListener("click", () => {
       if (!continueAvailable) return;
       if (!readProfile()) {
-        localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: "Илья Воронов", createdAt: Date.now(), migrated: true }));
+        localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: "Сотрудник", createdAt: Date.now(), migrated: true }));
       }
       finish("continue");
     });

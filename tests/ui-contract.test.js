@@ -17,7 +17,6 @@ const syntaxFiles = [
   "src/integrity-fixes.js",
   "src/time-boundary-guard.js",
   "src/runtime-engine.js",
-  "src/ui-observer-hub.js",
   "src/passive-clock.js",
   "src/day-transition-guard.js",
   "src/day-end-control.js",
@@ -59,7 +58,6 @@ for (const stylesheet of [
 
 for (const script of [
   "runtime-engine",
-  "ui-observer-hub",
   "passive-clock",
   "day-transition-guard",
   "day-end-control",
@@ -92,8 +90,7 @@ assert.ok(position("rules-extension") < position("state-migration"), "rules must
 assert.ok(position("state-migration") < position("integrity-fixes"), "migration definitions must load before integrity repairs");
 assert.ok(position("integrity-fixes") < position("time-boundary-guard"), "repaired state must precede time rules");
 assert.ok(position("time-boundary-guard") < position("runtime-engine"), "pure helpers must load before the runtime");
-assert.ok(position("runtime-engine") < position("ui-observer-hub"), "runtime must exist before UI subscriptions");
-assert.ok(position("ui-observer-hub") < position("passive-clock"), "observer hub must intercept observers before UI consumers");
+assert.ok(position("runtime-engine") < position("passive-clock"), "runtime must exist before UI consumers");
 assert.ok(position("passive-clock") < position("day-transition-guard"), "clock must exist before transition UI resets it");
 assert.ok(position("day-transition-guard") < position("day-end-control"), "transition recovery must load before the day-end dialog");
 assert.ok(position("day-end-control") < position("asset-registry"), "runtime controls must be ready before app extensions");

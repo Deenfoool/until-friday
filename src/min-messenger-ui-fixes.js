@@ -363,10 +363,7 @@
   root.addEventListener?.("storage", (event) => { if (event.key === STORAGE_KEY) scheduleEnhance(); });
   root.addEventListener?.("until-friday-min-state-change", scheduleEnhance);
 
-  if (typeof root.MutationObserver === "function" && document.documentElement) {
-    const observer = new root.MutationObserver(scheduleEnhance);
-    observer.observe(document.documentElement, { childList: true, subtree: true });
-  }
+  root.addEventListener?.("until-friday-min-render", scheduleEnhance);
   document.addEventListener("DOMContentLoaded", scheduleEnhance, { once: true });
   scheduleEnhance();
 

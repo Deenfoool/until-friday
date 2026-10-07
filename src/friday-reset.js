@@ -13,9 +13,7 @@
     try { sessionStorage.removeItem(AUTO_CONTINUE_KEY); } catch { /* unavailable */ }
   }
 
-  document.addEventListener("click", (event) => {
-    if (event.target.closest?.("[data-new-game]")) clearFinaleData();
-  }, true);
+
 
   root.UntilFridayFridayReset = {
     SCENE_KEY,

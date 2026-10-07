@@ -32,7 +32,7 @@
   let appWindow = null;
   let taskButton = null;
   let mountCleanup = null;
-  let contentObserver = null;
+  let lastStorySignature = "";
   let decorateQueued = false;
   let topZ = 2600;
   let currentRoute = readRoute();
@@ -231,7 +231,17 @@
     const gameState = current?.getState?.();
     if (!current || !gameState) return false;
 
-    return mutateMinState((state) => {
+    const signature = JSON.stringify([gameState.seed, gameState.deliveredEvents, gameState.completedActions]);
+    if (signature === lastStorySignature && Min.getState?.()?.gameSeed === gameState.seed) return false;
+    const changed = mutateMinState((state) => {
+      if (state.gameSeed !== gameState.seed) {
+        state.messages = state.messages.filter((message) => !message.storyMessage && !String(message.id).startsWith("work-"));
+        state.chats.filter((chat) => chat.workChat).forEach((chat) => {
+          chat.unread = 0;
+          delete state.drafts[chat.id];
+        });
+        state.gameSeed = gameState.seed;
+      }
       WORK_CONTACTS.forEach((contact) => {
         ensureUser(state, contact);
         ensureChat(state, contact);
@@ -274,6 +284,8 @@
         }, false);
       });
     });
+    if (changed) lastStorySignature = signature;
+    return changed;
   }
 
   function availableStoryActions() {
@@ -321,16 +333,21 @@
     if (!appWindow?.isConnected) return;
     const content = appWindow.querySelector(".window-content");
     const conversation = content?.querySelector(".min-conversation");
-    if (!conversation || conversation.querySelector("[data-min-story-actions]")) return;
+    if (!conversation) return;
 
     const contact = currentWorkContact();
     if (!contact) return;
     const actions = availableStoryActions().filter((action) => contactForAction(action.id)?.chatId === contact.chatId);
+    const signature = actions.map((action) => action.id).join("|");
+    const existing = conversation.querySelector("[data-min-story-actions]");
+    if (existing?.dataset.actionSignature === signature) return;
+    existing?.remove();
     if (!actions.length) return;
 
     const panel = document.createElement("section");
     panel.className = "min-desktop-story-actions";
     panel.dataset.minStoryActions = "true";
+    panel.dataset.actionSignature = signature;
     panel.innerHTML = `<header><div><b>Служебные варианты ответа</b><small>Эти ответы влияют на сюжет и рабочее время.</small></div></header><div></div>`;
     const list = panel.querySelector("div:last-child");
     actions.forEach((action) => {
@@ -347,7 +364,8 @@
   function scheduleDecorate() {
     if (decorateQueued) return;
     decorateQueued = true;
-    root.requestAnimationFrame?.(decorateStoryActions) || root.setTimeout?.(decorateStoryActions, 0);
+    if (typeof root.requestAnimationFrame === "function") root.requestAnimationFrame(decorateStoryActions);
+    else root.setTimeout?.(decorateStoryActions, 0);
   }
 
   function mountMessenger() {
@@ -372,13 +390,12 @@
     document.querySelectorAll(".task-button").forEach((button) => button.classList.remove("active"));
     appWindow.classList.remove("minimized");
     appWindow.classList.add("focused");
-    appWindow.style.zIndex = String(++topZ);
+    topZ = Math.max(topZ, ...Array.from(document.querySelectorAll(".app-window"), (element) => Number(element.style.zIndex) || 0)) + 1;
+    appWindow.style.zIndex = String(topZ);
     taskButton?.classList.add("active");
   }
 
   function closeWindow() {
-    contentObserver?.disconnect();
-    contentObserver = null;
     mountCleanup?.();
     mountCleanup = null;
     appWindow?.remove();
@@ -417,7 +434,8 @@
     document.querySelector(`.task-button[data-task-window="${APP_ID}"]:not(.min-desktop-task)`)?.remove();
 
     if (appWindow?.isConnected) {
-      mountMessenger();
+      syncStoryMessages();
+      scheduleDecorate();
       focusWindow();
       return;
     }
@@ -450,10 +468,6 @@
     layer.appendChild(appWindow);
     createTaskButton();
     focusWindow();
-
-    const content = appWindow.querySelector(".window-content");
-    contentObserver = new MutationObserver(scheduleDecorate);
-    contentObserver.observe(content, { childList: true, subtree: true });
 
     root.UntilFridayWindowLayout?.enhance?.(appWindow, APP_ID);
     root.UntilFridayWindowLayout?.maximize?.(appWindow);
@@ -572,12 +586,13 @@
 
   root.addEventListener("until-friday-state-change", () => {
     syncStoryMessages();
-    if (appWindow?.isConnected) mountMessenger();
+    scheduleDecorate();
     ensureLaunchers();
     updateBadge();
   });
 
   root.addEventListener("until-friday-min-state-change", updateBadge);
+  root.addEventListener("until-friday-min-render", scheduleDecorate);
   root.addEventListener("storage", (event) => {
     if (event.key === STORAGE_KEY) updateBadge();
   });

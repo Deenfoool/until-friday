@@ -308,6 +308,7 @@
     win.className = "app-window focused workflow-file-viewer";
     win.style.left = `${140 + viewers.size * 18}px`;
     win.style.top = `${90 + viewers.size * 16}px`;
+    topZ = Math.max(topZ, ...Array.from(document.querySelectorAll(".app-window"), (item) => Number(item.style.zIndex) || 0));
     win.style.zIndex = String(++topZ);
     win.innerHTML = `
       <header class="window-titlebar">
@@ -347,6 +348,7 @@
     document.querySelectorAll(".task-button").forEach((item) => item.classList.remove("active"));
     win.classList.remove("minimized");
     win.classList.add("focused");
+    topZ = Math.max(topZ, ...Array.from(document.querySelectorAll(".app-window"), (item) => Number(item.style.zIndex) || 0));
     win.style.zIndex = String(++topZ);
     document.querySelector(`[data-workflow-viewer-task="${selector(id)}"]`)?.classList.add("active");
   }
@@ -405,8 +407,10 @@
     return root.CSS?.escape ? root.CSS.escape(String(value)) : String(value).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
   }
 
-  const observer = new MutationObserver(queueRender);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
+  window.addEventListener("until-friday-ui-render", queueRender);
+  window.addEventListener("until-friday-state-change", queueRender);
+  window.addEventListener("until-friday-app-ready", queueRender);
+  document.addEventListener("click", queueRender);
   document.addEventListener("DOMContentLoaded", queueRender, { once: true });
   queueRender();
 

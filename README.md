@@ -222,7 +222,10 @@ onboarding.css                 меню, пролог и вход
 work-minigames.css             рабочие мини-задачи
 asset-ui.css                   оформление ассетов
 workflow.css                   документооборот между приложениями
-src/engine.js                  игровой движок
+src/engine.js                  базовые правила
+src/runtime-engine.js          изменения состояния и сохранение
+src/min-messenger.js           переписка МИН
+src/window-drag.js             перемещение окон
 src/story-v2.js                основной сюжет
 src/app-v2.js                  приложения и интерфейс
 src/onboarding.js              меню, пролог и ввод имени
@@ -239,13 +242,12 @@ assets/                        визуальные материалы игры
 ## 🧪 Проверки
 
 ```bash
-node tests/engine.test.js
-node tests/story-validation.test.js
-node tests/rules-extension.test.js
-node tests/ui-contract.test.js
+npm test
 ```
 
-Проверки также подключены к GitHub Actions.
+Требуется Node.js 22 или новее. Установка пакетов не нужна: тесты используют встроенные модули Node.js и выполняются в отдельных процессах. Проверяются сюжетные маршруты, сохранения, сброс, приложения и регрессии производительности МИН.
+
+[Архитектура](ARCHITECTURE.md) · [Состояние разработки](DEVELOPMENT_STATUS.md) · [Планы](ROADMAP.md)
 
 ---
 

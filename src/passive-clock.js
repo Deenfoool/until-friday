@@ -39,8 +39,9 @@
   function updateClock(state) {
     const time = document.querySelector("#clock-time");
     const date = document.querySelector("#clock-date");
-    if (time) time.textContent = formatTime(state.minute);
-    if (date) date.textContent = `${DAY_SHORT[state.dayIndex] || ""}, ${3 + state.dayIndex} ${MONTH_SHORT}`;
+    if (time && time.textContent !== formatTime(state.minute)) time.textContent = formatTime(state.minute);
+    const dateText = `${DAY_SHORT[state.dayIndex] || ""}, ${3 + state.dayIndex} ${MONTH_SHORT}`;
+    if (date && date.textContent !== dateText) date.textContent = dateText;
   }
 
   function notify(title, text) {
@@ -61,17 +62,19 @@
   function refreshOpenWindows() {
     const windows = Array.from(document.querySelectorAll('.app-window[data-window-id]:not(.minimized)'));
     if (!windows.length) return;
-    const activeId = document.querySelector('.app-window.focused[data-window-id]')?.dataset.windowId || null;
-    const ids = windows.map((windowElement) => windowElement.dataset.windowId).filter(Boolean);
+    const activeWindow = document.querySelector('.app-window.focused[data-window-id]');
+    const activeInput = document.activeElement;
+    const ids = windows.map((windowElement) => windowElement.dataset.windowId).filter((id) => ["mail", "tasks", "journal", "explorer"].includes(id));
 
     ids.forEach((appId) => {
       const icon = document.querySelector(`.desktop-icon[data-app="${cssEscape(appId)}"]`);
       icon?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
     });
 
-    if (activeId) {
-      const activeIcon = document.querySelector(`.desktop-icon[data-app="${cssEscape(activeId)}"]`);
-      activeIcon?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+    if (activeWindow?.isConnected) {
+      activeWindow.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+      activeWindow.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+      if (activeInput?.isConnected && typeof activeInput.focus === "function") activeInput.focus({ preventScroll: true });
     }
   }
 

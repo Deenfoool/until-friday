@@ -247,6 +247,11 @@
       desktopButton.dataset.app = app.id;
       desktopButton.innerHTML = `<span class="desktop-icon__glyph">${escapeHtml(app.icon)}</span><span class="desktop-icon__label">${escapeHtml(app.name)}</span>`;
       desktopButton.addEventListener("dblclick", () => openApp(app.id));
+      desktopButton.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        openApp(app.id);
+      });
       desktopButton.addEventListener("click", () => {
         $$(".desktop-icon").forEach((item) => item.classList.remove("selected"));
         desktopButton.classList.add("selected");
@@ -287,7 +292,6 @@
     ui.windowsLayer.appendChild(element);
     createTaskButton(appId, app.name);
     bindWindowControls(appId, element);
-    makeDraggable(element, $(".window-titlebar", element));
     element.addEventListener("mousedown", () => focusWindow(appId));
     render();
     focusWindow(appId);
@@ -352,7 +356,7 @@
   function focusWindow(appId) {
     const win = runtime.windows.get(appId);
     if (!win) return;
-    runtime.zIndex += 1;
+    runtime.zIndex = Math.max(runtime.zIndex, ...$$(".app-window").map((element) => Number(element.style.zIndex) || 0)) + 1;
     runtime.activeWindowId = appId;
     win.element.style.zIndex = String(runtime.zIndex);
     runtime.windows.forEach(({ element }) => element.classList.remove("focused"));
@@ -381,23 +385,7 @@
     [...runtime.windows.keys()].forEach(closeWindow);
   }
 
-  function makeDraggable(element, handle) {
-    let drag = null;
-    handle.addEventListener("mousedown", (event) => {
-      if (event.target.closest("button")) return;
-      const rect = element.getBoundingClientRect();
-      drag = { x: event.clientX - rect.left, y: event.clientY - rect.top };
-      event.preventDefault();
-    });
-    document.addEventListener("mousemove", (event) => {
-      if (!drag) return;
-      const maxX = Math.max(0, window.innerWidth - element.offsetWidth);
-      const maxY = Math.max(0, window.innerHeight - element.offsetHeight - 42);
-      element.style.left = `${clamp(event.clientX - drag.x, 0, maxX)}px`;
-      element.style.top = `${clamp(event.clientY - drag.y, 0, maxY)}px`;
-    });
-    document.addEventListener("mouseup", () => { drag = null; });
-  }
+
 
   function renderApp(appId, element) {
     const renderers = {
@@ -543,7 +531,6 @@
     ui.windowsLayer.appendChild(element);
     createTaskButton(id, file.title);
     bindWindowControls(id, element);
-    makeDraggable(element, $(".window-titlebar", element));
     element.addEventListener("mousedown", () => focusWindow(id));
     window.dispatchEvent(new CustomEvent("until-friday-ui-render", {
       detail: { appId: id, element }
@@ -1053,8 +1040,10 @@
   function updateClock() {
     gameState = engine.getState();
     const day = currentDay();
-    ui.clockTime.textContent = formatTime(gameState.minute);
-    ui.clockDate.textContent = `${DAY_SHORT[gameState.dayIndex] || ""}, ${3 + gameState.dayIndex} ${MONTH_SHORT}`;
+    const clockText = formatTime(gameState.minute);
+    if (ui.clockTime.textContent !== clockText) ui.clockTime.textContent = clockText;
+    const dateText = `${DAY_SHORT[gameState.dayIndex] || ""}, ${3 + gameState.dayIndex} ${MONTH_SHORT}`;
+    if (ui.clockDate.textContent !== dateText) ui.clockDate.textContent = dateText;
     const clock = $("#clock");
     if (clock) clock.title = gameState.ended ? "Посмотреть финал" : `Завершить ${day.title.toLowerCase()}`;
   }

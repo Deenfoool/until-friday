@@ -86,56 +86,12 @@ assert.equal(engine.startDay().ok, true);
 assert.equal(engine.applyAction("mon-report-final").ok, true);
 assert.equal(engine.canApplyAction("mon-report-old").reason, "choice-locked");
 
-const hubSource = read("src/ui-observer-hub.js");
-assert.doesNotThrow(() => new Function(hubSource));
-let nativeCount = 0;
-let nativeCallback = null;
-const target = {
-  contains(node) { return node === this || node?.parent === this; }
-};
-class FakeNativeObserver {
-  constructor(callback) {
-    nativeCount += 1;
-    nativeCallback = callback;
-  }
-  observe() {}
-  disconnect() {}
-  takeRecords() { return []; }
-}
-const observerContext = {
-  MutationObserver: FakeNativeObserver,
-  document: { documentElement: target, addEventListener() {} },
-  requestAnimationFrame: (callback) => callback(),
-  setTimeout: (callback) => callback(),
-  console
-};
-observerContext.globalThis = observerContext;
-vm.runInNewContext(hubSource, observerContext, { filename: "ui-observer-hub.js" });
-
-let firstCalls = 0;
-let secondCalls = 0;
-const first = new observerContext.MutationObserver(() => { firstCalls += 1; });
-const second = new observerContext.MutationObserver(() => { secondCalls += 1; });
-first.observe(target, { childList: true, subtree: true });
-second.observe(target, { childList: true, subtree: true });
-assert.equal(nativeCount, 1, "all virtual observers must share one native observer");
-
-nativeCallback([{ type: "childList", target }]);
-assert.equal(firstCalls, 1);
-assert.equal(secondCalls, 1);
-second.disconnect();
-nativeCallback([{ type: "childList", target }]);
-assert.equal(firstCalls, 2);
-assert.equal(secondCalls, 1, "disconnected subscribers must stop receiving records");
-assert.equal(observerContext.UntilFridayUiObserverHub.stats().nativeObservers, 1);
-
 const html = read("index.html");
-assert.doesNotMatch(html, /persistent-engine-guard\.js/, "deleted runtime facade must not be loaded");
-assert.ok(
-  html.indexOf("src/time-boundary-guard.js") < html.indexOf("src/runtime-engine.js") &&
-  html.indexOf("src/runtime-engine.js") < html.indexOf("src/ui-observer-hub.js") &&
-  html.indexOf("src/ui-observer-hub.js") < html.indexOf("src/passive-clock.js"),
-  "helpers, runtime, observer hub and consumers must load in a fixed order"
-);
-
+assert.doesNotMatch(html, /ui-observer-hub\.js/, "global observer compatibility layer must not be loaded");
+assert.equal(fs.existsSync(path.join(root, "src/ui-observer-hub.js")), false);
+for (const absolute of allSourceFiles(path.join(root, "src"))) {
+  if (absolute.endsWith("notification-history-guard.js")) continue;
+  assert.doesNotMatch(read(path.relative(root, absolute)), /new\s+(?:root\.)?MutationObserver/, "UI updates must follow lifecycle events, not global DOM mutation");
+}
+assert.ok(html.indexOf("src/runtime-engine.js") < html.indexOf("src/passive-clock.js"));
 console.log("Unified runtime architecture validation passed.");

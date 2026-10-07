@@ -15,7 +15,8 @@
   ];
   const SESSION_RESET_KEYS = [
     "until-friday-ending-snapshot-v1",
-    "until-friday-auto-continue-v1"
+    "until-friday-auto-continue-v1",
+    "until-friday-min-desktop-route-v1"
   ];
   let resetInProgress = false;
 
@@ -30,18 +31,9 @@
     try { remove(sessionStorage, SESSION_RESET_KEYS); } catch { /* unavailable */ }
   }
 
-  function clearExtendedDataForMenuNewGame() {
-    remove(localStorage, [
-      "until-friday-workflow-files-v1",
-      "until-friday-friday-scene-v1",
-      "until-friday-notification-history-v1",
-      "until-friday-return-welcome-v1"
-    ]);
-    try { remove(sessionStorage, SESSION_RESET_KEYS); } catch { /* unavailable */ }
-  }
 
   document.addEventListener("click", (event) => {
-    const resetButton = event.target.closest?.("#reset-button");
+    const resetButton = event.target.closest?.("#reset-button, [data-restart]");
     if (resetButton) {
       event.preventDefault();
       event.stopPropagation();
@@ -56,15 +48,11 @@
       return;
     }
 
-    if (event.target.closest?.("[data-new-game]")) {
-      clearExtendedDataForMenuNewGame();
-    }
   }, true);
 
   root.UntilFridayResetGuard = {
     LOCAL_RESET_KEYS,
     SESSION_RESET_KEYS,
-    clearGameData,
-    clearExtendedDataForMenuNewGame
+    clearGameData
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);

@@ -30,7 +30,7 @@ for (const phrase of [
   "MIN-ID",
   "data-min-p2p-connect",
   "data-min-p2p-call",
-  "MutationObserver"
+  "until-friday-min-render"
 ]) {
   assert.match(source, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `P2P module must contain: ${phrase}`);
 }

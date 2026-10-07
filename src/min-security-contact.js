@@ -71,14 +71,13 @@
 
   ensureContact();
   root.addEventListener?.("until-friday-app-ready", sync);
-  root.addEventListener?.("until-friday-state-change", sync);
+  root.addEventListener?.("until-friday-state-change", (event) => {
+    if (event.detail?.reason !== "time") sync();
+  });
   root.addEventListener?.("until-friday-min-state-change", scheduleDecorate);
   root.addEventListener?.("until-friday-ui-render", scheduleDecorate);
 
-  if (typeof root.MutationObserver === "function" && root.document?.documentElement) {
-    const observer = new root.MutationObserver(scheduleDecorate);
-    observer.observe(root.document.documentElement, { childList: true, subtree: true });
-  }
+  root.addEventListener?.("until-friday-min-render", scheduleDecorate);
 
   root.UntilFridayMinSecurityContact = {
     CONTACT,

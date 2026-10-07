@@ -4,7 +4,7 @@
   if (root.UntilFridayMinP2P) return;
 
   const Min = root.UntilFridayMinMessenger;
-  const PeerCtor = root.Peer;
+  let PeerCtor = root.Peer;
   if (!Min) return;
 
   const STORAGE_KEY = Min.STORAGE_KEY;
@@ -16,7 +16,7 @@
   const remoteSignatures = new Map();
   let peer = null;
   let peerId = "";
-  let status = PeerCtor ? "Запуск P2P…" : "PeerJS не загрузился";
+  let status = "P2P загружается…";
   let currentCall = null;
   let localStream = null;
   let pollTimer = null;
@@ -293,7 +293,9 @@
     });
     connection.on("data", (data) => handleData(connection, data));
     connection.on("close", () => {
+      if (connections.get(remoteId) !== connection) return;
       connections.delete(remoteId);
+      if (!connections.size) stopPolling();
       markOffline(remoteId);
       setStatus(connections.size ? "Часть P2P-контактов в сети" : "P2P включён, подключений нет");
     });
@@ -362,7 +364,8 @@
   }
 
   function initPeer() {
-    if (!PeerCtor) return;
+    PeerCtor = root.Peer || PeerCtor;
+    if (!PeerCtor || peer) return;
     peerId = localId();
     try {
       peer = new PeerCtor(peerId, { debug: 1 });
@@ -374,7 +377,6 @@
       peerId = id;
       root.localStorage?.setItem(PEER_ID_KEY, id);
       setStatus("P2P включён, подключений нет");
-      startPolling();
     });
     peer.on("connection", setupConnection);
     peer.on("call", answerCall);
@@ -398,7 +400,7 @@
     const settings = container.querySelector(".min-settings");
     if (settings && !settings.querySelector("[data-min-p2p-panel]")) settings.insertAdjacentHTML("beforeend", settingsPanel());
     const contactsHeader = container.querySelector(".min-page > header");
-    if (contactsHeader && container.querySelector(".min-contact-grid") && !contactsHeader.querySelector("[data-min-p2p-open]")) contactsHeader.insertAdjacentHTML("beforeend", contactButton());
+    if (contactsHeader && container.querySelector(".min-contact-grid") && !contactsHeader.querySelector("[data-min-p2p-open], [data-min-polish-p2p-open]")) contactsHeader.insertAdjacentHTML("beforeend", contactButton());
   }
 
   function decorateAll() {
@@ -479,8 +481,9 @@
   }
 
   function endCall() {
-    currentCall?.close?.();
+    const call = currentCall;
     currentCall = null;
+    call?.close?.();
     localStream?.getTracks?.().forEach((track) => track.stop());
     localStream = null;
     document.querySelector("[data-min-p2p-call]")?.remove();
@@ -541,8 +544,7 @@
     if (connection?.open) connection.send({ type: "typing", active: Boolean(textarea.value) });
   });
 
-  const observer = new MutationObserver(() => decorateAll());
-  observer.observe(document.documentElement, { childList: true, subtree: true });
+  root.addEventListener("until-friday-min-render", decorateAll);
 
   root.addEventListener("beforeunload", () => {
     stopPolling();
@@ -551,6 +553,7 @@
     peer?.destroy?.();
   });
 
+  root.addEventListener("until-friday-peer-ready", initPeer);
   initPeer();
   decorateAll();
 

@@ -109,6 +109,31 @@ assert.match(container.innerHTML, /data-min-composer/);
 assert.match(container.innerHTML, /data-min-voice/);
 assert.match(container.innerHTML, /data-min-attach/);
 
+// Incoming state must not steal focus or move the cursor while composing.
+context.document = { activeElement: null };
+context.CustomEvent = class { constructor(type, options) { this.type = type; this.detail = options.detail; } };
+let renderEvents = 0;
+context.dispatchEvent = (event) => { if (event.type === "until-friday-min-render") renderEvents += 1; };
+function input() {
+  return {
+    selectionStart: 2, selectionEnd: 4, style: {}, addEventListener() {},
+    focus() { context.document.activeElement = this; },
+    setSelectionRange(start, end) { this.selectionStart = start; this.selectionEnd = end; }
+  };
+}
+let currentInput = input();
+context.document.activeElement = currentInput;
+const focusedContainer = {
+  dataset: { minChatId: created.id }, querySelectorAll() { return []; },
+  querySelector(selector) { return selector === "[data-min-text]" ? currentInput : null; },
+  set innerHTML(value) { this.markup = value; currentInput = input(); }
+};
+api.render(focusedContainer, { url: `https://min.local/chat/${created.id}` });
+assert.equal(context.document.activeElement, currentInput);
+assert.equal(currentInput.selectionStart, 2);
+assert.equal(currentInput.selectionEnd, 4);
+assert.equal(renderEvents, 1, "each completed render must notify decorators once");
+
 const css = read("min-messenger.css");
 for (const phrase of [".min-app", ".min-nav", ".min-chat-list", ".min-conversation", ".min-message", ".min-composer", ".min-info", ".min-modal", ".min-call-overlay", "@media(max-width:620px)"]) {
   assert.match(css, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));

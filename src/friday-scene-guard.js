@@ -159,7 +159,7 @@
   window.addEventListener("until-friday-app-ready", queue);
   window.addEventListener("until-friday-state-change", queue);
   window.addEventListener("until-friday-ui-render", (event) => {
-    if (!event.detail?.appId || event.detail.appId === "tasks") queue();
+    if (!event.detail?.appId || event.detail?.appId === "tasks") queue();
   });
   queue();
 

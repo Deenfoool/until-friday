@@ -667,10 +667,11 @@
     return `${hours}:${minutes}`;
   }
 
-  const observer = new MutationObserver(queueDecorate);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-  document.addEventListener("DOMContentLoaded", queueDecorate, { once: true });
+  window.addEventListener("until-friday-ui-render", queueDecorate);
+  window.addEventListener("until-friday-state-change", queueDecorate);
   window.addEventListener("until-friday-app-ready", queueDecorate);
+  document.addEventListener("click", queueDecorate);
+  document.addEventListener("DOMContentLoaded", queueDecorate, { once: true });
   queueDecorate();
 
   root.UntilFridayFridayFinale = {

@@ -1,0 +1,12 @@
+{
+  "name": "until-friday",
+  "version": "0.2.1",
+  "private": true,
+  "description": "Психологическая офисная игра До пятницы",
+  "scripts": {
+    "test": "node scripts/test.js"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

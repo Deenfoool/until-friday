@@ -101,7 +101,7 @@ assert.ok(
 const rules = read("src/rules-extension.js");
 assert.match(rules, /AUDIT_EVENT_ID = "wed-security-audit"/, "Wednesday audit must be tied to its event");
 assert.match(rules, /requireAuditEvent/, "audit actions must be hidden before the event");
-assert.match(rules, /skippedRequirement: "wednesday-audit"/, "untriggered audit requirement must be skipped");
+assert.match(read("src/runtime-engine.js"), /skippedRequirement: "wednesday-audit"/, "untriggered audit requirement must be skipped");
 assert.match(rules, /storedEnding/, "resolved endings must not be appended repeatedly");
 
 console.log("Tuesday gameplay stage validation passed.");

@@ -22,6 +22,7 @@ function stateFor(truthId, route, overrides = {}) {
   });
   state.dayIndex = 4;
   state.dayStarted = true;
+  if (route === "blackmail") state.inventory.push("case-archive");
   if (route === "resignation") state.flags.resignationPrepared = true;
   return state;
 }

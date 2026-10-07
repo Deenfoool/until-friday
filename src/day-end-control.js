@@ -281,7 +281,7 @@
   window.addEventListener("until-friday-app-ready", queueDecorate);
   window.addEventListener("until-friday-state-change", queueDecorate);
   window.addEventListener("until-friday-ui-render", (event) => {
-    if (!event.detail?.appId || event.detail.appId === "tasks") queueDecorate();
+    if (!event.detail?.appId || event.detail?.appId === "tasks") queueDecorate();
   });
   queueDecorate();
 
