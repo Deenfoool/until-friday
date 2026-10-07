@@ -279,7 +279,7 @@
   }
 
   function emptyState() {
-    return `<div class="kp-empty"><img src="${icon("nothing-found", 96)}" alt=""><h2>Ничего не нашлось</h2><p>Попробуйте другой запрос или загляните в каталог.</p><button data-kp-reset>Сбросить фильтры</button></div>`;
+    return `<div class="kp-empty"><img src="${icon("nothing-found", 96)}" alt=""><h2>Ничего не нашлось</h2><p>Попробуйте другой запрос или загляните в каталог.</p><button data-kp-reset>Показать все товары</button></div>`;
   }
 
   function filterCount() {
