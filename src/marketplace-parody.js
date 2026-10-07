@@ -189,6 +189,11 @@
   function personal(state = stateNow()) { return Browser.personalState?.(state) || {}; }
   function esc(value) { return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
   function money(value) { return `${Math.round(Number(value) || 0).toLocaleString("ru-RU")} ₽`; }
+  function productWord(count) {
+    const lastTwo = count % 100;
+    if (lastTwo >= 11 && lastTwo <= 14) return "товаров";
+    return count % 10 === 1 ? "товар" : count % 10 >= 2 && count % 10 <= 4 ? "товара" : "товаров";
+  }
   function discount(product) { return Math.max(1, Math.round((1 - product.price / product.oldPrice) * 100)); }
   function isMarketOpen() {
     const address = document.querySelector(".personal-browser-window .rb-address input")?.value || "";
@@ -240,7 +245,7 @@
       ${hero()}
       <main class="kp-main">
         <div class="kp-breadcrumbs">Главная　/　${category === "all" ? "Все товары" : esc(CATEGORIES.find((item) => item.id === category)?.label || "Каталог")}</div>
-        <section class="kp-heading"><div><h1>${favoritesOnly ? "Избранное" : category === "all" ? "Хиты КупиТут" : esc(CATEGORIES.find((item) => item.id === category)?.label)}</h1><p>${all.length} товаров · выдача обновлена только что</p></div><div class="kp-tools"><button data-kp-filter><img src="${icon("filter", 20, "fluency-systems-regular")}" alt="">Фильтры${filterCount() ? ` (${filterCount()})` : ""}</button><select data-kp-sort><option value="popular" ${sort === "popular" ? "selected" : ""}>По популярности</option><option value="cheap" ${sort === "cheap" ? "selected" : ""}>Сначала дешевле</option><option value="expensive" ${sort === "expensive" ? "selected" : ""}>Сначала дороже</option><option value="rating" ${sort === "rating" ? "selected" : ""}>По рейтингу</option><option value="discount" ${sort === "discount" ? "selected" : ""}>По скидке</option></select></div></section>
+        <section class="kp-heading"><div><h1>${favoritesOnly ? "Избранное" : category === "all" ? "Хиты КупиТут" : esc(CATEGORIES.find((item) => item.id === category)?.label)}</h1><p>${all.length} ${productWord(all.length)} · выдача обновлена только что</p></div><div class="kp-tools"><button data-kp-filter><img src="${icon("filter", 20, "fluency-systems-regular")}" alt="">Фильтры${filterCount() ? ` (${filterCount()})` : ""}</button><select data-kp-sort><option value="popular" ${sort === "popular" ? "selected" : ""}>По популярности</option><option value="cheap" ${sort === "cheap" ? "selected" : ""}>Сначала дешевле</option><option value="expensive" ${sort === "expensive" ? "selected" : ""}>Сначала дороже</option><option value="rating" ${sort === "rating" ? "selected" : ""}>По рейтингу</option><option value="discount" ${sort === "discount" ? "selected" : ""}>По скидке</option></select></div></section>
         ${filterSummary()}
         ${shown.length ? `<div class="kp-grid">${shown.map((product) => productCard(product, user)).join("")}</div>` : emptyState()}
         ${shown.length < all.length ? `<button class="kp-more" data-kp-more>Показать ещё ${Math.min(20, all.length - shown.length)}</button>` : ""}
@@ -286,7 +291,7 @@
     const labels = [];
     if (filters.minPrice > 0) labels.push(`От ${money(filters.minPrice)}`);
     if (filters.maxPrice != null) labels.push(`До ${money(filters.maxPrice)}`);
-    if (filters.minRating > 0) labels.push(`Рейтинг от ${filters.minRating}`);
+    if (filters.minRating > 0) labels.push(`Рейтинг от ${String(filters.minRating).replace(".", ",")}`);
     return `<div class="kp-filter-summary" aria-label="Активные фильтры">${labels.map((label) => `<span>${label}</span>`).join("")}<button data-kp-clear-filters>Сбросить фильтры</button></div>`;
   }
 
@@ -301,7 +306,7 @@
   function cartDrawer(user) {
     const items = PRODUCTS.filter((product) => user.cart?.includes(product.id));
     const total = items.reduce((sum, product) => sum + product.price, 0);
-    return `<div class="kp-overlay" data-kp-overlay><aside class="kp-drawer"><header><div><strong>Корзина</strong><small>${items.length} товаров</small></div><button data-kp-close><img src="${icon("delete-sign", 22, "fluency-systems-regular")}" alt="Закрыть"></button></header><main>${items.length ? items.map((product) => `<article><img src="${product.image}" alt=""><div><b>${esc(product.title)}</b><small>${esc(product.brand)}</small><strong>${money(product.price)}</strong></div><button data-kp-cart-item="${product.id}"><img src="${icon("trash", 20, "fluency-systems-regular")}" alt="Удалить"></button></article>`).join("") : `<div class="kp-empty"><img src="${icon("shopping-cart", 80)}" alt=""><h2>В корзине пусто</h2><p>Это ненадолго.</p></div>`}</main>${items.length ? `<footer><div><span>Итого без учёта здравого смысла</span><strong>${money(total)}</strong></div><button data-kp-checkout>Перейти к оформлению</button></footer>` : ""}</aside></div>`;
+    return `<div class="kp-overlay" data-kp-overlay><aside class="kp-drawer"><header><div><strong>Корзина</strong><small>${items.length} ${productWord(items.length)}</small></div><button data-kp-close><img src="${icon("delete-sign", 22, "fluency-systems-regular")}" alt="Закрыть"></button></header><main>${items.length ? items.map((product) => `<article><img src="${product.image}" alt=""><div><b>${esc(product.title)}</b><small>${esc(product.brand)}</small><strong>${money(product.price)}</strong></div><button data-kp-cart-item="${product.id}"><img src="${icon("trash", 20, "fluency-systems-regular")}" alt="Удалить"></button></article>`).join("") : `<div class="kp-empty"><img src="${icon("shopping-cart", 80)}" alt=""><h2>В корзине пусто</h2><p>Это ненадолго.</p></div>`}</main>${items.length ? `<footer><div><span>Итого без учёта здравого смысла</span><strong>${money(total)}</strong></div><button data-kp-checkout>Перейти к оформлению</button></footer>` : ""}</aside></div>`;
   }
 
   function productModal(product, user) {
