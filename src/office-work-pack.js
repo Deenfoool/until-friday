@@ -12,6 +12,7 @@
   let activeWindow = null;
   let topZ = 1950;
   const announced = new Set();
+  const renderedTaskLists = new WeakMap();
 
   const icon = (name, size = 28) => `${ICON_ROOT}/${size}/${name}.png`;
 
@@ -548,12 +549,16 @@
     const state = stateNow();
     if (!list || !state) return false;
 
-    list.querySelector(".office-work-pack")?.remove();
     const saved = officeState(state);
     const dayTasks = tasksForDay(state.dayIndex);
     const completed = dayTasks.filter((task) => saved.completed[task.id]);
     const available = dayTasks.filter((task) => task.unlockMinute <= state.minute && !saved.completed[task.id]);
     const next = dayTasks.find((task) => task.unlockMinute > state.minute && !saved.completed[task.id]);
+    const signature = JSON.stringify([state.dayIndex, completed.map((task) => task.id), available.map((task) => task.id), next?.id]);
+    if (renderedTaskLists.get(list) === signature && list.querySelector(".office-work-pack")) return true;
+    const scrollTop = list.scrollTop;
+    const focusedId = document.activeElement?.dataset?.officeOpen;
+    list.querySelector(".office-work-pack")?.remove();
     const section = document.createElement("section");
     section.className = "office-work-pack";
     section.dataset.officeWorkPack = "true";
@@ -587,6 +592,11 @@
 
     section.querySelectorAll("[data-office-open]").forEach((button) => button.addEventListener("click", () => openTask(button.dataset.officeOpen)));
     list.prepend(section);
+    renderedTaskLists.set(list, signature);
+    if (focusedId) section.querySelectorAll("[data-office-open]").forEach((button) => {
+      if (button.dataset.officeOpen === focusedId) button.focus({ preventScroll: true });
+    });
+    list.scrollTop = scrollTop;
     return true;
   }
 

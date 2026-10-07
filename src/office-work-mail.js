@@ -7,6 +7,8 @@
   const Pack = root.UntilFridayOfficeWorkPack;
   if (!Pack) return;
 
+  const renderedLists = new WeakMap();
+
   const ICON_ROOT = "https://img.icons8.com/fluency-systems-regular";
   const icon = (name, size = 20) => `${ICON_ROOT}/${size}/${name}.png`;
 
@@ -36,22 +38,46 @@
     const view = element?.querySelector?.(".mail-view");
     if (!state || !list || !view) return false;
 
-    list.querySelectorAll("[data-office-mail-task]").forEach((item) => item.remove());
     const completed = Pack.officeState(state).completed;
+    const tasks = mailTasks(state);
+    const signature = JSON.stringify([state.dayIndex, tasks.map((task) => [task.id, Boolean(completed[task.id])])]);
+    if (renderedLists.get(list) === signature) return true;
+    if (!renderedLists.has(list)) {
+      // Clear the office selection before the base mail handler rebuilds the view.
+      list.addEventListener("click", (event) => {
+        const item = event.target.closest?.(".mail-item");
+        if (item && !item.dataset.officeMailTask) delete element.dataset.officeMailSelection;
+      }, true);
+    }
+    const scrollTop = list.scrollTop;
+    const focusedId = document.activeElement?.dataset?.officeMailTask;
+    list.querySelectorAll("[data-office-mail-task]").forEach((item) => item.remove());
+    renderedLists.set(list, signature);
 
-    mailTasks(state).forEach((task) => {
+    tasks.forEach((task) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = `mail-item office-mail-item ${completed[task.id] ? "completed" : ""}`;
       button.dataset.officeMailTask = task.id;
       button.innerHTML = `<strong>${esc(task.source)}</strong><span>${esc(task.title)}</span><small>${Pack.formatMinute(task.unlockMinute)}</small>`;
       button.addEventListener("click", () => {
+        element.dataset.officeMailSelection = task.id;
         list.querySelectorAll(".mail-item").forEach((item) => item.classList.remove("selected"));
         button.classList.add("selected");
-        renderOfficeMail(view, task, Boolean(completed[task.id]));
+        renderOfficeMail(view, task, Boolean(Pack.officeState(Runtime.getEngine().getState()).completed[task.id]));
       });
       list.appendChild(button);
+      if (task.id === element.dataset.officeMailSelection) {
+        list.querySelectorAll(".mail-item").forEach((item) => item.classList.remove("selected"));
+        button.classList.add("selected");
+        const viewScroll = view.scrollTop;
+        renderOfficeMail(view, task, Boolean(completed[task.id]));
+        view.scrollTop = viewScroll;
+      }
+      if (task.id === focusedId) button.focus({ preventScroll: true });
     });
+    if (!tasks.some((task) => task.id === element.dataset.officeMailSelection)) delete element.dataset.officeMailSelection;
+    list.scrollTop = scrollTop;
     return true;
   }
 
