@@ -146,8 +146,19 @@
     const input = page.querySelector("[data-kp-search] input");
     const active = document.activeElement;
     const focused = active === input;
+    let control = null;
+    if (!focused && active) {
+      for (const attribute of ["data-kp-close", "data-kp-cart", "data-kp-catalog", "data-kp-cart-item", "data-kp-favorite", "data-kp-quick", "data-kp-sort"]) {
+        const value = active.getAttribute?.(attribute);
+        if (value == null) continue;
+        const selector = `[${attribute}="${value}"]`;
+        const index = Array.from(page.querySelectorAll(selector)).indexOf(active);
+        if (index >= 0) control = { selector, index };
+        break;
+      }
+    }
     return { top: page.scrollTop, left: page.scrollLeft, draft: input?.value,
-      focused, start: focused ? input.selectionStart : null, end: focused ? input.selectionEnd : null };
+      focused, control, start: focused ? input.selectionStart : null, end: focused ? input.selectionEnd : null };
   }
 
   function restoreView(page, view) {
@@ -159,6 +170,7 @@
       input.value = view.draft;
       if (view.focused) { input.focus({ preventScroll: true }); input.setSelectionRange(view.start, view.end); }
     }
+    if (view.control) page.querySelectorAll(view.control.selector)[view.control.index]?.focus({ preventScroll: true });
   }
 
   function stateNow() { return Runtime.getEngine?.()?.getState?.() || null; }
@@ -279,8 +291,8 @@
     page.querySelectorAll("[data-kp-category]").forEach((button) => button.addEventListener("click", () => { category = button.dataset.kpCategory; query = ""; favoritesOnly = false; visibleCount = 20; catalogOpen = false; renderMarketplace({ resetSearch: true }); }));
     page.querySelector("[data-kp-sort]")?.addEventListener("change", (event) => { sort = event.currentTarget.value; renderMarketplace(); });
     page.querySelector("[data-kp-more]")?.addEventListener("click", () => { visibleCount += 20; renderMarketplace(); });
-    page.querySelector("[data-kp-catalog]")?.addEventListener("click", () => { catalogOpen = true; renderMarketplace(); });
-    page.querySelector("[data-kp-cart]")?.addEventListener("click", () => { cartOpen = true; renderMarketplace(); });
+    page.querySelector("[data-kp-catalog]")?.addEventListener("click", () => { catalogOpen = true; renderMarketplace(); page.querySelector(".kp-catalog [data-kp-close]")?.focus({ preventScroll: true }); });
+    page.querySelector("[data-kp-cart]")?.addEventListener("click", () => { cartOpen = true; renderMarketplace(); page.querySelector(".kp-drawer [data-kp-close]")?.focus({ preventScroll: true }); });
     page.querySelector("[data-kp-favorites]")?.addEventListener("click", () => { favoritesOnly = !favoritesOnly; category = "all"; query = ""; visibleCount = 20; renderMarketplace({ resetSearch: true }); });
     page.querySelector("[data-kp-home]")?.addEventListener("click", () => { category = "all"; query = ""; favoritesOnly = false; visibleCount = 20; renderMarketplace({ resetSearch: true }); });
     page.querySelectorAll("[data-kp-close]").forEach((button) => button.addEventListener("click", closePanels));

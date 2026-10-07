@@ -56,6 +56,16 @@ assert.equal(input.selectionStart, 4);
 assert.equal(input.selectionEnd, 10);
 assert.equal(page.scrollTop, 420);
 assert.equal(page.scrollLeft, 12);
+const oldControl = { getAttribute(name) { return name === "data-kp-cart-item" ? "e-headphones" : null; } };
+const newControl = { focus() { context.document.activeElement = this; } };
+const controlPage = { scrollTop: 42, scrollLeft: 0,
+  querySelector(selector) { return selector === ".kp-app" ? {} : null; },
+  querySelectorAll() { return [oldControl]; } };
+context.document.activeElement = oldControl;
+const controlView = api.captureView(controlPage);
+controlPage.querySelectorAll = () => [newControl];
+api.restoreView(controlPage, controlView);
+assert.equal(context.document.activeElement, newControl, "cart button focus must survive runtime refresh");
 handlers.get("electronics:click")();
 assert.equal(input.value, "", "explicit category switch must clear draft");
 assert.match(markup, /5 товаров/);
