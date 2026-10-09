@@ -159,9 +159,9 @@
       minute: 0,
       contact: "andrey",
       when: (state) => correctedTuesdayDocuments(state).length > 0,
-      text: (state) => "Исправленную " +
-        (correctedTuesdayDocuments(state).length === 1 ? "версию получил" : "версию документов получил") +
-        ". Исходные версии оставили в истории, повторно пересылать их не нужно."
+      text: (state) => correctedTuesdayDocuments(state).length === 1
+        ? "Исправленный документ получил. Предыдущую версию оставили в истории, повторно пересылать не нужно."
+        : "Исправленные документы получил. Предыдущие версии оставили в истории, повторно пересылать их не нужно."
     },
     {
       id: "steady-three",
