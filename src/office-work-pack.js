@@ -985,7 +985,7 @@
       office.completed[task.id] = {
         ...record,
         history,
-        revisionCount: history.length,
+        revisionCount: Number(record.revisionCount || 0) + 1,
         lastRevisionDay: draft.dayIndex,
         lastRevisionMinute: draft.minute,
         quality: assessment.status,
