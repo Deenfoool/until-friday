@@ -40,7 +40,10 @@
 
     const completed = Pack.officeState(state).completed;
     const tasks = mailTasks(state);
-    const signature = JSON.stringify([state.dayIndex, tasks.map((task) => [task.id, Boolean(completed[task.id])])]);
+    const signature = JSON.stringify([state.dayIndex, tasks.map((task) => [
+      task.id, Boolean(completed[task.id]), completed[task.id]?.quality,
+      completed[task.id]?.revisionCount || 0
+    ])]);
     if (renderedLists.get(list) === signature) return true;
     if (!renderedLists.has(list)) {
       // Clear the office selection before the base mail handler rebuilds the view.
