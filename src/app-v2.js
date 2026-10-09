@@ -89,6 +89,11 @@
     window.addEventListener("until-friday-state-change", (event) => {
       gameState = event.detail?.state || engine.getState();
       updateClock();
+      // A submitted document is immediately visible in Explorer, including its
+      // original values. Other windows keep their current focus and selection.
+      if (event.detail?.reason === "office-work-complete") {
+        runtime.windows.get("explorer")?.render();
+      }
     });
 
     if (hasCompletedIntro()) {
