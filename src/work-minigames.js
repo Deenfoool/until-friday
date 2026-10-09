@@ -96,7 +96,16 @@
         ":" + (record.minute % 60).toString().padStart(2, "0"),
       "Состояние: " + (record.quality === "needs-review" ? "передано на проверку" : "передано"),
       "",
-      ...lines
+      ...lines,
+      ...(record.history?.length ? [
+        "",
+        "--- История переданных версий ---",
+        ...record.history.flatMap((previous, index) => [
+          "Версия " + (index + 1) + " · " + (previous.quality === "needs-review" ? "с расхождениями" : "принята"),
+          submissionText(task, { ...previous, history: [] }),
+          ""
+        ])
+      ] : [])
     ].join("\n");
   }
 
@@ -303,6 +312,47 @@
     view.appendChild(panel);
   }
 
+  function decorateSubmittedWindow(element) {
+    const prefix = "doc-office-output-";
+    const windowId = element?.dataset?.windowId || "";
+    if (!windowId.startsWith(prefix)) return;
+    const id = windowId.slice(prefix.length);
+    const record = stateNow()?.metadata?.officeWork?.completed?.[id];
+    const paper = element.querySelector(".document-paper");
+    const documentEntry = submittedDocuments(stateNow()).find((item) => item.id === "office-output-" + id);
+    if (!paper || !documentEntry || !record) return;
+    if (paper.textContent !== documentEntry.content) paper.textContent = documentEntry.content;
+    const container = element.querySelector(".document-view");
+    if (!container) return;
+    let panel = container.querySelector("[data-office-revision]");
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.className = "monday-report-attach";
+      panel.dataset.officeRevision = id;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "action-button";
+      button.dataset.openOfficeRevision = id;
+      button.textContent = "Исправить и отправить новую версию";
+      const status = document.createElement("span");
+      status.setAttribute("role", "status");
+      button.addEventListener("click", () => {
+        const ok = root.UntilFridayOfficeWorkPack?.openRevision?.(id);
+        if (!ok) status.textContent = "Исправление сейчас недоступно.";
+      });
+      panel.append(button, status);
+      container.appendChild(panel);
+    }
+    const canEdit = record.quality === "needs-review" && Boolean(stateNow()?.dayStarted) &&
+      !stateNow()?.ended;
+    const button = panel.querySelector("[data-open-office-revision]");
+    if (button) {
+      button.disabled = !canEdit;
+      button.textContent = canEdit ? "Исправить и отправить новую версию" :
+        record.quality === "accepted" ? "Исправление принято" : "Недоступно";
+    }
+  }
+
   function saveInvoice(total) {
     const engine = root.UntilFridayRuntimeEngine?.getEngine?.();
     const state = engine?.getState?.();
@@ -378,6 +428,7 @@
       document.querySelectorAll(".app-window[data-window-id='tasks']").forEach(decorateTasks);
       document.querySelectorAll(".app-window[data-window-id='mail']").forEach(decorateMail);
       document.querySelectorAll(".app-window[data-window-id^='doc-report-']").forEach(decorateReportWindow);
+      document.querySelectorAll(".app-window[data-window-id^='doc-office-output-']").forEach(decorateSubmittedWindow);
       document.querySelectorAll(".app-window[data-window-id='doc-invoice']").forEach(decorateInvoiceWindow);
     });
   }
@@ -389,7 +440,7 @@
 
   root.UntilFridayWorkMinigames = {
     REPORTS, documents, parseAmount, invoiceTotal, reportDone, invoiceDone,
-    decorateTasks, decorateMail, attachedReport, attachReport, decorateReportWindow, decorateInvoiceWindow, saveInvoice,
+    decorateTasks, decorateMail, attachedReport, attachReport, decorateReportWindow, decorateSubmittedWindow, decorateInvoiceWindow, saveInvoice,
     openReportGame: () => openApp("mail"),
     openInvoiceGame: () => openApp("explorer")
   };
