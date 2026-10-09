@@ -44,6 +44,13 @@
     return officeCompletedIds(state).size;
   }
 
+  function documentsNeedingReview(state) {
+    const completed = state?.metadata?.officeWork?.completed || {};
+    return Object.entries(completed)
+      .filter(([id, result]) => id.startsWith("office-mon-") && result?.quality === "needs-review")
+      .map(([id]) => id);
+  }
+
   function actionDone(state, actionId) {
     return Boolean(state?.completedActions?.[actionId]);
   }
@@ -105,7 +112,9 @@
       minute: 0,
       contact: "andrey",
       when: (state) => officeCompletedCount(state) >= 3 && Number(state.minute || 0) < 900,
-      text: () => "Вижу, очередь двигается. Продолжай в том же темпе и не потеряй основные задачи среди мелких поручений."
+      text: (state) => documentsNeedingReview(state).length
+        ? "Очередь двигается, но в нескольких переданных документах есть расхождения. Я отправил их на перепроверку. Посмотри исходные данные."
+        : "Вижу, очередь двигается. Продолжай в том же темпе и не потеряй основные задачи среди мелких поручений."
     },
     {
       id: "midday-behind",
@@ -126,7 +135,9 @@
       minute: 0,
       contact: "andrey",
       when: (state) => officeCompletedCount(state) >= Number(Office.DAILY_QUOTA || 5),
-      text: () => "Дневную норму по поручениям закрыл. Это заметно. Остальные карточки можно брать ради результата, но отчёт и счёт важнее."
+      text: (state) => documentsNeedingReview(state).length
+        ? "Норма по отправленным поручениям закрыта, но часть файлов придётся перепроверить. Завтра бухгалтерия и отделы могут вернуться к этим вопросам."
+        : "Дневную норму по поручениям закрыл. Это заметно. Остальные карточки можно брать ради результата, но отчёт и счёт важнее."
     },
     {
       id: "late-main-work",
@@ -372,6 +383,7 @@
     CONTACTS,
     officeCompletedIds,
     officeCompletedCount,
+    documentsNeedingReview,
     reportDone,
     invoiceDecisionDone,
     directorData,
