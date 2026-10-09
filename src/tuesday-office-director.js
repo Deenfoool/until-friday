@@ -71,9 +71,27 @@
       actionDone(state, "tue-answer-admin-deflect");
   }
 
+  function pendingMondayReviews(state) {
+    const records = state?.metadata?.officeWork?.completed || {};
+    return Object.entries(records).filter(([id, record]) =>
+      id.startsWith("office-mon-") && record?.quality === "needs-review"
+    ).map(([id]) => id);
+  }
+
+  function correctedTuesdayDocuments(state) {
+    const records = state?.metadata?.officeWork?.completed || {};
+    return Object.entries(records).filter(([id, record]) =>
+      id.startsWith("office-mon-") && record?.quality === "accepted" &&
+      Number(record.lastRevisionDay) === DAY_INDEX
+    ).map(([id]) => id);
+  }
+
   function morningCarryoverText(state) {
     if (state?.flags?.reportWrong) {
       return "Вчера пришлось возвращать июльский отчёт. Сегодня сначала проверяй версию файла, потом отправляй. Второй такой ошибки не нужно.";
+    }
+    if (pendingMondayReviews(state).length) {
+      return "Вчерашние документы с расхождениями сохранились в общем каталоге. Проверь их и отправь исправленные версии, когда будет окно между новыми задачами.";
     }
     if (state?.flags?.reportCorrect && state?.flags?.invoiceFixed) {
       return "Вчера отчёт и счёт закрыл нормально. Сегодня держи тот же темп: сначала клиент, потом очередь поручений.";
@@ -126,6 +144,24 @@
       contact: "andrey",
       when: () => true,
       text: morningCarryoverText
+    },
+    {
+      id: "document-followup",
+      minute: 780,
+      contact: "andrey",
+      when: (state) => pendingMondayReviews(state).length > 0,
+      text: (state) => "Бухгалтерия вернула " +
+        (pendingMondayReviews(state).length === 1 ? "один документ" : "несколько документов") +
+        " со вчерашними расхождениями. Файлы доступны в Проводнике, исправления можно отправить оттуда."
+    },
+    {
+      id: "correction-received",
+      minute: 0,
+      contact: "andrey",
+      when: (state) => correctedTuesdayDocuments(state).length > 0,
+      text: (state) => "Исправленную " +
+        (correctedTuesdayDocuments(state).length === 1 ? "версию получил" : "версию документов получил") +
+        ". Исходные версии оставили в истории, повторно пересылать их не нужно."
     },
     {
       id: "steady-three",
@@ -190,6 +226,8 @@
     eventDelivered,
     completedOfficeIds,
     completedOfficeCount,
+    pendingMondayReviews,
+    correctedTuesdayDocuments,
     clientHandled,
     adminAnswered,
     morningCarryoverText,
