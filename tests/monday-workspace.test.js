@@ -117,7 +117,13 @@ assert.ok(output, "Submitted work must become a file in Explorer");
 assert.match(output.content, /C6 = 246/);
 assert.match(output.content, /передано на проверку/);
 state.dayIndex = 1;
-assert.equal(Monday.documents(state).length, 1, "Submitted files must persist after Monday");
+assert.equal(Monday.documents(state).length, 3, "Submitted office files and sent attachments remain after Monday");
 assert.equal(Monday.documents(state)[0].id, output.id, "File IDs must remain stable");
+assert.equal(Monday.documents(state).find((item) => item.id === "sent-report-july").title,
+  "Отправлено_Отчёт_июль_финал_копия.xlsx",
+  "The archived outbound report must preserve the exact attachment selected in Explorer");
+assert.equal(Monday.documents(state).find((item) => item.id === "sent-invoice-7814").type,
+  "Отправленный документ",
+  "The outgoing invoice must remain readable after Monday");
 
 console.log("Monday shared Explorer/Mail documents and persisted invoice validation passed.");
