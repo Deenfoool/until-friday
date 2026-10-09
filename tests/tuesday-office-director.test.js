@@ -87,7 +87,7 @@ vm.runInContext(tuesdaySource, context, { filename: "tuesday-office-director.js"
 const Director = context.UntilFridayTuesdayOfficeDirector;
 assert.ok(context.UntilFridayOfficeDayDirector, "Reusable office director core must be exported");
 assert.ok(Director, "Tuesday director API must be exported");
-assert.equal(Director.BEATS.length, 7);
+assert.equal(Director.BEATS.length, 9);
 assert.equal(Director.CONTACTS.marina.chatId, "work-chat-marina");
 assert.match(coreSource, /pending\.has\(beatId\)/, "Message recovery must respect an active typing delay");
 
@@ -111,6 +111,28 @@ assert.deepEqual(Array.from(Director.dueBeats(current), (beat) => beat.id), []);
 current = state({ minute: 548, flags: { reportWrong: true } });
 assert.deepEqual(Array.from(Director.dueBeats(current), (beat) => beat.id), ["morning-carryover"]);
 assert.match(Director.morningCarryoverText(current), /возвращать июльский отчёт/i);
+
+const problematic = state({
+  minute: 790,
+  metadata: {
+    officeWork: { completed: {
+      "office-mon-supplier-letter": { quality: "needs-review" }
+    } },
+    tuesdayDirector: { delivered: { "morning-carryover": {} } }
+  }
+});
+assert.equal(Director.pendingMondayReviews(problematic).length, 1);
+assert.ok(Director.dueBeats(problematic).some((beat) => beat.id === "document-followup"),
+  "Unresolved Monday errors should cause a real Tuesday MIN response");
+assert.match(Director.morningCarryoverText(problematic), /вчерашние документы/i);
+problematic.metadata.officeWork.completed["office-mon-supplier-letter"] = {
+  quality: "accepted", revisionCount: 1, lastRevisionDay: 1
+};
+assert.equal(Director.pendingMondayReviews(problematic).length, 0);
+assert.equal(Director.correctedTuesdayDocuments(problematic).length, 1);
+assert.ok(Director.dueBeats(problematic).some((beat) => beat.id === "correction-received"),
+  "Tuesday revision should be acknowledged by the manager");
+assert.equal(Director.dueBeats(problematic).some((beat) => beat.id === "document-followup"), false);
 
 current = state({
   minute: 700,
