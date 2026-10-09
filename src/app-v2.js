@@ -469,12 +469,10 @@
 
   function buildVisibleFiles() {
     const day = gameState.dayIndex;
-    const files = [];
+    // Sent Monday documents remain in Explorer on subsequent days.
+    const files = [...(window.UntilFridayWorkMinigames?.documents(gameState) || [])];
 
     if (day === 0) {
-      // Reports and invoice are shared with Mail's outgoing attachment flow.
-      // Opening a file must not silently complete the associated story action.
-      files.push(...(window.UntilFridayWorkMinigames?.documents(gameState) || []));
       files.push(
         { id: "vacancy", title: "Вакансия_специалист.txt", type: "Документ", icon: "TXT", content: "Проект вакансии: специалист отдела сопровождения. Причина открытия позиции не указана.", actionId: "mon-open-vacancy" },
         { id: "leadership", title: "Руководство", type: "Закрытая папка", icon: "DIR", accessLabel: "Нет доступа", restricted: true, actionId: "mon-request-leadership-access", content: "Для чтения требуется дополнительное разрешение." }
