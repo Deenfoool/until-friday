@@ -145,12 +145,12 @@
     if (reportCards.length && !reportDone(state) && !list.querySelector('[data-minigame-card="report"]')) {
       list.insertBefore(taskCard("report", "Отчёт за июль",
         "Откройте версии отчёта в Проводнике, затем ответьте на письмо Андрея Соколова и приложите выбранный файл.",
-        "Перейти в Почту", () => openApp("mail")), reportCards[0]);
+        "Перейти в Почту", () => openApp("mail")), list.querySelector(".office-work-pack") || list.firstElementChild);
     }
     if (invoiceCards.length && !invoiceDone(state) && !list.querySelector('[data-minigame-card="invoice"]')) {
       list.insertBefore(taskCard("invoice", "Счёт №7814",
         "Найдите счёт в Проводнике, сравните сумму с договором и сохраните исправление либо передайте вопрос начальнику.",
-        "Открыть Проводник", () => openApp("explorer")), invoiceCards[0]);
+        "Открыть Проводник", () => openApp("explorer")), list.querySelector(".office-work-pack") || list.firstElementChild);
     }
   }
 
@@ -164,8 +164,8 @@
     panel.className = "monday-mail-panel";
     panel.dataset.mondayMail = "true";
     if (reportDone(state)) {
-      const sent = state.completedActions["mon-report-final"] ? REPORTS[2] : REPORTS[0];
-      panel.textContent = "Ответ отправлен. Вложение: " + sent.title + ".";
+      const sentLabel = state.completedActions["mon-report-final"] ? REPORTS[2].title : "предварительная версия июльского отчёта";
+      panel.textContent = "Ответ отправлен. Вложение: " + sentLabel + ".";
       view.appendChild(panel);
       return;
     }
