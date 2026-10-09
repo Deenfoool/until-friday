@@ -206,35 +206,99 @@
     }
   }
 
+  function attachedReport(state = stateNow()) {
+    return REPORTS.find((file) => file.id === state?.metadata?.mondayReportDraft?.fileId) || null;
+  }
+
+  function attachReport(id) {
+    const file = REPORTS.find((item) => item.id === id);
+    const current = root.UntilFridayRuntimeEngine?.getEngine?.();
+    const state = current?.getState?.();
+    if (!file || !state || state.dayIndex !== 0 || reportDone(state)) return { ok: false };
+    return current.updateState((draft) => {
+      draft.metadata ||= {};
+      draft.metadata.mondayReportDraft = { fileId: id, selectedMinute: draft.minute };
+    }, "monday-report-attachment");
+  }
+
+  function decorateReportWindow(element) {
+    const id = element?.dataset?.windowId?.replace(/^doc-/, "");
+    if (!id || !REPORT_ACTIONS[id] || element.querySelector("[data-report-attach]")) return;
+    const container = element.querySelector(".document-view");
+    if (!container) return;
+    const wrapper = document.createElement("div");
+    wrapper.className = "monday-report-attach";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "action-button";
+    button.dataset.reportAttach = "true";
+    button.textContent = "Прикрепить к письму Андрея";
+    const status = document.createElement("span");
+    status.setAttribute("role", "status");
+    wrapper.append(button, status);
+    const state = stateNow();
+    if (!state || state.dayIndex !== 0 || reportDone(state)) {
+      button.disabled = true;
+      status.textContent = "Поручение по отчёту уже закрыто.";
+    } else if (attachedReport(state)?.id === id) {
+      status.textContent = "Этот файл прикреплён к черновику письма.";
+    }
+    button.addEventListener("click", () => {
+      const result = attachReport(id);
+      status.textContent = result?.ok ? "Файл выбран. Теперь откройте Почту и отправьте письмо." :
+        "Не удалось прикрепить файл.";
+    });
+    container.appendChild(wrapper);
+  }
+
   function decorateMail(element) {
     const state = stateNow();
     if (!state || state.dayIndex !== 0) return;
     const view = element?.querySelector?.(".mail-view");
     if (!view || view.querySelector(".mail-meta h2")?.textContent.trim() !== "Отчёт за июль") return;
-    if (view.querySelector("[data-monday-mail]")) return;
+    const selected = attachedReport(state);
+    const existing = view.querySelector("[data-monday-mail]");
+    const sent = reportDone(state);
+    const sentLabel = selected?.title ||
+      (state.completedActions?.["mon-report-final"] ? REPORTS[2].title : "предварительная версия июльского отчёта");
+    if (existing) {
+      if (sent) {
+        existing.textContent = "Письмо отправлено. Вложение: " + sentLabel + ".";
+        return;
+      }
+      const slot = existing.querySelector("[data-report-attachment]");
+      if (slot) slot.textContent = selected ? "Вложение: " + selected.title : "Вложение не выбрано";
+      const send = existing.querySelector("[data-monday-send]");
+      if (send) send.disabled = !selected;
+      return;
+    }
     const panel = document.createElement("section");
     panel.className = "monday-mail-panel";
     panel.dataset.mondayMail = "true";
-    if (reportDone(state)) {
-      const sentLabel = state.completedActions["mon-report-final"] ? REPORTS[2].title : "предварительная версия июльского отчёта";
-      panel.textContent = "Ответ отправлен. Вложение: " + sentLabel + ".";
+    if (sent) {
+      panel.textContent = "Письмо отправлено. Вложение: " + sentLabel + ".";
       view.appendChild(panel);
       return;
     }
-    panel.innerHTML = '<header><strong>Ответить с вложением</strong><span>Для проверки версий используйте Проводник</span></header>' +
-      '<label>Файл из общего каталога<select data-monday-report><option value="">Выберите вложение…</option>' +
-      REPORTS.map((file) => '<option value="' + file.id + '">' + escapeHtml(file.title) + '</option>').join("") +
-      '</select></label>' +
-      '<div class="monday-mail-footer"><span data-monday-mail-error role="status"></span><button type="button" class="action-button" data-monday-send>Отправить Андрею</button></div>';
-    const select = panel.querySelector("[data-monday-report]");
+    panel.innerHTML = '<header><strong>Ответить с вложением</strong><span>Файл прикрепляется из Проводника</span></header>' +
+      '<div class="monday-mail-attachment" data-report-attachment></div>' +
+      '<button type="button" class="action-button secondary" data-monday-browse>Открыть Проводник</button>' +
+      '<div class="monday-mail-footer"><span data-monday-mail-error role="status"></span>' +
+      '<button type="button" class="action-button" data-monday-send>Отправить Андрею</button></div>';
+    panel.querySelector("[data-report-attachment]").textContent = selected
+      ? "Вложение: " + selected.title : "Вложение не выбрано";
+    panel.querySelector("[data-monday-send]").disabled = !selected;
     const error = panel.querySelector("[data-monday-mail-error]");
+    panel.querySelector("[data-monday-browse]").addEventListener("click", () => openApp("explorer"));
     panel.querySelector("[data-monday-send]").addEventListener("click", () => {
-      const selected = REPORTS.find((file) => file.id === select.value);
-      if (!selected) { error.textContent = "Выберите файл из общего каталога."; return; }
-      const result = action(REPORT_ACTIONS[selected.id]);
-      if (!result?.ok) { error.textContent = "Отправка не выполнена. Проверьте доступность задания и время."; return; }
-      // A sent report is reconstructed from the story action after reload.
-      panel.replaceChildren(document.createTextNode("Письмо отправлено. Вложение: " + selected.title + "."));
+      const latest = attachedReport();
+      if (!latest) { error.textContent = "Прикрепите документ из Проводника."; return; }
+      const result = action(REPORT_ACTIONS[latest.id]);
+      if (!result?.ok) {
+        error.textContent = "Письмо не отправлено. Проверьте рабочее время и доступность поручения.";
+        return;
+      }
+      panel.textContent = "Письмо отправлено. Вложение: " + latest.title + ".";
     });
     view.appendChild(panel);
   }
@@ -313,6 +377,7 @@
       if (!state || state.dayIndex !== 0) return;
       document.querySelectorAll(".app-window[data-window-id='tasks']").forEach(decorateTasks);
       document.querySelectorAll(".app-window[data-window-id='mail']").forEach(decorateMail);
+      document.querySelectorAll(".app-window[data-window-id^='doc-report-']").forEach(decorateReportWindow);
       document.querySelectorAll(".app-window[data-window-id='doc-invoice']").forEach(decorateInvoiceWindow);
     });
   }
@@ -324,7 +389,7 @@
 
   root.UntilFridayWorkMinigames = {
     REPORTS, documents, parseAmount, invoiceTotal, reportDone, invoiceDone,
-    decorateTasks, decorateMail, decorateInvoiceWindow, saveInvoice,
+    decorateTasks, decorateMail, attachedReport, attachReport, decorateReportWindow, decorateInvoiceWindow, saveInvoice,
     openReportGame: () => openApp("mail"),
     openInvoiceGame: () => openApp("explorer")
   };
