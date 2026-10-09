@@ -122,3 +122,20 @@
   .monday-invoice-row input { text-align: left; }
   .monday-mail-panel { padding: 12px; }
 }
+
+.monday-mail-attachment {
+  border: 1px dashed rgba(120, 146, 170, .65);
+  border-radius: 6px;
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.monday-report-attach {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px;
+}
+.monday-report-attach span { font-size: 12px; }
