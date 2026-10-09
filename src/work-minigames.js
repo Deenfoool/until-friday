@@ -171,7 +171,7 @@
         content: [
           "Договор КС-41/26 · сопровождение программного комплекса",
           "Стоимость по договору: " + formatAmount(CONTRACT_AMOUNT),
-          "Итого в счёте: " + formatAmount(invoiceTotal(state)),
+          "Итого в счёте: " + formatAmount(fixed ? invoiceTotal(state) : INVOICE_AMOUNT),
           "Передано: " + (fixed ? "бухгалтеру как исправление" : "начальнику на проверку")
         ].join("\n")
       });
