@@ -133,9 +133,56 @@
       });
   }
 
+  function historicalDocuments(state) {
+    if (!state) return [];
+    const files = [];
+    if (reportDone(state)) {
+      const correct = Boolean(state.completedActions?.["mon-report-final"]);
+      const selected = REPORTS.find((file) => file.id === state.metadata?.mondayReportDraft?.fileId) ||
+        (correct ? REPORTS[2] : REPORTS[0]);
+      const action = correct ? state.completedActions["mon-report-final"] :
+        state.completedActions["mon-report-old"];
+      files.push({
+        id: "sent-report-july",
+        title: "Отправлено_" + selected.title,
+        type: "Исходящее вложение",
+        icon: "XLS",
+        content: [
+          "Исходящая почта · Андрей Соколов",
+          "Отправлено: ПН " + Math.floor(Number(action?.minute || 0) / 60).toString().padStart(2, "0") +
+            ":" + (Number(action?.minute || 0) % 60).toString().padStart(2, "0"),
+          "Файл: " + selected.title,
+          "Источник: " + selected.author,
+          "",
+          "Обращений: " + selected.requests,
+          "Закрыто: " + selected.closed,
+          "Просрочено: " + selected.overdue,
+          selected.status
+        ].join("\n")
+      });
+    }
+    if (invoiceDone(state)) {
+      const fixed = Boolean(state.completedActions?.["mon-invoice-fix"]);
+      files.push({
+        id: "sent-invoice-7814",
+        title: fixed ? "Счёт_7814_исправленный.xlsx" : "Счёт_7814_передан_начальнику.xlsx",
+        type: "Отправленный документ",
+        icon: "XLS",
+        content: [
+          "Договор КС-41/26 · сопровождение программного комплекса",
+          "Стоимость по договору: " + formatAmount(CONTRACT_AMOUNT),
+          "Итого в счёте: " + formatAmount(invoiceTotal(state)),
+          "Передано: " + (fixed ? "бухгалтеру как исправление" : "начальнику на проверку")
+        ].join("\n")
+      });
+    }
+    return files;
+  }
+
   function documents(state = stateNow()) {
     const submitted = submittedDocuments(state);
-    if (state && state.dayIndex !== 0) return submitted;
+    const historical = historicalDocuments(state);
+    if (state && state.dayIndex !== 0) return [...submitted, ...historical];
     const reports = REPORTS.map((file) => ({
       ...file,
       type: "Таблица",
@@ -161,7 +208,7 @@
         "Стоимость по договору: " + formatAmount(CONTRACT_AMOUNT) + "\n" +
         "Итого в счёте: " + formatAmount(invoiceTotal(state)) + "\n" +
         "Состояние: " + (state?.metadata?.mondayInvoice?.saved ? "изменён пользователем" : "получен из бухгалтерии")
-    }, ...submitted];
+    }, ...submitted, ...historical];
   }
 
   function escapeHtml(value) {
@@ -444,7 +491,7 @@
   root.document?.addEventListener("DOMContentLoaded", queueDecorate, { once: true });
 
   root.UntilFridayWorkMinigames = {
-    REPORTS, documents, parseAmount, invoiceTotal, reportDone, invoiceDone,
+    REPORTS, documents, historicalDocuments, parseAmount, invoiceTotal, reportDone, invoiceDone,
     decorateTasks, decorateMail, attachedReport, attachReport, decorateReportWindow, decorateSubmittedWindow, decorateInvoiceWindow, saveInvoice,
     openReportGame: () => openApp("mail"),
     openInvoiceGame: () => openApp("explorer")
