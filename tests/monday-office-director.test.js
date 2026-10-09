@@ -123,7 +123,7 @@ const flawed = state({
     mondayDirector: { delivered: {} }
   }
 });
-assert.deepEqual(Director.documentsNeedingReview(flawed), ["office-mon-supplier-letter"]);
+assert.deepEqual(Array.from(Director.documentsNeedingReview(flawed)), ["office-mon-supplier-letter"]);
 assert.match(Director.BEATS.find((beat) => beat.id === "steady-three").text(flawed), /перепроверку/,
   "Manager response must reflect submitted documents with quality problems");
 
