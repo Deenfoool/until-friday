@@ -163,10 +163,11 @@ for (const text of [
 }
 
 const monday = read("src/work-minigames.js");
-assert.match(monday, /Подготовить отчёт за июль/, "report selection must be interactive");
+assert.match(monday, /Ответить с вложением/, "report must be sent through Mail, not a separate picker");
 assert.match(monday, /Отчёт_июль_финал_копия\.xlsx/, "report task must include ambiguous versions");
-assert.match(monday, /Проверить счёт №7814/, "invoice verification must be interactive");
-assert.match(monday, /842 000 ₽/, "invoice task must include the suspicious amount");
+assert.match(monday, /data-monday-invoice-total/, "invoice must expose an editable amount");
+assert.match(monday, /CONTRACT_AMOUNT = 84200/, "invoice must retain the contract amount");
+assert.match(monday, /saveInvoice\(/, "invoice changes must be persisted through the main engine");
 
 const loader = read("src/loading-indicator.js");
 assert.match(loader, /const SEGMENT_COUNT = 12;/, "loader must build twelve segments programmatically");
