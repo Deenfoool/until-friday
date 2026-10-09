@@ -557,8 +557,12 @@
 
   function safeSubmission(input) {
     try {
-      // Game notes are bounded to avoid bloating local saves with long pasted text.
-      return JSON.parse(JSON.stringify(input || {}).slice(0, 4096));
+      // Bound submitted data to protect browser saves from pasted megabyte texts.
+      const serialized = JSON.stringify(input || {});
+      if (serialized.length > 4096) {
+        return { truncated: true, preview: serialized.slice(0, 2048) };
+      }
+      return JSON.parse(serialized);
     } catch {
       return { truncated: true };
     }
