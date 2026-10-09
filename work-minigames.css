@@ -1,4 +1,5 @@
 /* Monday workspace: real document/mail interactions, not detached puzzles. */
+.task-list > .task-card[hidden] { display: none !important; }
 .monday-work-card {
   border-left: 3px solid var(--accent, #6488a3);
 }
