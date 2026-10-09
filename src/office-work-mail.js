@@ -86,6 +86,7 @@
   function renderOfficeMail(view, task, result) {
     const done = Boolean(result);
     const needsReview = result?.quality === "needs-review";
+    const hasArchive = done && task.dayIndex === 0 && result?.submission?.source !== "shared-invoice" && Boolean(result?.submission);
     view.innerHTML = `
       <header class="mail-meta office-mail-meta">
         <h2>${esc(task.title)}</h2>
@@ -95,9 +96,12 @@
       <div class="mail-body office-mail-body">${esc(bodyFor(task))}</div>
       <section class="office-mail-assignment">
         <header><img src="${icon(done ? "checked-checkbox" : "task", 24)}" alt=""><div><b>${needsReview ? "Документ передан на проверку" : done ? "Поручение выполнено" : "Прикреплено рабочее поручение"}</b><span>${esc(task.description)}</span></div></header>
-        <footer><span>${task.minutes} минут</span><button type="button" data-office-mail-open ${done ? "disabled" : ""}>${needsReview ? "Передано" : done ? "Выполнено" : "Открыть задание"}</button></footer>
+        <footer><span>${task.minutes} минут</span><button type="button" data-office-mail-open ${done && !hasArchive ? "disabled" : ""}>${hasArchive ? "Открыть результат" : needsReview ? "Передано" : done ? "Выполнено" : "Открыть задание"}</button></footer>
       </section>`;
-    view.querySelector("[data-office-mail-open]")?.addEventListener("click", () => Pack.openTask(task.id));
+    view.querySelector("[data-office-mail-open]")?.addEventListener("click", () => {
+      if (hasArchive) root.UntilFridayDesktop?.openFileById?.("office-output-" + task.id);
+      else if (!done) Pack.openTask(task.id);
+    });
   }
 
   root.addEventListener?.("until-friday-ui-render", (event) => {
