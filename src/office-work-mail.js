@@ -64,14 +64,14 @@
         element.dataset.officeMailSelection = task.id;
         list.querySelectorAll(".mail-item").forEach((item) => item.classList.remove("selected"));
         button.classList.add("selected");
-        renderOfficeMail(view, task, Boolean(Pack.officeState(Runtime.getEngine().getState()).completed[task.id]));
+        renderOfficeMail(view, task, Pack.officeState(Runtime.getEngine().getState()).completed[task.id]);
       });
       list.appendChild(button);
       if (task.id === element.dataset.officeMailSelection) {
         list.querySelectorAll(".mail-item").forEach((item) => item.classList.remove("selected"));
         button.classList.add("selected");
         const viewScroll = view.scrollTop;
-        renderOfficeMail(view, task, Boolean(completed[task.id]));
+        renderOfficeMail(view, task, completed[task.id]);
         view.scrollTop = viewScroll;
       }
       if (task.id === focusedId) button.focus({ preventScroll: true });
@@ -83,7 +83,9 @@
     return true;
   }
 
-  function renderOfficeMail(view, task, done) {
+  function renderOfficeMail(view, task, result) {
+    const done = Boolean(result);
+    const needsReview = result?.quality === "needs-review";
     view.innerHTML = `
       <header class="mail-meta office-mail-meta">
         <h2>${esc(task.title)}</h2>
@@ -92,8 +94,8 @@
       </header>
       <div class="mail-body office-mail-body">${esc(bodyFor(task))}</div>
       <section class="office-mail-assignment">
-        <header><img src="${icon(done ? "checked-checkbox" : "task", 24)}" alt=""><div><b>${done ? "Поручение выполнено" : "Прикреплено рабочее поручение"}</b><span>${esc(task.description)}</span></div></header>
-        <footer><span>${task.minutes} минут</span><button type="button" data-office-mail-open ${done ? "disabled" : ""}>${done ? "Выполнено" : "Открыть задание"}</button></footer>
+        <header><img src="${icon(done ? "checked-checkbox" : "task", 24)}" alt=""><div><b>${needsReview ? "Документ передан на проверку" : done ? "Поручение выполнено" : "Прикреплено рабочее поручение"}</b><span>${esc(task.description)}</span></div></header>
+        <footer><span>${task.minutes} минут</span><button type="button" data-office-mail-open ${done ? "disabled" : ""}>${needsReview ? "Передано" : done ? "Выполнено" : "Открыть задание"}</button></footer>
       </section>`;
     view.querySelector("[data-office-mail-open]")?.addEventListener("click", () => Pack.openTask(task.id));
   }
