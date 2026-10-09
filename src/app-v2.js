@@ -69,7 +69,16 @@
 
   // Controlled entry points for desktop-native workflows. Story writes still go
   // through the central runtime via performAction().
-  window.UntilFridayDesktop = Object.freeze({ openApp, performAction });
+  window.UntilFridayDesktop = Object.freeze({
+    openApp,
+    performAction,
+    openFileById(id) {
+      const file = buildVisibleFiles().find((item) => item.id === id);
+      if (!file) return false;
+      openStoryFile(file);
+      return true;
+    }
+  });
   init();
   window.__UNTIL_FRIDAY_V2_READY__ = true;
 
