@@ -68,8 +68,60 @@
     return Number.isSafeInteger(value) && value > 0 ? value : INVOICE_AMOUNT;
   }
 
+  function submissionText(task, record) {
+    const submitted = record.submission || {};
+    const config = task.config || {};
+    let lines = [];
+    if (task.type === "document") lines = [String(submitted.text || "")];
+    else if (task.type === "sheet") {
+      lines = [
+        ...config.rows.map((row) => row.join(" | ")),
+        "",
+        "Сохранённые ячейки:",
+        ...Object.entries(submitted.values || {}).map(([cell, value]) => cell + " = " + value)
+      ];
+    } else if (task.type === "template") {
+      lines = config.fields.map((field) => field.label + ": " + (submitted.fields?.[field.id] || "не заполнено"));
+    } else if (task.type === "organize") {
+      lines = config.files.map((file) => file.name + " → " + (submitted.assignments?.[file.id] || "не распределён"));
+    } else if (task.type === "audit") {
+      lines = ["Отмеченные строки:", ...(submitted.selected || [])];
+    } else if (task.type === "sort") {
+      lines = ["Порядок:", ...(submitted.order || [])];
+    }
+    return [
+      task.title,
+      "Отдел: " + task.source,
+      "Передано в " + Math.floor(record.minute / 60).toString().padStart(2, "0") +
+        ":" + (record.minute % 60).toString().padStart(2, "0"),
+      "Состояние: " + (record.quality === "needs-review" ? "передано на проверку" : "передано"),
+      "",
+      ...lines
+    ].join("\n");
+  }
+
+  function submittedDocuments(state) {
+    const completed = state?.metadata?.officeWork?.completed || {};
+    const tasks = root.UntilFridayOfficeWorkPack?.TASK_BY_ID || {};
+    return Object.entries(completed)
+      .filter(([id, result]) => id.startsWith("office-mon-") &&
+        result?.submission && result.submission.source !== "shared-invoice" && tasks[id])
+      .map(([id, result]) => {
+        const task = tasks[id];
+        const isSheet = task.type === "sheet";
+        return {
+          id: "office-output-" + id,
+          title: task.title.replace(/[<>:"/\\|?*]/g, "").replace(/\s+/g, "_") + (isSheet ? ".xlsx" : ".txt"),
+          type: isSheet ? "Таблица" : "Рабочий документ",
+          icon: isSheet ? "XLS" : "TXT",
+          content: submissionText(task, result)
+        };
+      });
+  }
+
   function documents(state = stateNow()) {
-    if (state && state.dayIndex !== 0) return [];
+    const submitted = submittedDocuments(state);
+    if (state && state.dayIndex !== 0) return submitted;
     const reports = REPORTS.map((file) => ({
       ...file,
       type: "Таблица",
@@ -95,7 +147,7 @@
         "Стоимость по договору: " + formatAmount(CONTRACT_AMOUNT) + "\n" +
         "Итого в счёте: " + formatAmount(invoiceTotal(state)) + "\n" +
         "Состояние: " + (state?.metadata?.mondayInvoice?.saved ? "изменён пользователем" : "получен из бухгалтерии")
-    }];
+    }, ...submitted];
   }
 
   function escapeHtml(value) {
