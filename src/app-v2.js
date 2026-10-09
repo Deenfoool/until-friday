@@ -67,6 +67,9 @@
   const engine = Engine.createEngine(Story, saved || null);
   let gameState = engine.getState();
 
+  // Controlled entry points for desktop-native workflows. Story writes still go
+  // through the central runtime via performAction().
+  window.UntilFridayDesktop = Object.freeze({ openApp, performAction });
   init();
   window.__UNTIL_FRIDAY_V2_READY__ = true;
 
@@ -455,10 +458,10 @@
     const files = [];
 
     if (day === 0) {
+      // Reports and invoice are shared with Mail's outgoing attachment flow.
+      // Opening a file must not silently complete the associated story action.
+      files.push(...(window.UntilFridayWorkMinigames?.documents(gameState) || []));
       files.push(
-        { id: "report-final", title: "Отчёт_июль_финал.xlsx", type: "Таблица", icon: "XLS", content: "Финальная версия июльского отчёта. Данные сверены с журналом обращений.", actionId: "mon-report-final" },
-        { id: "report-old", title: "Отчёт_июль_черновик.xlsx", type: "Таблица", icon: "XLS", content: "Черновая версия отчёта. Несколько цифр ещё не сверены.", actionId: "mon-report-old" },
-        { id: "invoice", title: "Счёт_7814.txt", type: "Документ", icon: "TXT", content: "Сумма по договору: 84 200 ₽\nСумма к оплате: 842 000 ₽\n\nВероятно, в документе лишний ноль." },
         { id: "vacancy", title: "Вакансия_специалист.txt", type: "Документ", icon: "TXT", content: "Проект вакансии: специалист отдела сопровождения. Причина открытия позиции не указана.", actionId: "mon-open-vacancy" },
         { id: "leadership", title: "Руководство", type: "Закрытая папка", icon: "DIR", accessLabel: "Нет доступа", restricted: true, actionId: "mon-request-leadership-access", content: "Для чтения требуется дополнительное разрешение." }
       );
