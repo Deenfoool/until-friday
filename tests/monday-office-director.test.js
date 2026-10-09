@@ -110,6 +110,23 @@ current = state({
 assert.ok(Director.dueBeats(current).some((beat) => beat.id === "steady-three"), "Chief must notice three completed office tasks");
 assert.equal(Director.officeCompletedCount(current), 3);
 
+const flawed = state({
+  minute: 700,
+  metadata: {
+    officeWork: {
+      completed: {
+        a: { quality: "accepted" },
+        "office-mon-supplier-letter": { quality: "needs-review" },
+        c: { quality: "accepted" }
+      }
+    },
+    mondayDirector: { delivered: {} }
+  }
+});
+assert.deepEqual(Director.documentsNeedingReview(flawed), ["office-mon-supplier-letter"]);
+assert.match(Director.BEATS.find((beat) => beat.id === "steady-three").text(flawed), /перепроверку/,
+  "Manager response must reflect submitted documents with quality problems");
+
 current = state({
   minute: 810,
   metadata: {
