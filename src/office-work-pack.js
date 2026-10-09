@@ -104,7 +104,7 @@
         ],
         "Ориентируйтесь на название поставщика и назначение документа."),
 
-      sheet("office-mon-invoice-fix", "Исправить итог в счёте", "В итоговой строке добавлен лишний ноль. Введите корректное значение.", 11, "Бухгалтерия", {
+      sheet("office-mon-invoice-fix", "Проверить счёт №7814", "Откройте счёт в Проводнике. Сверьте сумму с договором, сохраните правку или передайте расхождение начальнику.", 11, "Бухгалтерия", {
         headers: ["Позиция", "Сумма, ₽"],
         rows: [["Сопровождение", "60 000"], ["Настройка", "24 200"], ["ИТОГО", "842 000"]],
         editable: ["B4"],
@@ -527,6 +527,43 @@
     return false;
   }
 
+
+  // Monday submissions produce documents and consequences, not a blocking quiz.
+  // Later days still use the existing validator until their scenarios are redesigned.
+  function assessSubmission(taskOrId, input = {}) {
+    const task = typeof taskOrId === "string" ? TASK_BY_ID[taskOrId] : taskOrId;
+    if (!task) return { accepted: false, status: "unknown" };
+    if (task.dayIndex !== 0) {
+      const accepted = validateTask(task, input);
+      return { accepted, status: accepted ? "accepted" : "needs-review" };
+    }
+    let accepted = validateTask(task, input);
+    if (task.id === "office-mon-supplier-letter") {
+      const text = normalizeText(input.text);
+      accepted = /кс-18/.test(text) && /24\s*бухт/.test(text) &&
+        /12:00/.test(text) && /курьер/.test(text);
+    } else if (task.id === "office-mon-memo-proof") {
+      const text = normalizeText(input.text);
+      accepted = /переезд/.test(text) && /два\s+дополнительн/.test(text) &&
+        /четыре\s+кресл/.test(text) && /пятницы/.test(text) &&
+        !/пятници|просим\s*,/.test(text);
+    } else if (task.id === "office-mon-redact-contacts") {
+      const text = String(input.text || "");
+      accepted = /пропуск/i.test(text) && /второй\s+этаж/i.test(text) &&
+        !/\+7\s*900|111-22-33|45\s*08\s*123456|паспорт\s*\d{2}/i.test(text);
+    }
+    return { accepted, status: accepted ? "accepted" : "needs-review" };
+  }
+
+  function safeSubmission(input) {
+    try {
+      // Game notes are bounded to avoid bloating local saves with long pasted text.
+      return JSON.parse(JSON.stringify(input || {}).slice(0, 4096));
+    } catch {
+      return { truncated: true };
+    }
+  }
+
   function typeLabel(type) {
     return ({ sheet: "Таблица", document: "Документ", template: "Форма", audit: "Сверка", sort: "Сортировка", organize: "Файлы" })[type] || "Задание";
   }
@@ -582,7 +619,7 @@
           <h3>${esc(task.title)}</h3>
           <p>${esc(task.description)}</p>
         </div>
-        <div class="office-task-action"><span>${task.minutes} мин.</span>${done ? `<b><img src="${icon("checked-checkbox", 18)}" alt="">Готово</b>` : `<button type="button" data-office-open="${task.id}">Открыть</button>`}</div>`;
+        <div class="office-task-action"><span>${task.id === "office-mon-invoice-fix" ? "Общий счёт" : task.minutes + " мин."}</span>${done ? `<b><img src="${icon("checked-checkbox", 18)}" alt="">${saved.completed[task.id]?.quality === "needs-review" ? "Передано на проверку" : "Готово"}</b>` : `<button type="button" data-office-open="${task.id}">Открыть</button>`}</div>`;
       cards.appendChild(card);
     });
 
@@ -649,6 +686,12 @@
     const state = stateNow();
     const saved = officeState(state);
     if (!task || !state || state.dayIndex !== task.dayIndex || task.unlockMinute > state.minute || saved.completed[id]) return false;
+    if (id === "office-mon-invoice-fix") {
+      // There is exactly one invoice, shared with Explorer and the story.
+      const desktop = root.UntilFridayDesktop;
+      if (desktop?.openFileById) return desktop.openFileById("invoice");
+      return false;
+    }
     const win = createTaskWindow(task);
     if (!win) return false;
     renderTask(win, task);
@@ -664,7 +707,7 @@
       </div>
       <section class="office-task-instruction"><h2>${esc(task.title)}</h2><p>${esc(task.description)}</p></section>
       <main class="office-task-workspace" data-office-workspace></main>
-      <footer class="office-task-footer"><div><span data-office-error></span><small data-office-hint></small></div><button type="button" data-office-submit>Проверить и завершить</button></footer>`;
+      <footer class="office-task-footer"><div><span data-office-error></span><small data-office-hint></small></div><button type="button" data-office-submit>${task.dayIndex === 0 ? "Передать результат" : "Проверить и завершить"}</button></footer>`;
 
     const workspace = content.querySelector("[data-office-workspace]");
     const readInput = renderWorkspace(workspace, task);
@@ -675,7 +718,7 @@
 
     submit.addEventListener("click", () => {
       const input = readInput();
-      if (!validateTask(task, input)) {
+      if (task.dayIndex !== 0 && !validateTask(task, input)) {
         attempts += 1;
         error.textContent = "Проверка не пройдена. Исправьте данные и попробуйте ещё раз.";
         hint.textContent = attempts >= 2 ? `Подсказка: ${task.hint}` : "";
@@ -686,7 +729,7 @@
       }
       error.textContent = "";
       hint.textContent = "";
-      const result = completeTask(task, attempts);
+      const result = completeTask(task, attempts, input);
       if (!result.ok) {
         error.textContent = result.message || "Не удалось сохранить результат задания.";
       }
@@ -800,7 +843,8 @@
     return () => ({ assignments: Object.fromEntries([...workspace.querySelectorAll("[data-file-assignment]")].map((select) => [select.dataset.fileAssignment, select.value])) });
   }
 
-  function completeTask(task, attempts) {
+  function completeTask(task, attempts, input = {}) {
+    const assessment = assessSubmission(task, input);
     const current = engine();
     const before = current?.getState?.();
     if (!current || !before) return { ok: false, message: "Игровой движок недоступен." };
@@ -816,23 +860,31 @@
     const update = current.updateState((draft) => {
       draft.metadata ||= {};
       const office = normalizeOfficeState(draft.metadata.officeWork);
+      const monday = task.dayIndex === 0;
+      const earned = monday ? (assessment.accepted ? task.score : -1) : task.score;
       office.completed[task.id] = {
         dayIndex: draft.dayIndex,
         minute: draft.minute,
         attempts: Number(attempts || 0),
-        score: task.score
+        score: earned,
+        ...(monday ? { quality: assessment.status, submission: safeSubmission(input) } : {})
       };
       office.attempts[task.id] = Number(attempts || 0);
       draft.metadata.officeWork = office;
       draft.stats ||= {};
-      draft.stats.work = Number(draft.stats.work || 0) + task.score;
+      draft.stats.work = Number(draft.stats.work || 0) + earned;
+      if (monday && !assessment.accepted) {
+        draft.stats.anxiety = Number(draft.stats.anxiety || 0) + 1;
+      }
       draft.journal ||= [];
       draft.journal.push({
         id: `office-${task.id}-${draft.dayIndex}-${draft.minute}`,
         dayIndex: draft.dayIndex,
         minute: draft.minute,
         type: "office-work",
-        text: `Выполнено рабочее поручение: ${task.title}`
+        text: assessment.status === "needs-review" && task.dayIndex === 0
+          ? `Передан рабочий документ с расхождениями: ${task.title}`
+          : `Выполнено рабочее поручение: ${task.title}`
       });
     }, "office-work-complete");
 
@@ -843,7 +895,12 @@
     }
 
     const completed = tasksForDay(task.dayIndex).filter((item) => officeState(update.state).completed[item.id]).length;
-    Runtime?.notify?.("Рабочее поручение выполнено", `${task.title}. Затрачено ${task.minutes} минут.`);
+    Runtime?.notify?.(
+      task.dayIndex === 0 && !assessment.accepted ? "Документ передан" : "Рабочее поручение выполнено",
+      task.dayIndex === 0 && !assessment.accepted
+        ? `${task.title}. В отправленных данных возможны ошибки; коллеги могут вернуться к этому документу.`
+        : `${task.title}. Затрачено ${task.minutes} минут.`
+    );
     if (completed === DAILY_QUOTA) Runtime?.notify?.("Дневная норма закрыта", `Выполнено ${DAILY_QUOTA} офисных поручений. Остальные задачи дают дополнительный рабочий рейтинг.`);
     closeActiveWindow();
     return { ok: true, state: update.state };
@@ -859,11 +916,43 @@
     });
   }
 
+  // A separate office task must not recreate invoice №7814 or ask for the same edit twice.
+  // Its completion mirrors the actual story decision after that decision is persisted.
+  let invoiceSyncPending = false;
+  function syncMondayInvoice(state = stateNow()) {
+    if (!state || state.dayIndex !== 0 || invoiceSyncPending) return false;
+    if (!state.completedActions?.["mon-invoice-fix"] && !state.completedActions?.["mon-invoice-report"]) return false;
+    if (officeState(state).completed["office-mon-invoice-fix"]) return false;
+    invoiceSyncPending = true;
+    root.setTimeout?.(() => {
+      invoiceSyncPending = false;
+      const current = engine();
+      const latest = current?.getState?.();
+      if (!latest || latest.dayIndex !== 0 ||
+        (!latest.completedActions?.["mon-invoice-fix"] && !latest.completedActions?.["mon-invoice-report"]) ||
+        officeState(latest).completed["office-mon-invoice-fix"]) return;
+      current.updateState((draft) => {
+        draft.metadata ||= {};
+        const office = normalizeOfficeState(draft.metadata.officeWork);
+        const escalated = Boolean(draft.completedActions["mon-invoice-report"]);
+        office.completed["office-mon-invoice-fix"] = {
+          dayIndex: 0, minute: draft.minute, attempts: 0, score: 0,
+          quality: escalated ? "escalated" : "accepted",
+          submission: { source: "shared-invoice", result: escalated ? "escalated" : "corrected" }
+        };
+        draft.metadata.officeWork = office;
+      }, "office-work-invoice-linked");
+    }, 0);
+    return true;
+  }
+
+  root.addEventListener?.("until-friday-app-ready", () => syncMondayInvoice());
   root.addEventListener?.("until-friday-ui-render", (event) => {
     if (event.detail?.appId === "tasks") decorateTaskApp(event.detail.element);
   });
 
   root.addEventListener?.("until-friday-state-change", (event) => {
+    syncMondayInvoice(event.detail?.state);
     announceUnlocked(event.detail?.state, event.detail?.reason);
     const taskWindow = document.querySelector(".app-window[data-window-id='tasks']");
     if (taskWindow) decorateTaskApp(taskWindow);
@@ -882,6 +971,8 @@
     availableTasks,
     completedForDay,
     validateTask,
+    assessSubmission,
+    syncMondayInvoice,
     formatMinute,
     decorateTaskApp,
     openTask,
