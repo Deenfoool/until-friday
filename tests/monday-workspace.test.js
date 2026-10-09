@@ -54,6 +54,13 @@ assert.equal(Monday.parseAmount("84 200,00"), 84200);
 assert.equal(Monday.parseAmount("invalid 84200"), null);
 assert.equal(Monday.parseAmount("-100"), null);
 assert.equal(Monday.parseAmount(""), null);
+assert.equal(Monday.attachedReport(state), null);
+const chosenReport = Monday.attachReport("report-autosave");
+assert.equal(chosenReport.ok, true, "Explorer must attach the selected version into main engine state");
+assert.equal(Monday.attachedReport(state).id, "report-autosave");
+assert.equal(state.metadata.mondayReportDraft.fileId, "report-autosave");
+assert.equal(Monday.attachReport("not-a-file").ok, false);
+assert.equal(saves, 1);
 
 const initialFiles = Monday.documents();
 assert.equal(initialFiles.length, 4, "Explorer should show three report versions and an invoice");
@@ -70,7 +77,7 @@ assert.ok(initialFiles.find((file) => file.id === "invoice").content.includes("8
 
 const saved = Monday.saveInvoice(84200);
 assert.equal(saved.ok, true);
-assert.equal(saves, 1);
+assert.equal(saves, 2);
 assert.equal(state.metadata.mondayInvoice.total, 84200);
 assert.equal(state.metadata.mondayInvoice.saved, true);
 assert.equal(state.metadata.mondayInvoice.updatedMinute, 540);
@@ -80,10 +87,11 @@ assert.ok(Monday.documents().find((file) => file.id === "invoice").content.inclu
 state.completedActions["mon-invoice-fix"] = { minute: 560 };
 assert.equal(Monday.invoiceDone(state), true);
 assert.equal(Monday.saveInvoice(100).ok, false, "Completed invoices must not be mutable");
-assert.equal(saves, 1, "Rejected edit must not alter the save");
+assert.equal(saves, 2, "Rejected edit must not alter the save");
 
 state.completedActions["mon-report-final"] = { minute: 570 };
 assert.equal(Monday.reportDone(state), true);
+assert.equal(Monday.attachReport("report-old").ok, false, "Sent attachments must not be changed retroactively");
 
 // Office submissions are recovered from main engine metadata, not a second save.
 context.UntilFridayOfficeWorkPack = {
