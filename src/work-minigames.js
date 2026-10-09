@@ -1,324 +1,279 @@
 (function (root) {
   "use strict";
 
+  // Monday's documents are one shared model for Explorer, Mail and the invoice editor.
+  // The story remains owned by UntilFridayRuntimeEngine; no separate engine save is written here.
+  const REPORTS = Object.freeze([
+    {
+      id: "report-old",
+      title: "Отчёт_июль_черновик.xlsx",
+      modified: "Пт, 18:22",
+      author: "Сотрудник отдела",
+      status: "Черновик. Не сверены три строки.",
+      requests: 418, closed: 374, overdue: 31
+    },
+    {
+      id: "report-autosave",
+      title: "Отчёт_июль_финал_копия.xlsx",
+      modified: "Пт, 18:58",
+      author: "Автосохранение",
+      status: "Автоматическая копия без подписи. Сверка не завершена.",
+      requests: 421, closed: 389, overdue: 18
+    },
+    {
+      id: "report-final",
+      title: "Отчёт_июль_финал.xlsx",
+      modified: "Пт, 19:04",
+      author: "Сотрудник отдела",
+      status: "Данные сверены с журналом обращений.",
+      requests: 421, closed: 392, overdue: 16
+    }
+  ]);
+  const REPORT_ACTIONS = Object.freeze({
+    "report-old": "mon-report-old",
+    "report-autosave": "mon-report-old",
+    "report-final": "mon-report-final"
+  });
+  const REPORT_LABELS = ["Отправить финальную версию отчёта", "Отправить старый черновик"];
+  const INVOICE_LABELS = ["Исправить лишний ноль", "Передать счёт начальнику как нарушение"];
+  const INVOICE_AMOUNT = 842000;
+  const CONTRACT_AMOUNT = 84200;
   let queued = false;
-  let activeGame = null;
-  let zIndex = 1700;
 
-  const REPORT_FINAL = "Отправить финальную версию отчёта";
-  const REPORT_OLD = "Отправить старый черновик";
-  const INVOICE_FIX = "Исправить лишний ноль";
-  const INVOICE_REPORT = "Передать счёт начальнику как нарушение";
-
-  function queueDecorate() {
-    if (queued) return;
-    queued = true;
-    requestAnimationFrame(() => {
-      queued = false;
-      decorateTaskLists();
-    });
+  function stateNow() {
+    return root.UntilFridayRuntimeEngine?.getEngine?.()?.getState?.();
   }
 
-  function decorateTaskLists() {
-    document.querySelectorAll(".task-list").forEach((list) => {
-      decorateReportTask(list);
-      decorateInvoiceTask(list);
-    });
+  function reportDone(state) {
+    return Boolean(state?.completedActions?.["mon-report-final"] || state?.completedActions?.["mon-report-old"]);
+  }
+
+  function invoiceDone(state) {
+    return Boolean(state?.completedActions?.["mon-invoice-fix"] || state?.completedActions?.["mon-invoice-report"]);
+  }
+
+  function parseAmount(text) {
+    const raw = String(text ?? "").replace(/[\s\u00a0\u202f₽]/g, "");
+    if (!/^\d+(?:[,.]00)?$/.test(raw)) return null;
+    const number = Number(raw.replace(/[,.]00$/, ""));
+    return Number.isSafeInteger(number) && number > 0 ? number : null;
+  }
+
+  function formatAmount(number) {
+    return Number(number).toLocaleString("ru-RU") + " ₽";
+  }
+
+  function invoiceTotal(state) {
+    const value = state?.metadata?.mondayInvoice?.total;
+    return Number.isSafeInteger(value) && value > 0 ? value : INVOICE_AMOUNT;
+  }
+
+  function documents(state = stateNow()) {
+    if (state && state.dayIndex !== 0) return [];
+    const reports = REPORTS.map((file) => ({
+      ...file,
+      type: "Таблица",
+      icon: "XLS",
+      content: [
+        file.title,
+        "Автор: " + file.author,
+        "Изменён: " + file.modified,
+        "",
+        "Обращений: " + file.requests,
+        "Закрыто: " + file.closed,
+        "Просрочено: " + file.overdue,
+        "",
+        file.status
+      ].join("\n")
+    }));
+    return [...reports, {
+      id: "invoice",
+      title: "Счёт_7814.xlsx",
+      type: "Таблица",
+      icon: "XLS",
+      content: "Договор КС-41/26 · сопровождение программного комплекса\n" +
+        "Стоимость по договору: " + formatAmount(CONTRACT_AMOUNT) + "\n" +
+        "Итого в счёте: " + formatAmount(invoiceTotal(state)) + "\n" +
+        "Состояние: " + (state?.metadata?.mondayInvoice?.saved ? "изменён пользователем" : "получен из бухгалтерии")
+    }];
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+  }
+
+  function openApp(id) {
+    const desktop = root.UntilFridayDesktop;
+    if (desktop?.openApp) desktop.openApp(id);
+    else root.document?.querySelector?.('[data-app="' + id + '"]')?.dispatchEvent?.(new MouseEvent("dblclick", { bubbles: true }));
+  }
+
+  function action(id) {
+    if (!root.UntilFridayDesktop?.performAction) return { ok: false, reason: "Приложение ещё загружается." };
+    return root.UntilFridayDesktop.performAction(id);
   }
 
   function cardByTitle(list, title) {
     return Array.from(list.querySelectorAll(":scope > .task-card")).find((card) =>
       card.querySelector("h3")?.textContent.trim() === title
-    ) || null;
-  }
-
-  function actionButton(card) {
-    return card?.querySelector(".action-button") || null;
-  }
-
-  function decorateReportTask(list) {
-    const finalCard = cardByTitle(list, REPORT_FINAL);
-    const oldCard = cardByTitle(list, REPORT_OLD);
-    if (!finalCard || !oldCard) return;
-
-    finalCard.hidden = true;
-    oldCard.hidden = true;
-    if (list.querySelector('[data-minigame-card="report"]')) return;
-
-    const card = createTaskCard(
-      "report",
-      "Подготовить отчёт за июль",
-      "В общей папке находятся несколько похожих версий. Проверьте содержимое и отправьте нужный файл начальнику.",
-      "Открыть задание"
     );
-    card.querySelector("button").addEventListener("click", () => openReportGame({
-      correct: actionButton(finalCard),
-      wrong: actionButton(oldCard)
-    }));
-    list.insertBefore(card, finalCard);
   }
 
-  function decorateInvoiceTask(list) {
-    const fixCard = cardByTitle(list, INVOICE_FIX);
-    const reportCard = cardByTitle(list, INVOICE_REPORT);
-    if (!fixCard || !reportCard) return;
-
-    fixCard.hidden = true;
-    reportCard.hidden = true;
-    if (list.querySelector('[data-minigame-card="invoice"]')) return;
-
-    const card = createTaskCard(
-      "invoice",
-      "Проверить счёт №7814",
-      "Сопоставьте счёт с договором, найдите ошибочное значение и решите, что делать с обнаруженным расхождением.",
-      "Начать проверку"
-    );
-    card.querySelector("button").addEventListener("click", () => openInvoiceGame({
-      fix: actionButton(fixCard),
-      report: actionButton(reportCard)
-    }));
-    list.insertBefore(card, fixCard);
-  }
-
-  function createTaskCard(id, title, description, buttonLabel) {
+  function taskCard(kind, title, description, buttonText, open) {
     const card = document.createElement("article");
-    card.className = "task-card work-minigame-card";
-    card.dataset.minigameCard = id;
-    card.innerHTML = `
-      <header><h3></h3><span>рабочее задание</span></header>
-      <div class="task-body">
-        <p></p>
-        <div class="action-row"><button class="action-button" type="button"></button></div>
-      </div>`;
+    card.className = "task-card work-minigame-card monday-work-card";
+    card.dataset.minigameCard = kind;
+    card.innerHTML = '<header><h3></h3><span>рабочая задача</span></header>' +
+      '<div class="task-body"><p></p><div class="action-row"><button class="action-button" type="button"></button></div></div>';
     card.querySelector("h3").textContent = title;
     card.querySelector("p").textContent = description;
-    card.querySelector("button").textContent = buttonLabel;
+    const button = card.querySelector("button");
+    button.textContent = buttonText;
+    button.addEventListener("click", open);
     return card;
   }
 
-  function createWindow(title, id) {
-    closeActiveGame();
-    const layer = document.querySelector("#windows-layer");
-    if (!layer) return null;
-
-    const windowElement = document.createElement("section");
-    windowElement.className = "app-window focused work-minigame-window";
-    windowElement.dataset.workMinigame = id;
-    windowElement.style.zIndex = String(++zIndex);
-    windowElement.innerHTML = `
-      <header class="window-titlebar">
-        <div class="window-title"></div>
-        <div class="window-controls"><button type="button" data-close aria-label="Закрыть">×</button></div>
-      </header>
-      <div class="window-content work-minigame-content"></div>
-      <footer class="window-status">Учебный режим отключён · результат будет записан в журнал</footer>`;
-    windowElement.querySelector(".window-title").textContent = title;
-    windowElement.querySelector("[data-close]").addEventListener("click", closeActiveGame);
-    windowElement.addEventListener("mousedown", () => {
-      windowElement.style.zIndex = String(++zIndex);
-      document.querySelectorAll(".app-window").forEach((item) => item.classList.toggle("focused", item === windowElement));
-    });
-    layer.appendChild(windowElement);
-    activeGame = windowElement;
-    return windowElement;
+  function decorateTasks(element) {
+    const state = stateNow();
+    const list = element?.querySelector?.(".task-list");
+    if (!list || !state || state.dayIndex !== 0) return;
+    const reportCards = REPORT_LABELS.map((label) => cardByTitle(list, label)).filter(Boolean);
+    const invoiceCards = INVOICE_LABELS.map((label) => cardByTitle(list, label)).filter(Boolean);
+    reportCards.forEach((card) => { card.hidden = true; });
+    invoiceCards.forEach((card) => { card.hidden = true; });
+    if (reportCards.length && !reportDone(state) && !list.querySelector('[data-minigame-card="report"]')) {
+      list.insertBefore(taskCard("report", "Отчёт за июль",
+        "Откройте версии отчёта в Проводнике, затем ответьте на письмо Андрея Соколова и приложите выбранный файл.",
+        "Перейти в Почту", () => openApp("mail")), reportCards[0]);
+    }
+    if (invoiceCards.length && !invoiceDone(state) && !list.querySelector('[data-minigame-card="invoice"]')) {
+      list.insertBefore(taskCard("invoice", "Счёт №7814",
+        "Найдите счёт в Проводнике, сравните сумму с договором и сохраните исправление либо передайте вопрос начальнику.",
+        "Открыть Проводник", () => openApp("explorer")), invoiceCards[0]);
+    }
   }
 
-  function closeActiveGame() {
-    activeGame?.remove();
-    activeGame = null;
-  }
-
-  function openReportGame(actions) {
-    const windowElement = createWindow("Задачи — отчёт за июль", "report");
-    if (!windowElement) return;
-    const content = windowElement.querySelector(".work-minigame-content");
-    const files = [
-      {
-        id: "draft",
-        name: "Отчёт_июль_черновик.xlsx",
-        modified: "Пт, 18:22",
-        size: "42 КБ",
-        author: "Илья Воронов",
-        status: "Не сверены три строки. Итоговые значения помечены как предварительные.",
-        rows: ["Обращений: 418", "Закрыто: 374", "Просрочено: 31", "Статус: ЧЕРНОВИК"]
-      },
-      {
-        id: "autosave",
-        name: "Отчёт_июль_финал_копия.xlsx",
-        modified: "Пт, 18:58",
-        size: "44 КБ",
-        author: "Автосохранение",
-        status: "Файл создан автоматически до последней проверки. Подпись автора отсутствует.",
-        rows: ["Обращений: 421", "Закрыто: 389", "Просрочено: 18", "Статус: НЕ ПОДПИСАН"]
-      },
-      {
-        id: "final",
-        name: "Отчёт_июль_финал.xlsx",
-        modified: "Пт, 19:04",
-        size: "45 КБ",
-        author: "Илья Воронов",
-        status: "Данные сверены с журналом обращений. Проверка завершена перед отпуском.",
-        rows: ["Обращений: 421", "Закрыто: 392", "Просрочено: 16", "Статус: ПРОВЕРЕНО"]
-      }
-    ];
-
-    content.innerHTML = `
-      <div class="work-task-heading">
-        <strong>Поручение от Андрея Соколова</strong>
-        <p>До 11:30 отправьте финальную версию июльского отчёта. В папке остались похожие файлы.</p>
-      </div>
-      <div class="report-picker">
-        <aside class="report-file-list" data-file-list></aside>
-        <section class="report-preview" data-preview><div class="work-empty-preview">Выберите файл для просмотра.</div></section>
-      </div>
-      <div class="work-task-footer">
-        <span class="work-task-error" data-error></span>
-        <button type="button" class="action-button" data-submit disabled>Отправить выбранный файл</button>
-      </div>`;
-
-    const list = content.querySelector("[data-file-list]");
-    const preview = content.querySelector("[data-preview]");
-    const submit = content.querySelector("[data-submit]");
-    const error = content.querySelector("[data-error]");
-    let selected = null;
-
-    files.forEach((file) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "report-file";
-      button.innerHTML = `<span class="report-file__icon"></span><span><strong></strong><small></small></span>`;
-      button.querySelector("strong").textContent = file.name;
-      button.querySelector("small").textContent = `${file.modified} · ${file.size}`;
-      if (root.UntilFridaySprites) button.querySelector(".report-file__icon").appendChild(root.UntilFridaySprites.createIcon("files", "spreadsheet", 30));
-      button.addEventListener("click", () => {
-        selected = file;
-        list.querySelectorAll("button").forEach((item) => item.classList.toggle("selected", item === button));
-        renderReportPreview(preview, file);
-        submit.disabled = false;
-        error.textContent = "";
-      });
-      list.appendChild(button);
-    });
-
-    submit.addEventListener("click", () => {
-      if (!selected) return;
-      const target = selected.id === "final" ? actions.correct : actions.wrong;
-      if (!target) {
-        error.textContent = "Действие больше недоступно. Обновите список задач.";
-        return;
-      }
-      closeActiveGame();
-      target.click();
-    });
-  }
-
-  function renderReportPreview(preview, file) {
-    preview.innerHTML = `
-      <header><h3></h3><span></span></header>
-      <dl class="report-meta"><div><dt>Изменён</dt><dd></dd></div><div><dt>Автор</dt><dd></dd></div></dl>
-      <div class="report-sheet" data-rows></div>
-      <p class="report-file-note"></p>`;
-    preview.querySelector("h3").textContent = file.name;
-    preview.querySelector("header span").textContent = file.size;
-    const values = preview.querySelectorAll("dd");
-    values[0].textContent = file.modified;
-    values[1].textContent = file.author;
-    const rows = preview.querySelector("[data-rows]");
-    file.rows.forEach((value) => {
-      const row = document.createElement("div");
-      row.textContent = value;
-      rows.appendChild(row);
-    });
-    preview.querySelector(".report-file-note").textContent = file.status;
-  }
-
-  function openInvoiceGame(actions) {
-    const windowElement = createWindow("Задачи — проверка счёта №7814", "invoice");
-    if (!windowElement) return;
-    const content = windowElement.querySelector(".work-minigame-content");
-    const fields = [
-      ["contract", "Договор", "Стоимость работ", "84 200 ₽", false],
-      ["service", "Счёт", "Стоимость услуг", "84 200 ₽", false],
-      ["payment", "Счёт", "Итого к оплате", "842 000 ₽", true],
-      ["tax", "Счёт", "НДС", "Без НДС", false]
-    ];
-
-    content.innerHTML = `
-      <div class="work-task-heading">
-        <strong>Сверка финансового документа</strong>
-        <p>Выберите значение, которое противоречит договору. После проверки решите, как поступить.</p>
-      </div>
-      <div class="invoice-compare">
-        <section class="invoice-document">
-          <header><strong>Договор КС-41/26</strong><span>утверждён</span></header>
-          <p>Предмет: сопровождение программного комплекса</p>
-          <p>Стоимость работ: <b>84 200 ₽</b></p>
-        </section>
-        <section class="invoice-document">
-          <header><strong>Счёт №7814</strong><span>к оплате</span></header>
-          <div class="invoice-fields" data-invoice-fields></div>
-        </section>
-      </div>
-      <div class="invoice-resolution hidden" data-resolution>
-        <strong>Расхождение найдено. Выберите действие:</strong>
-        <div>
-          <button type="button" class="action-button" data-fix>Исправить и передать бухгалтеру</button>
-          <button type="button" class="action-button danger" data-report>Сохранить копию и передать начальнику</button>
-        </div>
-      </div>
-      <div class="work-task-footer"><span class="work-task-error" data-error></span></div>`;
-
-    const fieldList = content.querySelector("[data-invoice-fields]");
-    const error = content.querySelector("[data-error]");
-    const resolution = content.querySelector("[data-resolution]");
-
-    fields.filter((field) => field[1] === "Счёт").forEach(([id, source, label, value, incorrect]) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "invoice-field";
-      button.dataset.field = id;
-      button.innerHTML = `<span></span><strong></strong>`;
-      button.querySelector("span").textContent = label;
-      button.querySelector("strong").textContent = value;
-      button.addEventListener("click", () => {
-        fieldList.querySelectorAll("button").forEach((item) => item.classList.toggle("selected", item === button));
-        if (!incorrect) {
-          error.textContent = "Выбранное значение не противоречит договору. Проверьте итоговую сумму.";
-          resolution.classList.add("hidden");
-          button.classList.add("incorrect-choice");
-          window.setTimeout(() => button.classList.remove("incorrect-choice"), 320);
-          return;
-        }
-        error.textContent = "";
-        resolution.classList.remove("hidden");
-      });
-      fieldList.appendChild(button);
-    });
-
-    content.querySelector("[data-fix]").addEventListener("click", () => completeByButton(actions.fix, error));
-    content.querySelector("[data-report]").addEventListener("click", () => completeByButton(actions.report, error));
-  }
-
-  function completeByButton(button, errorElement) {
-    if (!button) {
-      errorElement.textContent = "Действие больше недоступно. Обновите список задач.";
+  function decorateMail(element) {
+    const state = stateNow();
+    if (!state || state.dayIndex !== 0) return;
+    const view = element?.querySelector?.(".mail-view");
+    if (!view || view.querySelector(".mail-meta h2")?.textContent.trim() !== "Отчёт за июль") return;
+    if (view.querySelector("[data-monday-mail]")) return;
+    const panel = document.createElement("section");
+    panel.className = "monday-mail-panel";
+    panel.dataset.mondayMail = "true";
+    if (reportDone(state)) {
+      const sent = state.completedActions["mon-report-final"] ? REPORTS[2] : REPORTS[0];
+      panel.textContent = "Ответ отправлен. Вложение: " + sent.title + ".";
+      view.appendChild(panel);
       return;
     }
-    closeActiveGame();
-    button.click();
+    panel.innerHTML = '<header><strong>Ответить с вложением</strong><span>Для проверки версий используйте Проводник</span></header>' +
+      '<label>Файл из общего каталога<select data-monday-report><option value="">Выберите вложение…</option>' +
+      REPORTS.map((file) => '<option value="' + file.id + '">' + escapeHtml(file.title) + '</option>').join("") +
+      '</select></label>' +
+      '<div class="monday-mail-footer"><span data-monday-mail-error role="status"></span><button type="button" class="action-button" data-monday-send>Отправить Андрею</button></div>';
+    const select = panel.querySelector("[data-monday-report]");
+    const error = panel.querySelector("[data-monday-mail-error]");
+    panel.querySelector("[data-monday-send]").addEventListener("click", () => {
+      const selected = REPORTS.find((file) => file.id === select.value);
+      if (!selected) { error.textContent = "Выберите файл из общего каталога."; return; }
+      const result = action(REPORT_ACTIONS[selected.id]);
+      if (!result?.ok) { error.textContent = "Отправка не выполнена. Проверьте доступность задания и время."; return; }
+      // A sent report is reconstructed from the story action after reload.
+      panel.replaceChildren(document.createTextNode("Письмо отправлено. Вложение: " + selected.title + "."));
+    });
+    view.appendChild(panel);
   }
 
+  function saveInvoice(total) {
+    const engine = root.UntilFridayRuntimeEngine?.getEngine?.();
+    const state = engine?.getState?.();
+    if (!engine || !state || state.dayIndex !== 0 || invoiceDone(state)) return { ok: false };
+    return engine.updateState((draft) => {
+      draft.metadata ||= {};
+      draft.metadata.mondayInvoice = {
+        total,
+        saved: true,
+        updatedMinute: draft.minute
+      };
+    }, "monday-invoice-edit");
+  }
 
+  function decorateInvoiceWindow(element) {
+    const state = stateNow();
+    if (!state || state.dayIndex !== 0) return;
+    const paper = element?.querySelector?.(".document-paper");
+    if (!paper || element.querySelector("[data-monday-invoice]")) return;
+    const completed = invoiceDone(state);
+    const container = document.createElement("section");
+    container.dataset.mondayInvoice = "true";
+    container.className = "monday-invoice-editor";
+    container.innerHTML = '<header><strong>Счёт №7814</strong><span>Договор КС-41/26</span></header>' +
+      '<div class="monday-invoice-row"><span>Стоимость работ по договору</span><strong>' + formatAmount(CONTRACT_AMOUNT) + '</strong></div>' +
+      '<label class="monday-invoice-row"><span>Итого к оплате по счёту</span>' +
+      '<input data-monday-invoice-total inputmode="decimal" aria-label="Итого к оплате" value="' +
+      escapeHtml(String(invoiceTotal(state))) + '" ' + (completed ? "disabled" : "") + '></label>' +
+      '<div class="monday-invoice-footer"><button type="button" data-monday-save ' + (completed ? "disabled" : "") + '>Сохранить сумму</button>' +
+      '<span data-monday-status role="status"></span></div>' +
+      '<div class="monday-invoice-actions">' +
+      '<button type="button" class="action-button" data-monday-fix ' + (completed ? "disabled" : "") + '>Передать исправление бухгалтеру</button>' +
+      '<button type="button" class="action-button secondary" data-monday-escalate ' + (completed ? "disabled" : "") + '>Передать расхождение начальнику</button></div>';
+    paper.replaceWith(container);
+    const input = container.querySelector("[data-monday-invoice-total]");
+    const status = container.querySelector("[data-monday-status]");
+    status.textContent = completed ? "Решение по счёту уже принято." : (state.metadata?.mondayInvoice?.saved ? "Изменения сохранены." : "Исходный счёт.");
+    container.querySelector("[data-monday-save]").addEventListener("click", () => {
+      const total = parseAmount(input.value);
+      if (total === null) { status.textContent = "Введите положительную сумму в рублях."; return; }
+      const result = saveInvoice(total);
+      if (!result?.ok) { status.textContent = "Не удалось сохранить сумму."; return; }
+      input.value = String(total);
+      status.textContent = "Сумма сохранена. Сверьте её с договором перед передачей.";
+    });
+    container.querySelector("[data-monday-fix]").addEventListener("click", () => {
+      const current = stateNow();
+      if (parseAmount(input.value) !== CONTRACT_AMOUNT ||
+          invoiceTotal(current) !== CONTRACT_AMOUNT ||
+          !current?.metadata?.mondayInvoice?.saved) {
+        status.textContent = "Бухгалтеру можно передать только сохранённую сумму, совпадающую с договором.";
+        return;
+      }
+      const result = action("mon-invoice-fix");
+      status.textContent = result?.ok ? "Исправленный счёт передан бухгалтеру." : "Передача недоступна.";
+      if (result?.ok) container.querySelectorAll("input, button").forEach((node) => { node.disabled = true; });
+    });
+    container.querySelector("[data-monday-escalate]").addEventListener("click", () => {
+      const result = action("mon-invoice-report");
+      status.textContent = result?.ok ? "Копия исходного счёта передана начальнику." : "Передача недоступна.";
+      if (result?.ok) container.querySelectorAll("input, button").forEach((node) => { node.disabled = true; });
+    });
+    element.querySelector(".window-status").textContent = completed ? "Решение принято" : "Локальная копия · изменения фиксируются";
+  }
 
-  window.addEventListener("until-friday-ui-render", queueDecorate);
-  window.addEventListener("until-friday-state-change", queueDecorate);
-  window.addEventListener("until-friday-app-ready", queueDecorate);
-  document.addEventListener("click", queueDecorate);
-  document.addEventListener("DOMContentLoaded", queueDecorate, { once: true });
-  queueDecorate();
+  function queueDecorate() {
+    if (queued) return;
+    queued = true;
+    root.requestAnimationFrame(() => {
+      queued = false;
+      const state = stateNow();
+      if (!state || state.dayIndex !== 0) return;
+      document.querySelectorAll(".app-window[data-window-id='tasks']").forEach(decorateTasks);
+      document.querySelectorAll(".app-window[data-window-id='mail']").forEach(decorateMail);
+      document.querySelectorAll(".app-window[data-window-id='doc-invoice']").forEach(decorateInvoiceWindow);
+    });
+  }
+
+  root.addEventListener("until-friday-ui-render", queueDecorate);
+  root.addEventListener("until-friday-state-change", queueDecorate);
+  root.addEventListener("until-friday-app-ready", queueDecorate);
+  root.document?.addEventListener("DOMContentLoaded", queueDecorate, { once: true });
 
   root.UntilFridayWorkMinigames = {
-    openReportGame,
-    openInvoiceGame
+    REPORTS, documents, parseAmount, invoiceTotal, reportDone, invoiceDone,
+    decorateTasks, decorateMail, decorateInvoiceWindow, saveInvoice,
+    openReportGame: () => openApp("mail"),
+    openInvoiceGame: () => openApp("explorer")
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
