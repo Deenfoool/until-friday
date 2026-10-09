@@ -595,7 +595,9 @@
     const completed = dayTasks.filter((task) => saved.completed[task.id]);
     const available = dayTasks.filter((task) => task.unlockMinute <= state.minute && !saved.completed[task.id]);
     const next = dayTasks.find((task) => task.unlockMinute > state.minute && !saved.completed[task.id]);
-    const signature = JSON.stringify([state.dayIndex, completed.map((task) => task.id), available.map((task) => task.id), next?.id]);
+    const signature = JSON.stringify([state.dayIndex, completed.map((task) =>
+      [task.id, saved.completed[task.id]?.quality, saved.completed[task.id]?.revisionCount || 0]
+    ), available.map((task) => task.id), next?.id]);
     if (renderedTaskLists.get(list) === signature && list.querySelector(".office-work-pack")) return true;
     const scrollTop = list.scrollTop;
     const focusedId = document.activeElement?.dataset?.officeOpen;
@@ -702,19 +704,62 @@
     return true;
   }
 
-  function renderTask(win, task) {
+  function openRevision(id) {
+    const task = TASK_BY_ID[id];
+    const state = stateNow();
+    const record = officeState(state).completed[id];
+    if (!task || !state || !state.dayStarted || state.ended || task.dayIndex !== 0 ||
+      !record || record.quality !== "needs-review" || state.dayIndex < 0 ||
+      state.dayIndex >= DAY_STARTS.length) return false;
+    const win = createTaskWindow(task);
+    if (!win) return false;
+    win.querySelector(".window-title").textContent = "Исправление: " + task.title;
+    renderTask(win, task, true);
+    return true;
+  }
+
+  function restoreSubmission(workspace, task, submitted = {}) {
+    if (task.type === "sheet") {
+      workspace.querySelectorAll("[data-sheet-cell]").forEach((node) => {
+        if (submitted.values && Object.prototype.hasOwnProperty.call(submitted.values, node.dataset.sheetCell)) {
+          node.value = String(submitted.values[node.dataset.sheetCell]);
+        }
+      });
+    } else if (task.type === "document") {
+      const node = workspace.querySelector("[data-document-text]");
+      if (node && typeof submitted.text === "string") {
+        node.value = submitted.text;
+        node.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    } else if (task.type === "template") {
+      workspace.querySelectorAll("[data-template-field]").forEach((node) => {
+        if (submitted.fields && Object.prototype.hasOwnProperty.call(submitted.fields, node.dataset.templateField)) {
+          node.value = String(submitted.fields[node.dataset.templateField]);
+        }
+      });
+    } else if (task.type === "organize") {
+      workspace.querySelectorAll("[data-file-assignment]").forEach((node) => {
+        if (submitted.assignments?.[node.dataset.fileAssignment]) {
+          node.value = submitted.assignments[node.dataset.fileAssignment];
+        }
+      });
+    }
+  }
+
+  function renderTask(win, task, revision = false) {
     const content = win.querySelector(".office-work-content");
     content.innerHTML = `
       <div class="office-work-toolbar">
         <div><img src="${icon(typeIcon(task.type), 24)}" alt=""><span>${esc(typeLabel(task.type))}</span></div>
         <div><b>${esc(task.source)}</b><span>Поступило в ${formatMinute(task.unlockMinute)}</span></div>
       </div>
-      <section class="office-task-instruction"><h2>${esc(task.title)}</h2><p>${esc(task.description)}</p></section>
+      <section class="office-task-instruction"><h2>${esc(task.title)}</h2><p>${revision ? "Документ уже был передан. Исправьте найденные расхождения и отправьте новую версию. Предыдущая останется в истории." : esc(task.description)}</p></section>
       <main class="office-task-workspace" data-office-workspace></main>
-      <footer class="office-task-footer"><div><span data-office-error></span><small data-office-hint></small></div><button type="button" data-office-submit>${task.dayIndex === 0 ? "Передать результат" : "Проверить и завершить"}</button></footer>`;
+      <footer class="office-task-footer"><div><span data-office-error></span><small data-office-hint></small></div><button type="button" data-office-submit>${revision ? "Отправить исправление" : task.dayIndex === 0 ? "Передать результат" : "Проверить и завершить"}</button></footer>`;
 
     const workspace = content.querySelector("[data-office-workspace]");
     const readInput = renderWorkspace(workspace, task);
+    if (revision) restoreSubmission(workspace, task, officeState(stateNow()).completed[task.id]?.submission);
     const error = content.querySelector("[data-office-error]");
     const hint = content.querySelector("[data-office-hint]");
     const submit = content.querySelector("[data-office-submit]");
@@ -733,7 +778,7 @@
       }
       error.textContent = "";
       hint.textContent = "";
-      const result = completeTask(task, attempts, input);
+      const result = revision ? reviseTask(task, input) : completeTask(task, attempts, input);
       if (!result.ok) {
         error.textContent = result.message || "Не удалось сохранить результат задания.";
       }
@@ -910,6 +955,72 @@
     return { ok: true, state: update.state };
   }
 
+  function reviseTask(taskOrId, input = {}) {
+    const task = typeof taskOrId === "string" ? TASK_BY_ID[taskOrId] : taskOrId;
+    const current = engine();
+    const before = current?.getState?.();
+    const previous = officeState(before).completed[task?.id];
+    if (!task || task.dayIndex !== 0 || !before || !before.dayStarted ||
+      before.ended || !previous || previous.quality !== "needs-review") {
+      return { ok: false, message: "Этот документ нельзя сейчас исправить." };
+    }
+    const assessment = assessSubmission(task, input);
+    const minutes = 6;
+    const time = current.advanceTime(minutes);
+    if (!time?.ok || Number(time.advancedMinutes) < minutes) {
+      return { ok: false, message: "До конца смены не хватает времени для исправления." };
+    }
+    const result = current.updateState((draft) => {
+      draft.metadata ||= {};
+      const office = normalizeOfficeState(draft.metadata.officeWork);
+      const record = office.completed[task.id];
+      if (!record || record.quality !== "needs-review") throw new Error("Document revision conflict");
+      const newScore = assessment.accepted ? task.score : -1;
+      const history = [...(record.history || []), {
+        dayIndex: record.lastRevisionDay ?? record.dayIndex,
+        minute: record.lastRevisionMinute ?? record.minute,
+        quality: record.quality,
+        submission: record.submission
+      }].slice(-10);
+      office.completed[task.id] = {
+        ...record,
+        history,
+        revisionCount: history.length,
+        lastRevisionDay: draft.dayIndex,
+        lastRevisionMinute: draft.minute,
+        quality: assessment.status,
+        score: newScore,
+        submission: safeSubmission(input)
+      };
+      draft.metadata.officeWork = office;
+      draft.stats ||= {};
+      draft.stats.work = Number(draft.stats.work || 0) + (newScore - Number(record.score || 0));
+      draft.journal ||= [];
+      draft.journal.push({
+        id: "office-revision-" + task.id + "-" + draft.dayIndex + "-" + draft.minute,
+        dayIndex: draft.dayIndex,
+        minute: draft.minute,
+        type: "office-work",
+        text: assessment.accepted
+          ? "Исправленная версия отправлена: " + task.title
+          : "Повторно отправлен документ с расхождениями: " + task.title
+      });
+    }, "office-work-revision");
+    if (!result?.ok) {
+      current.replaceState?.(before, "office-work-revision-rollback");
+      Runtime?.persist?.(before);
+      return { ok: false, message: "Исправление не сохранилось. Время возвращено." };
+    }
+    Runtime?.notify?.(
+      assessment.accepted ? "Исправление отправлено" : "Новая версия передана",
+      assessment.accepted
+        ? task.title + ". Исправленные данные доступны в Проводнике."
+        : task.title + ". В новой версии ещё есть расхождения."
+    );
+    closeActiveWindow();
+    return { ok: true, state: result.state, quality: assessment.status };
+  }
+
   function announceUnlocked(state, reason) {
     if (!state || state.ended || !state.dayStarted || reason === "engine-created") return;
     availableTasks(state).forEach((task) => {
@@ -980,6 +1091,8 @@
     formatMinute,
     decorateTaskApp,
     openTask,
-    completeTask
+    completeTask,
+    openRevision,
+    reviseTask
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
