@@ -92,8 +92,13 @@
     return [
       task.title,
       "Отдел: " + task.source,
-      "Передано в " + Math.floor(record.minute / 60).toString().padStart(2, "0") +
+      "Первая отправка: ПН " + Math.floor(record.minute / 60).toString().padStart(2, "0") +
         ":" + (record.minute % 60).toString().padStart(2, "0"),
+      ...(Number.isFinite(record.lastRevisionMinute) ? [
+        "Последнее исправление: " + (["ПН", "ВТ", "СР", "ЧТ", "ПТ"][record.lastRevisionDay] || "—") +
+          " " + Math.floor(record.lastRevisionMinute / 60).toString().padStart(2, "0") +
+          ":" + (record.lastRevisionMinute % 60).toString().padStart(2, "0")
+      ] : []),
       "Состояние: " + (record.quality === "needs-review" ? "передано на проверку" : "передано"),
       "",
       ...lines,
