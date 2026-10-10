@@ -552,18 +552,22 @@
     let accepted = validateTask(task, input);
     if (task.id === "office-mon-supplier-letter") {
       const value = normalizeText(input.text);
-      accepted = accepted || (/(ks-18|кс-18)/i.test(value) && /24\\s*(reels|rolls)/i.test(value) &&
-        /12:00/.test(value) && /(courier|documents)/i.test(value));
+      accepted = accepted ||
+        (/кс-18/.test(value) && /24\s*бухт/.test(value) && /12:00/.test(value) && /курьер/.test(value)) ||
+        (/(ks-18|кс-18)/i.test(value) && /24\s*(reels|rolls)/i.test(value) &&
+          /12:00/.test(value) && /(courier|documents)/i.test(value));
     } else if (task.id === "office-mon-memo-proof") {
       const value = normalizeText(input.text);
-      accepted = accepted || (/move/i.test(value) && /two/i.test(value) &&
-        /desks?/i.test(value) && /four/i.test(value) &&
-        /chairs?/i.test(value) && /friday/i.test(value) && !/fryday/i.test(value));
+      accepted = accepted ||
+        (/переезд/.test(value) && /два\s+дополнительн/.test(value) && /четыре\s+кресл/.test(value) &&
+          /пятницы/.test(value) && !/пятници|просим\s*,/.test(value)) ||
+        (/move/i.test(value) && /two/i.test(value) && /desks?/i.test(value) && /four/i.test(value) &&
+          /chairs?/i.test(value) && /friday/i.test(value) && !/fryday/i.test(value));
     } else if (task.id === "office-mon-redact-contacts") {
       const value = String(input.text || "");
-      const contentOk = (/пропуск/i.test(value) && /второй\\s+этаж/i.test(value)) ||
+      const contentOk = (/пропуск/i.test(value) && /второй\s+этаж/i.test(value)) ||
         (/(access card|badge|pass)/i.test(value) && /(second|2nd) floor/i.test(value));
-      const secrets = /\\+7\\s*900|111-22-33|45\\s*08\\s*123456|паспорт\\s*\\d{2}|passport\\s*\\d{2}/i;
+      const secrets = /\+7\s*900|111-22-33|45\s*08\s*123456|паспорт\s*\d{2}|passport\s*\d{2}/i;
       accepted = contentOk && !secrets.test(value);
     }
     return { accepted, status: accepted ? "accepted" : "needs-review" };
