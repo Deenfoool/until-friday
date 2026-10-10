@@ -41,6 +41,13 @@
       [/^([Пп]онедельник|[Вв]торник|[Сс]реда|[Чч]етверг|[Пп]ятница) заверш[её]н$/, (_, day) => (dict[day] || day) + " complete"],
       [/^Завершить\s+(понедельник|вторник|среду|четверг|пятницу|Понедельник|Вторник|Среда|Четверг|Пятница)\??$/, (_, day) =>
         "End " + ({ понедельник: "Monday", вторник: "Tuesday", среду: "Wednesday", четверг: "Thursday", пятницу: "Friday" }[day] || translate(day, "en")) + "?"],
+      [/^(\d+)\s+из\s+(\d+)$/, (_, done, total) => done + " of " + total],
+      [/^Невыполненные обязательства:\s*(.+)\.$/, (_, labels) =>
+        "Unfinished obligations: " + labels.split("; ").map((label) => translate(label, "en")).join("; ") + "."],
+      [/^(.+)\.\s+Сохранение готово, рабочий сеанс следующего дня будет открыт после перезагрузки\.$/, (_, date) =>
+        translate(date, "en") + ". Your save is ready. The next work session will open after a reload."],
+      [/^Не удалось завершить день:\s*(.+)\.$/, (_, reason) =>
+        "Could not end the day: " + translate(reason, "en") + "."],
       [/^(ПН|ВТ|СР|ЧТ|ПТ),\s*(\d+)\s+АВГ$/, (_, day, d) => (dict[day] || day) + ", Aug " + d],
       [/^(.+)\s*·\s*(\d+)\s*мин\.$/, (_, a, n) => translate(a, "en") + " · " + n + " min"],
       [/^(\d+)\s*мин\.$/, (_, n) => n + " min"],
