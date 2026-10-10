@@ -140,6 +140,17 @@ officeRoot.globalThis = officeRoot;
 vm.createContext(officeRoot);
 vm.runInContext(read("src/office-work-pack.js"), officeRoot);
 const pack = officeRoot.UntilFridayOfficeWorkPack;
+for (const task of pack.TASKS) {
+  if (task.type === "document") {
+    assert.notEqual(api.translate(task.config.sourceText, "en"), task.config.sourceText,
+      task.id + ": source document must have an English translation");
+    assert.notEqual(api.translate(task.config.expectedText, "en"), task.config.expectedText,
+      task.id + ": reference content must have an English translation");
+  } else if (task.type === "template") {
+    assert.notEqual(api.translate(task.config.sourceText, "en"), task.config.sourceText,
+      task.id + ": template instructions must be available in English");
+  }
+}
 const sourceTask = pack.TASK_BY_ID["office-tue-client-letter"];
 assert.equal(pack.validateTask(sourceTask, { text: sourceTask.config.expectedText }), true);
 assert.equal(pack.validateTask(sourceTask, { text: api.translate(sourceTask.config.expectedText, "en") }), true);
