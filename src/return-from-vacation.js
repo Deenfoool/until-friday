@@ -122,7 +122,7 @@
     document.querySelectorAll('.desktop-icon[data-app="chat"]').forEach((button) => button.classList.toggle("return-unread", unread));
     document.querySelectorAll(".start-app").forEach((button) => {
       const label = button.querySelector("span:last-child")?.textContent.trim();
-      if (label === "Связь") button.classList.toggle("return-unread", unread);
+      if (label === "Связь" || label === "Messages") button.classList.toggle("return-unread", unread);
     });
   }
 
@@ -153,7 +153,7 @@
   function decorateDimaConversation(initialState) {
     document.querySelectorAll(".chat-layout").forEach((layout) => {
       const header = layout.querySelector(".chat-header strong")?.textContent.trim();
-      if (header !== "Дима Орлов") return;
+      if (header !== "Дима Орлов" && header !== "Dima Orlov") return;
 
       let state = initialState;
       if (!state.read) {
@@ -171,7 +171,7 @@
 
       messages.querySelectorAll(".return-guide-message").forEach((message) => message.remove());
       const existingRumor = Array.from(messages.querySelectorAll(".message")).find((message) =>
-        message.querySelector(".message-bubble")?.textContent.includes("Слышал, в пятницу опять собрание")
+        ["Слышал, в пятницу опять собрание", "I heard there\u0027s another meeting on Friday"].some((phrase) => message.querySelector(".message-bubble")?.textContent.includes(phrase))
       );
       if (existingRumor) existingRumor.hidden = !state.choice;
 
