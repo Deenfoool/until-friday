@@ -81,7 +81,10 @@ const normalized = api.normalizeOfficeState({ completed: { a: { minute: 600 } },
 assert.equal(normalized.version, 1);
 assert.equal(normalized.completed.a.minute, 600);
 assert.equal(normalized.attempts.a, 2);
-assert.deepEqual(plain(api.normalizeOfficeState(null)), { version: 1, completed: {}, attempts: {} });
+assert.deepEqual(plain(api.normalizeOfficeState(null)), { version: 1, completed: {}, attempts: {}, drafts: {} });
+assert.deepEqual(plain(api.normalizeOfficeState({ drafts: { "office-mon-requests-sum": { submission: { values: { C6: "246" } } } } }).drafts),
+  { "office-mon-requests-sum": { submission: { values: { C6: "246" } } } },
+  "Legacy saves must keep the new draft registry without losing finished tasks");
 assert.equal(api.formatMinute(527), "08:47");
 assert.equal(api.formatMinute(1080), "18:00");
 
