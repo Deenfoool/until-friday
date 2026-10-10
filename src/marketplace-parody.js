@@ -206,7 +206,12 @@
     list = list.filter((product) => product.price >= options.minPrice && (options.maxPrice == null || product.price <= options.maxPrice) && product.rating >= options.minRating);
     if (options.query) {
       const needle = options.query.toLowerCase().replaceAll("ё", "е");
-      list = list.filter((product) => `${product.title} ${product.brand} ${product.categoryLabel}`.toLowerCase().replaceAll("ё", "е").includes(needle));
+      list = list.filter((product) => {
+        const englishName = root.UntilFridayI18n?.translate?.(product.title, "en") || "";
+        const englishCategory = root.UntilFridayI18n?.translate?.(product.categoryLabel, "en") || "";
+        const searchable = `${product.title} ${englishName} ${product.brand} ${product.categoryLabel} ${englishCategory}`;
+        return searchable.toLowerCase().replaceAll("ё", "е").includes(needle);
+      });
     }
     return list.slice().sort((a, b) => {
       if (options.sort === "cheap") return a.price - b.price;
