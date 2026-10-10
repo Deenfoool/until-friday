@@ -778,7 +778,7 @@
     return true;
   }
 
-  function restoreSubmission(workspace, task, submitted = {}) {
+  function restoreSubmission(workspace, task, submitted = {}, readInput = null) {
     if (task.type === "sheet") {
       workspace.querySelectorAll("[data-sheet-cell]").forEach((node) => {
         if (submitted.values && Object.prototype.hasOwnProperty.call(submitted.values, node.dataset.sheetCell)) {
