@@ -23,6 +23,7 @@ const listeners = new Map();
 let saves = 0;
 const context = {
   console, JSON, Date, Math, Map, Set, WeakMap, WeakSet, Promise,
+  Event: class { constructor(type, options) { this.type = type; this.bubbles = Boolean(options?.bubbles); } },
   location: { href: "https://test.local/" },
   localStorage: {
     getItem: (key) => memory.get(key) || null,
@@ -110,4 +111,45 @@ assert.equal(pack.completeTask(lastTask, 0, { text: "Unfinished memo" }).ok, fal
 assert.equal(engine.getState().minute, endMinute);
 assert.equal(pack.draftFor(lastTask.id).submission.text, "Unfinished memo");
 assert.equal(pack.officeState(engine.getState()).completed[lastTask.id], undefined);
+
+const sheetField = { dataset: { sheetCell: "C6" }, value: "" };
+pack.restoreSubmission({ querySelectorAll() { return [sheetField]; } },
+  { type: "sheet" }, { values: { C6: "=SUM(C2:C5)" } });
+assert.equal(sheetField.value, "=SUM(C2:C5)");
+
+let documentEvent = null;
+const documentField = { value: "", dispatchEvent(event) { documentEvent = event.type; } };
+pack.restoreSubmission({ querySelector() { return documentField; } },
+  { type: "document" }, { text: "Restored draft" });
+assert.equal(documentField.value, "Restored draft");
+assert.equal(documentEvent, "input", "Word count must update when a saved draft is restored");
+
+const templateField = { dataset: { templateField: "recipient" }, value: "" };
+pack.restoreSubmission({ querySelectorAll() { return [templateField]; } },
+  { type: "template" }, { fields: { recipient: "Accounting" } });
+assert.equal(templateField.value, "Accounting");
+
+const select = { dataset: { fileAssignment: "invoice-7814" }, value: "" };
+pack.restoreSubmission({ querySelectorAll() { return [select]; } },
+  { type: "organize" }, { assignments: { "invoice-7814": "Accounting" } });
+assert.equal(select.value, "Accounting");
+
+const checkbox = { checked: false };
+let selection = false;
+const row = {
+  dataset: { auditRow: "duplicate" },
+  querySelector() { return checkbox; },
+  classList: { toggle(name, value) { selection = value; } }
+};
+pack.restoreSubmission({ querySelectorAll() { return [row]; } },
+  { type: "audit" }, { selected: ["duplicate"] });
+assert.equal(checkbox.checked, true);
+assert.equal(selection, true);
+
+let restoredOrder = null;
+const reader = () => ({ order: [] });
+reader.restore = (order) => { restoredOrder = [...order]; };
+pack.restoreSubmission({}, { type: "sort" }, { order: ["b", "a"] }, reader);
+assert.equal(restoredOrder.join(","), "b,a", "Reordered priorities must survive reopening");
+
 console.log("Monday autosaves, idempotence, time cost, revision separation and cleanup passed.");
