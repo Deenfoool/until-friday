@@ -1219,6 +1219,7 @@
     openTask,
     completeTask,
     openRevision,
-    reviseTask
+    reviseTask,
+    restoreSubmission
   };
 })(typeof globalThis !== "undefined" ? globalThis : window);
