@@ -66,6 +66,20 @@
     if (!element || typeof element.closest !== "function") return false;
     return Boolean(element.closest("script,style,noscript,textarea,code,pre,[contenteditable],.terminal-output"));
   }
+  function contextualTranslation(value, element) {
+    const source = String(value ?? "").trim();
+    if (language !== "en") return translate(value);
+    if (source === "Корзина") {
+      const label = element?.closest?.(".kp-app") ? "Cart" : "Recycle Bin";
+      return String(value).replace(source, label);
+    }
+    if (source === "Связь") {
+      const label = element?.closest?.(".office-sheet") ? "Connectivity" : "Messages";
+      return String(value).replace(source, label);
+    }
+    return translate(value);
+  }
+
   function translateNode(node) {
     if (!node?.nodeValue || shouldSkip(node.parentElement)) return;
     const shown = node.nodeValue;
@@ -73,7 +87,7 @@
     if (!original || (shown !== original.source && shown !== original.result)) {
       original = { source: shown, result: shown };
     }
-    const next = translate(original.source);
+    const next = contextualTranslation(original.source, node.parentElement);
     if (shown !== next) node.nodeValue = next;
     original.result = next;
     originals.set(node, original);
@@ -86,8 +100,8 @@
       const existing = element.getAttribute(attribute);
       const cached = element.getAttribute(key);
       const source = cached || existing;
-      if (!cached && source !== translate(source)) element.setAttribute(key, source);
-      const next = translate(source);
+      if (!cached && source !== contextualTranslation(source, element)) element.setAttribute(key, source);
+      const next = contextualTranslation(source, element);
       if (existing !== next) element.setAttribute(attribute, next);
     }
   }
