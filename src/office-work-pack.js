@@ -466,6 +466,10 @@
     return `${Math.floor(minute / 60).toString().padStart(2, "0")}:${(minute % 60).toString().padStart(2, "0")}`;
   }
 
+  function localize(value) {
+    return root.UntilFridayI18n?.translate?.(value) || String(value ?? "");
+  }
+
   function normalizeText(value) {
     return String(value ?? "")
       .replace(/\s+/g, " ")
@@ -503,12 +507,18 @@
     }
 
     if (task.type === "document") {
-      return normalizeText(input.text) === normalizeText(task.config.expectedText);
+      const value = normalizeText(input.text);
+      return value === normalizeText(task.config.expectedText) ||
+        value === normalizeText(root.UntilFridayI18n?.translate?.(task.config.expectedText, "en"));
     }
 
     if (task.type === "template") {
       const fields = input.fields || {};
-      return task.config.fields.every((field) => normalizeText(fields[field.id]) === normalizeText(field.expected));
+      return task.config.fields.every((field) => {
+        const value = normalizeText(fields[field.id]);
+        return value === normalizeText(field.expected) ||
+          value === normalizeText(root.UntilFridayI18n?.translate?.(field.expected, "en"));
+      });
     }
 
     if (task.type === "audit") {
@@ -539,18 +549,20 @@
     }
     let accepted = validateTask(task, input);
     if (task.id === "office-mon-supplier-letter") {
-      const text = normalizeText(input.text);
-      accepted = /кс-18/.test(text) && /24\s*бухт/.test(text) &&
-        /12:00/.test(text) && /курьер/.test(text);
+      const value = normalizeText(input.text);
+      accepted = accepted || (/(ks-18|кс-18)/i.test(value) && /24\\s*(reels|rolls)/i.test(value) &&
+        /12:00/.test(value) && /(courier|documents)/i.test(value));
     } else if (task.id === "office-mon-memo-proof") {
-      const text = normalizeText(input.text);
-      accepted = /переезд/.test(text) && /два\s+дополнительн/.test(text) &&
-        /четыре\s+кресл/.test(text) && /пятницы/.test(text) &&
-        !/пятници|просим\s*,/.test(text);
+      const value = normalizeText(input.text);
+      accepted = accepted || (/move/i.test(value) && /two/i.test(value) &&
+        /desks?/i.test(value) && /four/i.test(value) &&
+        /chairs?/i.test(value) && /friday/i.test(value) && !/fryday/i.test(value));
     } else if (task.id === "office-mon-redact-contacts") {
-      const text = String(input.text || "");
-      accepted = /пропуск/i.test(text) && /второй\s+этаж/i.test(text) &&
-        !/\+7\s*900|111-22-33|45\s*08\s*123456|паспорт\s*\d{2}/i.test(text);
+      const value = String(input.text || "");
+      const contentOk = (/пропуск/i.test(value) && /второй\\s+этаж/i.test(value)) ||
+        (/(access card|badge|pass)/i.test(value) && /(second|2nd) floor/i.test(value));
+      const secrets = /\\+7\\s*900|111-22-33|45\\s*08\\s*123456|паспорт\\s*\\d{2}|passport\\s*\\d{2}/i;
+      accepted = contentOk && !secrets.test(value);
     }
     return { accepted, status: accepted ? "accepted" : "needs-review" };
   }
@@ -831,8 +843,8 @@
     const config = task.config;
     workspace.innerHTML = `
       <section class="office-document-editor">
-        <aside class="office-source-letter"><header><img src="${icon("new-post", 22)}" alt=""><div><b>${esc(config.sourceLabel)}</b><span>${esc(task.source)}</span></div></header><article>${esc(config.sourceText)}</article></aside>
-        <section class="office-editor"><div class="office-editor-ribbon"><button type="button"><b>Ж</b></button><button type="button"><i>К</i></button><button type="button"><u>Ч</u></button><span>Calibri · 11</span></div><textarea data-document-text spellcheck="true">${esc(config.initialText)}</textarea><footer><span data-word-count></span><span>Русский</span></footer></section>
+        <aside class="office-source-letter"><header><img src="${icon("new-post", 22)}" alt=""><div><b>${esc(config.sourceLabel)}</b><span>${esc(task.source)}</span></div></header><article>${esc(localize(config.sourceText))}</article></aside>
+        <section class="office-editor"><div class="office-editor-ribbon"><button type="button"><b>Ж</b></button><button type="button"><i>К</i></button><button type="button"><u>Ч</u></button><span>Calibri · 11</span></div><textarea data-document-text spellcheck="true">${esc(localize(config.initialText))}</textarea><footer><span data-word-count></span><span>${root.UntilFridayI18n?.currentLanguage?.() === "en" ? "English" : "Русский"}</span></footer></section>
       </section>`;
     const textarea = workspace.querySelector("[data-document-text]");
     const count = workspace.querySelector("[data-word-count]");
@@ -846,7 +858,7 @@
     const config = task.config;
     workspace.innerHTML = `
       <section class="office-template-layout">
-        <aside class="office-source-letter"><header><img src="${icon("new-post", 22)}" alt=""><div><b>Исходное сообщение</b><span>${esc(task.source)}</span></div></header><article>${esc(config.sourceText)}</article></aside>
+        <aside class="office-source-letter"><header><img src="${icon("new-post", 22)}" alt=""><div><b>Исходное сообщение</b><span>${esc(task.source)}</span></div></header><article>${esc(localize(config.sourceText))}</article></aside>
         <form class="office-template-form">${config.fields.map((field) => `<label><span>${esc(field.label)}</span><input data-template-field="${field.id}" autocomplete="off"></label>`).join("")}</form>
       </section>`;
     return () => ({ fields: Object.fromEntries([...workspace.querySelectorAll("[data-template-field]")].map((input) => [input.dataset.templateField, input.value])) });
