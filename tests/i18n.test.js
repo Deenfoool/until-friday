@@ -21,7 +21,9 @@ const dictFiles = [
   "src/i18n-live-late-en.js",
   "src/i18n-director-early-en.js",
   "src/i18n-director-late-en.js",
-  "src/i18n-system-en.js"
+  "src/i18n-system-en.js",
+  "src/i18n-office-data-en.js",
+  "src/i18n-qa-en.js"
 ];
 const storage = new Map();
 const shown = { nodeValue: "Новая игра", parentElement: { closest() { return null; } } };
@@ -77,6 +79,24 @@ assert.equal(api.translate("Документ передан на проверк�
 assert.equal(api.translate("Неделя уже завершена.", "en"), "The week has already ended.",
   "System messages must be translated");
 assert.equal(api.translate("ПН, 3 АВГ", "en"), "MON, Aug 3");
+assert.equal(api.translate("Завершить Понедельник?", "en"), "End Monday?");
+assert.equal(api.translate("Пользователь: Илья Воронов", "en"), "User: Ilya Voronov");
+assert.match(api.translate("help              список команд", "en"), /list commands/);
+assert.equal(api.matchesLabel("Запрос пояснений", "Запрос пояснений"), true);
+assert.equal(api.matchesLabel("Explanation requested", "Запрос пояснений"), true);
+assert.equal(api.matchesLabel("Other assignment", "Запрос пояснений"), false);
+for (const file of [
+  "src/tuesday-minigames.js",
+  "src/wednesday-minigames.js",
+  "src/thursday-minigames.js",
+  "src/friday-finale.js"
+]) {
+  assert.match(read(file), /UntilFridayI18n\\?\\.matchesLabel/,
+    file + " must resolve existing UI actions under both languages");
+}
+assert.match(read("src/app-v2.js"), /UntilFridayI18n\\?\\.apply\\?\\.\\(output\\)/,
+  "Terminal outputs must be translated immediately on Enter");
+
 assert.equal(api.translate(""), "");
 assert.equal(api.setLanguage("en"), "en");
 assert.equal(context.document.documentElement.lang, "en");
