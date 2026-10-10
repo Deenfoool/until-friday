@@ -476,7 +476,8 @@
     const current = engine();
     const before = current?.getState?.();
     if (!task || task.dayIndex !== 0 || !before || !before.dayStarted || before.ended ||
-      before.dayIndex !== 0 && !revision || before.dayIndex < task.dayIndex) {
+      before.dayIndex < task.dayIndex ||
+      (!revision && (before.dayIndex !== task.dayIndex || before.minute < task.unlockMinute))) {
       return { ok: false, reason: "unavailable" };
     }
     const previous = officeState(before);
