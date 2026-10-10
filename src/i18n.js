@@ -34,6 +34,8 @@
     const dynamic = [
       [/^Рабочих поручений:\s*(\d+)\s*·\s*других действий:\s*(\d+)$/, (_, a, b) => "Work assignments: " + a + " · other actions: " + b],
       [/^Слов:\s*(\d+)$/, (_, n) => "Words: " + n],
+      [/^Черновик сохранён\s*·\s*(\d{2}:\d{2})$/, (_, time) => "Draft saved · " + time],
+      [/^Поступило в\s*(\d{2}:\d{2})$/, (_, time) => "Received at " + time],
       [/^Следующее поручение появится в\s*(.*)$/, (_, t) => "Next assignment arrives at " + t],
       [/^(\d+)\s*писем$/, (_, n) => n + " emails"],
       [/^(\d+)\s*контакта?$/, (_, n) => n + " contacts"],
