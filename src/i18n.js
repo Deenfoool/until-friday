@@ -4,6 +4,7 @@
   const SETTINGS_KEY = "until-friday-settings-v1";
   const LANGUAGES = Object.freeze(["ru", "en"]);
   const originals = new WeakMap();
+  const attributeOriginals = new WeakMap();
   let scheduled = false;
 
   function normalizeLanguage(language) {
@@ -38,8 +39,8 @@
       [/^(\d+)\s*контакта?$/, (_, n) => n + " contacts"],
       [/^(\d+)\s*доступных действий$/, (_, n) => n + " available actions"],
       [/^([Пп]онедельник|[Вв]торник|[Сс]реда|[Чч]етверг|[Пп]ятница) заверш[её]н$/, (_, day) => (dict[day] || day) + " complete"],
-      [/^Завершить\s+(Понедельник|Вторник|Среда|Четверг|Пятница)\??$/, (_, day) =>
-        "End " + translate(day, "en") + "?"],
+      [/^Завершить\s+(понедельник|вторник|среду|четверг|пятницу|Понедельник|Вторник|Среда|Четверг|Пятница)\??$/, (_, day) =>
+        "End " + ({ понедельник: "Monday", вторник: "Tuesday", среду: "Wednesday", четверг: "Thursday", пятницу: "Friday" }[day] || translate(day, "en")) + "?"],
       [/^(ПН|ВТ|СР|ЧТ|ПТ),\s*(\d+)\s+АВГ$/, (_, day, d) => (dict[day] || day) + ", Aug " + d],
       [/^(.+)\s*·\s*(\d+)\s*мин\.$/, (_, a, n) => translate(a, "en") + " · " + n + " min"],
       [/^(\d+)\s*мин\.$/, (_, n) => n + " min"],
@@ -112,17 +113,30 @@
   }
   function translateAttributes(element) {
     if (!element || shouldSkip(element)) return;
+    let originalsByAttribute = attributeOriginals.get(element);
+    if (!originalsByAttribute) {
+      originalsByAttribute = Object.create(null);
+      attributeOriginals.set(element, originalsByAttribute);
+    }
     for (const attribute of ["placeholder", "title", "aria-label", "alt"]) {
-      if (!element.hasAttribute?.(attribute)) continue;
-      const key = "data-i18n-original-" + attribute;
-      const existing = element.getAttribute(attribute);
-      const cached = element.getAttribute(key);
-      const source = cached || existing;
-      if (!cached && source !== contextualTranslation(source, element)) element.setAttribute(key, source);
-      const next = contextualTranslation(source, element);
-      if (existing !== next) element.setAttribute(attribute, next);
+      if (!element.hasAttribute?.(attribute)) {
+        delete originalsByAttribute[attribute];
+        continue;
+      }
+      const displayed = element.getAttribute(attribute);
+      let entry = originalsByAttribute[attribute];
+      // An application may repurpose the same control without replacing it.
+      // Preserve the new source caption rather than restoring stale UI text.
+      if (!entry || (displayed !== entry.source && displayed !== entry.result)) {
+        entry = { source: displayed, result: displayed };
+      }
+      const translated = contextualTranslation(entry.source, element);
+      if (displayed !== translated) element.setAttribute(attribute, translated);
+      entry.result = translated;
+      originalsByAttribute[attribute] = entry;
     }
   }
+
   function apply(container = root.document?.body) {
     if (!container || !root.document) return;
     root.document.documentElement.lang = language;
