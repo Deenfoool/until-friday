@@ -91,10 +91,10 @@ for (const file of [
   "src/thursday-minigames.js",
   "src/friday-finale.js"
 ]) {
-  assert.match(read(file), /UntilFridayI18n\\?\\.matchesLabel/,
+  assert.ok(read(file).includes("UntilFridayI18n?.matchesLabel"),
     file + " must resolve existing UI actions under both languages");
 }
-assert.match(read("src/app-v2.js"), /UntilFridayI18n\\?\\.apply\\?\\.\\(output\\)/,
+assert.ok(read("src/app-v2.js").includes("UntilFridayI18n?.apply?.(output)"),
   "Terminal outputs must be translated immediately on Enter");
 
 assert.equal(api.translate(""), "");
@@ -107,6 +107,39 @@ assert.equal(api.setLanguage("ru"), "ru");
 assert.equal(shown.nodeValue, "Новая игра", "Switching back must restore original Russian");
 assert.equal(api.setLanguage("bad"), "ru", "Unsupported locales must fall back to Russian");
 assert.equal(api.translate("ПН, 3 АВГ", "en"), "MON, Aug 3");
+
+
+assert.equal(api.translate("Завершить понедельник?", "en"), "End Monday?");
+assert.equal(api.translate("Завершить вторник?", "en"), "End Tuesday?");
+assert.equal(api.translate("Завершить среду?", "en"), "End Wednesday?");
+assert.equal(api.translate("Завершить четверг?", "en"), "End Thursday?");
+
+const dynamicAttrs = new Map([["placeholder", "Новая игра"], ["title", "Сохранить"]]);
+const reusedControl = {
+  nodeType: 1,
+  closest() { return null; },
+  hasAttribute(name) { return dynamicAttrs.has(name); },
+  getAttribute(name) { return dynamicAttrs.get(name) ?? null; },
+  setAttribute(name, value) { dynamicAttrs.set(name, String(value)); },
+  querySelectorAll() { return []; }
+};
+const treeWalker = context.document.createTreeWalker;
+context.document.createTreeWalker = () => ({ nextNode: () => null });
+api.setLanguage("en");
+api.apply(reusedControl);
+assert.equal(dynamicAttrs.get("placeholder"), "New Game");
+assert.equal(dynamicAttrs.get("title"), "Save");
+// Reusing a DOM control must not bring back its previous caption.
+dynamicAttrs.set("placeholder", "Настройки");
+dynamicAttrs.set("title", "Продолжить");
+api.apply(reusedControl);
+assert.equal(dynamicAttrs.get("placeholder"), "Settings");
+assert.equal(dynamicAttrs.get("title"), "Continue");
+api.setLanguage("ru");
+api.apply(reusedControl);
+assert.equal(dynamicAttrs.get("placeholder"), "Настройки");
+assert.equal(dynamicAttrs.get("title"), "Продолжить");
+context.document.createTreeWalker = treeWalker;
 
 const story = read("src/story-v2.js");
 const phrases = [...new Set([...story.matchAll(/"([^"\n]*[А-Яа-яЁё][^"\n]*)"/g)].map((match) => match[1]))];
