@@ -680,7 +680,7 @@
           <h3>${esc(task.title)}</h3>
           <p>${esc(task.description)}</p>
         </div>
-        <div class="office-task-action"><span>${task.id === "office-mon-invoice-fix" ? "Общий счёт" : task.minutes + " мин."}</span>${done ? `<b><img src="${icon("checked-checkbox", 18)}" alt="">${saved.completed[task.id]?.quality === "needs-review" ? "Передано на проверку" : "Готово"}</b>` : `<button type="button" data-office-open="${task.id}">Открыть</button>`}</div>`;
+        <div class="office-task-action"><span>${task.id === "office-mon-invoice-fix" ? "Общий счёт" : task.minutes + " мин."}</span>${done ? `<b><img src="${icon("checked-checkbox", 18)}" alt="">${saved.completed[task.id]?.quality === "needs-review" ? "Передано на проверку" : saved.completed[task.id]?.quality === "escalated" ? "Передано начальнику" : "Готово"}</b>${state.dayIndex === 0 && saved.completed[task.id]?.quality === "needs-review" ? `<button type="button" data-office-revise="${task.id}">Исправить</button>` : ""}` : `<button type="button" data-office-open="${task.id}">Открыть</button>`}</div>`;
       cards.appendChild(card);
     });
 
@@ -689,6 +689,7 @@
     }
 
     section.querySelectorAll("[data-office-open]").forEach((button) => button.addEventListener("click", () => openTask(button.dataset.officeOpen)));
+    section.querySelectorAll("[data-office-revise]").forEach((button) => button.addEventListener("click", () => openRevision(button.dataset.officeRevise)));
     list.prepend(section);
     if (available.length) list.querySelector(".empty-state")?.remove();
     const status = element.querySelector(".window-status");
