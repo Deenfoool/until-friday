@@ -116,7 +116,7 @@
   "Платёж": "Payment",
   "Сумма, ₽": "Amount, RUB",
   "Хостинг": "Hosting",
-  "Связь": "Connectivity",
+  "Связь": "Messages",
   "Канцелярия": "Office Supplies",
   "Курьер": "Courier",
   "Организация": "Organization",
