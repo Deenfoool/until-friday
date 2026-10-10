@@ -1,0 +1,48 @@
+/* The language selector lives in the main menu and remains visible on small screens. */
+.opening-menu__language {
+  margin: 18px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: rgba(237,244,252,.86);
+  font-size: 13px;
+}
+.opening-menu__language select,
+.settings-panel [data-settings-language] {
+  color: #f5f8fc;
+  background: rgba(14,29,46,.92);
+  border: 1px solid rgba(160,187,220,.55);
+  border-radius: 8px;
+  padding: 9px 34px 9px 12px;
+  font: inherit;
+  min-width: 142px;
+  cursor: pointer;
+}
+.opening-menu__language select option,
+.settings-panel [data-settings-language] option {
+  color: #f5f8fc;
+  background: #15283e;
+}
+.opening-menu__language select:focus-visible,
+.settings-panel [data-settings-language]:focus-visible {
+  outline: 2px solid #9dccff;
+  outline-offset: 3px;
+}
+html[lang="en"] .office-task-copy,
+html[lang="en"] .mail-view,
+html[lang="en"] .office-task-workspace {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 520px) {
+  .opening-menu__language {
+    margin-top: 12px;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .opening-menu__language select {
+    width: 100%;
+    max-width: 220px;
+  }
+}
