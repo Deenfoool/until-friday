@@ -1,4 +1,6 @@
 (function(root){"use strict";Object.assign(root.UntilFridayEnglish || (root.UntilFridayEnglish = {}), {
+  "июльский отчёт": "July report",
+  "решение по счёту 7814": "decision on invoice 7814",
   "Основные задачи": "Core Tasks",
   "Завершение рабочего дня": "End Workday",
   "Начать следующий день": "Start Next Day",
