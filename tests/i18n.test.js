@@ -10,7 +10,18 @@ const dictFiles = [
   "src/i18n-en.js",
   "src/i18n-office-en.js",
   "src/i18n-interface-en.js",
-  "src/i18n-documents-en.js"
+  "src/i18n-documents-en.js",
+  "src/i18n-finale-en.js",
+  "src/i18n-tickets-en.js",
+  "src/i18n-thursday-en.js",
+  "src/i18n-npc-en.js",
+  "src/i18n-marketplace-en.js",
+  "src/i18n-browser-en.js",
+  "src/i18n-live-early-en.js",
+  "src/i18n-live-late-en.js",
+  "src/i18n-director-early-en.js",
+  "src/i18n-director-late-en.js",
+  "src/i18n-system-en.js"
 ];
 const storage = new Map();
 const shown = { nodeValue: "Новая игра", parentElement: { closest() { return null; } } };
@@ -57,6 +68,15 @@ assert.equal(api.translate("Пятница", "en"), "Friday");
 assert.equal(api.translate("Новая игра", "en"), "New Game");
 assert.equal(api.translate("Свести обращения за утро", "en"), "Summarize morning support requests");
 assert.equal(api.translate("До пятницы", "en"), "Until Friday");
+assert.equal(api.translate("Решение касалось вашей должности", "en"), "The decision concerned your position",
+  "The Friday director meeting must be translated");
+assert.equal(api.translate("Платье «Созвон отменили»", "en"), "“Meeting Canceled” Dress",
+  "Marketplace product names must be translated");
+assert.equal(api.translate("Документ передан на проверку", "en"), "Document Sent for Review",
+  "Office states must be translated");
+assert.equal(api.translate("Неделя уже завершена.", "en"), "The week has already ended.",
+  "System messages must be translated");
+assert.equal(api.translate("ПН, 3 АВГ", "en"), "MON, Aug 3");
 assert.equal(api.translate(""), "");
 assert.equal(api.setLanguage("en"), "en");
 assert.equal(context.document.documentElement.lang, "en");
@@ -84,6 +104,11 @@ const index = read("index.html");
 assert.ok(index.indexOf("src/i18n.js") < index.indexOf("src/engine.js"),
   "Localization must load before the story and UI modules");
 assert.ok(index.includes("src/i18n-documents-en.js"));
+for (const dictionary of dictFiles) {
+  assert.ok(index.includes(dictionary), dictionary + " must be loaded");
+  assert.ok(index.indexOf(dictionary) < index.indexOf("src/i18n.js"),
+    dictionary + " must load before the localization runtime");
+}
 
 const officeRoot = {
   UntilFridayI18n: api,
