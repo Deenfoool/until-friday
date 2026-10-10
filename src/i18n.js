@@ -110,6 +110,10 @@
     if (!container || !root.document) return;
     root.document.documentElement.lang = language;
     root.document.title = language === "en" ? "Until Friday" : "До пятницы";
+    const description = root.document.querySelector?.('meta[name="description"]');
+    if (description) description.content = language === "en"
+      ? "Until Friday — a browser-based psychological game about five office workdays."
+      : "До пятницы — браузерная психологическая игра о последней рабочей неделе.";
     if (language === "ru" && !needsRussianRestore) return;
     if (container.nodeType === 3) return translateNode(container);
     if (container.nodeType !== 1 && container.nodeType !== 9) return;
