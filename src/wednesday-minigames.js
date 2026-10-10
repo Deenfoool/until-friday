@@ -148,18 +148,18 @@
   }
 
   function buttonByLabel(rootElement, label) {
-    return Array.from(rootElement?.querySelectorAll(".action-button") || []).find((button) => textOf(button) === label) || null;
+    return Array.from(rootElement?.querySelectorAll(".action-button") || []).find((button) => (root.UntilFridayI18n?.matchesLabel?.(textOf(button), label) || textOf(button) === label)) || null;
   }
 
   function cardByTitle(list, title) {
     return Array.from(list.querySelectorAll(":scope > .task-card")).find((card) =>
-      textOf(card.querySelector("h3")) === title
+      (root.UntilFridayI18n?.matchesLabel?.(textOf(card.querySelector("h3")), title) || textOf(card.querySelector("h3")) === title)
     ) || null;
   }
 
   function decorateAuditMail() {
     document.querySelectorAll(".mail-view").forEach((view) => {
-      if (textOf(view.querySelector("h2")) !== "Запрос пояснений") return;
+      if (!(root.UntilFridayI18n?.matchesLabel?.(textOf(view.querySelector("h2")), "Запрос пояснений") || textOf(view.querySelector("h2")) === "Запрос пояснений")) return;
       const actions = view.querySelector("[data-actions]");
       if (!actions) return;
 
