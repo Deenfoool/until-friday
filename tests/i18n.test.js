@@ -113,6 +113,14 @@ assert.equal(api.translate("Завершить понедельник?", "en"), 
 assert.equal(api.translate("Завершить вторник?", "en"), "End Tuesday?");
 assert.equal(api.translate("Завершить среду?", "en"), "End Wednesday?");
 assert.equal(api.translate("Завершить четверг?", "en"), "End Thursday?");
+assert.equal(api.translate("2 из 3", "en"), "2 of 3");
+assert.equal(api.translate(
+  "Невыполненные обязательства: июльский отчёт; решение по счёту 7814.", "en"
+), "Unfinished obligations: July report; decision on invoice 7814.");
+assert.equal(api.translate(
+  "4 августа. Сохранение готово, рабочий сеанс следующего дня будет открыт после перезагрузки.", "en"
+), "August 4. Your save is ready. The next work session will open after a reload.");
+
 
 const dynamicAttrs = new Map([["placeholder", "Новая игра"], ["title", "Сохранить"]]);
 const reusedControl = {
@@ -139,6 +147,33 @@ api.setLanguage("ru");
 api.apply(reusedControl);
 assert.equal(dynamicAttrs.get("placeholder"), "Настройки");
 assert.equal(dynamicAttrs.get("title"), "Продолжить");
+context.document.createTreeWalker = treeWalker;
+
+const floatingTextRoot = { nodeType: 1, hasAttribute() { return false; }, querySelectorAll() { return []; } };
+let insideShop = true;
+let outputWrites = 0;
+let currentlyShown = "Корзина";
+const textNode = {
+  parentElement: { closest(selector) { return insideShop && selector === ".kp-app" ? {} : null; } },
+  get nodeValue() { return currentlyShown; },
+  set nodeValue(value) { currentlyShown = value; outputWrites += 1; }
+};
+context.document.createTreeWalker = () => {
+  let visited = false;
+  return { nextNode() { if (visited) return null; visited = true; return textNode; } };
+};
+api.setLanguage("en");
+api.apply(floatingTextRoot);
+assert.equal(currentlyShown, "Cart");
+const firstWriteCount = outputWrites;
+api.apply(floatingTextRoot);
+assert.equal(outputWrites, firstWriteCount, "Repeated scans must not rewrite unchanged nodes");
+insideShop = false;
+api.apply(floatingTextRoot);
+assert.equal(currentlyShown, "Recycle Bin", "Moving an element must update contextual translations");
+api.setLanguage("ru");
+api.apply(floatingTextRoot);
+assert.equal(currentlyShown, "Корзина");
 context.document.createTreeWalker = treeWalker;
 
 const story = read("src/story-v2.js");
