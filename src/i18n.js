@@ -72,6 +72,14 @@
     return input; // Do not guess at meaning or modify unknown gameplay data.
   }
 
+  // UI decorators identify existing actions by the visible caption. Support both
+  // locales without changing story IDs or storing translated labels in saves.
+  function matchesLabel(displayed, sourceRussian) {
+    const shown = String(displayed ?? "").trim();
+    const original = String(sourceRussian ?? "").trim();
+    return shown === original || shown === translate(original, "en").trim();
+  }
+
   function shouldSkip(element) {
     if (!element || typeof element.closest !== "function") return false;
     return Boolean(element.closest("script,style,noscript,textarea,code,pre,[contenteditable]"));
@@ -171,6 +179,7 @@
     currentLanguage,
     readSettings,
     translate,
+    matchesLabel,
     apply,
     queue,
     setLanguage
