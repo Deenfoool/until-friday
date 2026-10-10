@@ -437,7 +437,8 @@
     return {
       version: 1,
       completed: source.completed && typeof source.completed === "object" ? { ...source.completed } : {},
-      attempts: source.attempts && typeof source.attempts === "object" ? { ...source.attempts } : {}
+      attempts: source.attempts && typeof source.attempts === "object" ? { ...source.attempts } : {},
+      drafts: source.drafts && typeof source.drafts === "object" ? { ...source.drafts } : {}
     };
   }
 
@@ -459,6 +460,41 @@
     if (!state) return [];
     const saved = officeState(state);
     return tasksForDay(state.dayIndex).filter((task) => saved.completed[task.id]);
+  }
+
+  function draftKey(task, revision = false) {
+    return task.id + (revision ? ":revision" : "");
+  }
+
+  function draftFor(taskOrId, revision = false, state = stateNow()) {
+    const task = typeof taskOrId === "string" ? TASK_BY_ID[taskOrId] : taskOrId;
+    return task ? officeState(state).drafts[draftKey(task, revision)] || null : null;
+  }
+
+  function saveDraft(taskOrId, input = {}, revision = false) {
+    const task = typeof taskOrId === "string" ? TASK_BY_ID[taskOrId] : taskOrId;
+    const current = engine();
+    const before = current?.getState?.();
+    if (!task || task.dayIndex !== 0 || !before || !before.dayStarted || before.ended ||
+      before.dayIndex !== 0 && !revision || before.dayIndex < task.dayIndex) {
+      return { ok: false, reason: "unavailable" };
+    }
+    const previous = officeState(before);
+    const completed = previous.completed[task.id];
+    if (revision ? completed?.quality !== "needs-review" : Boolean(completed)) {
+      return { ok: false, reason: "already-completed" };
+    }
+    const submission = safeSubmission(input);
+    const key = draftKey(task, revision);
+    if (JSON.stringify(previous.drafts[key]?.submission) === JSON.stringify(submission)) {
+      return { ok: true, unchanged: true, state: before };
+    }
+    return current.updateState((draft) => {
+      draft.metadata ||= {};
+      const office = normalizeOfficeState(draft.metadata.officeWork);
+      office.drafts[key] = { dayIndex: draft.dayIndex, minute: draft.minute, submission };
+      draft.metadata.officeWork = office;
+    }, "office-work-draft");
   }
 
   function formatMinute(value) {
@@ -700,7 +736,11 @@
     win.style.zIndex = String(++topZ);
   }
 
+  let activeDraftFlush = null;
   function closeActiveWindow() {
+    const flush = activeDraftFlush;
+    activeDraftFlush = null;
+    if (flush) flush();
     activeWindow?.remove();
     activeWindow = null;
   }
@@ -761,6 +801,15 @@
           node.value = submitted.assignments[node.dataset.fileAssignment];
         }
       });
+    } else if (task.type === "audit") {
+      workspace.querySelectorAll("[data-audit-row]").forEach((row) => {
+        const checked = Array.isArray(submitted.selected) && submitted.selected.includes(row.dataset.auditRow);
+        const checkbox = row.querySelector("input");
+        if (checkbox) checkbox.checked = checked;
+        row.classList.toggle("selected", checked);
+      });
+    } else if (task.type === "sort") {
+      readInput?.restore?.(submitted.order);
     }
   }
 
@@ -777,11 +826,38 @@
 
     const workspace = content.querySelector("[data-office-workspace]");
     const readInput = renderWorkspace(workspace, task);
-    if (revision) restoreSubmission(workspace, task, officeState(stateNow()).completed[task.id]?.submission);
+    const pending = draftFor(task, revision);
+    const original = revision ? officeState(stateNow()).completed[task.id]?.submission : null;
+    if (original) restoreSubmission(workspace, task, original, readInput);
+    if (pending?.submission) restoreSubmission(workspace, task, pending.submission, readInput);
     const error = content.querySelector("[data-office-error]");
     const hint = content.querySelector("[data-office-hint]");
     const submit = content.querySelector("[data-office-submit]");
     let attempts = 0;
+    let saveTimer = null;
+    const status = win.querySelector(".window-status");
+    const flushDraft = () => {
+      if (saveTimer !== null) {
+        root.clearTimeout?.(saveTimer);
+        saveTimer = null;
+      }
+      const result = saveDraft(task, readInput(), revision);
+      if (result?.ok && !result.unchanged && status) status.textContent = "Черновик сохранён · " + formatMinute(stateNow()?.minute);
+      if (!result?.ok && result?.reason !== "already-completed" && status) status.textContent = "Черновик не сохранился";
+      return result;
+    };
+    const queueSave = () => {
+      if (saveTimer !== null) root.clearTimeout?.(saveTimer);
+      saveTimer = root.setTimeout?.(flushDraft, 450) ?? null;
+    };
+    if (task.dayIndex === 0) {
+      workspace.addEventListener("input", queueSave);
+      workspace.addEventListener("change", queueSave);
+      workspace.addEventListener("click", (event) => {
+        if (event.target.closest?.("[data-move], [data-audit-row]")) queueSave();
+      });
+      activeDraftFlush = flushDraft;
+    }
 
     submit.addEventListener("click", () => {
       const input = readInput();
@@ -901,7 +977,14 @@
       }));
     };
     render();
-    return () => ({ order: [...order] });
+    const read = () => ({ order: [...order] });
+    read.restore = (ids) => {
+      if (!Array.isArray(ids) || ids.length !== order.length ||
+        new Set(ids).size !== order.length || ids.some((id) => !order.includes(id))) return;
+      order.splice(0, order.length, ...ids);
+      render();
+    };
+    return read;
   }
 
   function renderOrganize(workspace, task) {
@@ -937,6 +1020,7 @@
         ...(monday ? { quality: assessment.status, submission: safeSubmission(input) } : {})
       };
       office.attempts[task.id] = Number(attempts || 0);
+      delete office.drafts[draftKey(task)];
       draft.metadata.officeWork = office;
       draft.stats ||= {};
       draft.stats.work = Number(draft.stats.work || 0) + earned;
@@ -1010,6 +1094,7 @@
         score: newScore,
         submission: safeSubmission(input)
       };
+      delete office.drafts[draftKey(task, true)];
       draft.metadata.officeWork = office;
       draft.stats ||= {};
       draft.stats.work = Number(draft.stats.work || 0) + (newScore - Number(record.score || 0));
@@ -1079,6 +1164,7 @@
     return true;
   }
 
+  root.addEventListener?.("pagehide", () => activeDraftFlush?.());
   root.addEventListener?.("until-friday-app-ready", () => syncMondayInvoice());
   root.addEventListener?.("until-friday-ui-render", (event) => {
     if (event.detail?.appId === "tasks") decorateTaskApp(event.detail.element);
@@ -1105,6 +1191,8 @@
     completedForDay,
     validateTask,
     assessSubmission,
+    draftFor,
+    saveDraft,
     syncMondayInvoice,
     formatMinute,
     decorateTaskApp,
