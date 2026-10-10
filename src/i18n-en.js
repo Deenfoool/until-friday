@@ -198,5 +198,5 @@
   "Компания планировала сокращение всего отдела.": "The company planned to downsize the entire department.",
   "Разговор относился к подрядчику, а не к сотруднику.": "The conversation concerned a contractor, not an employee."
 };
-  root.UntilFridayEnglish = Object.freeze(translations);
+  root.UntilFridayEnglish = translations;
 })(typeof globalThis !== "undefined" ? globalThis : window);
