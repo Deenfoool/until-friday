@@ -508,16 +508,18 @@
 
     if (task.type === "document") {
       const value = normalizeText(input.text);
+      const english = root.UntilFridayI18n?.translate?.(task.config.expectedText, "en");
       return value === normalizeText(task.config.expectedText) ||
-        value === normalizeText(root.UntilFridayI18n?.translate?.(task.config.expectedText, "en"));
+        (typeof english === "string" && value === normalizeText(english));
     }
 
     if (task.type === "template") {
       const fields = input.fields || {};
       return task.config.fields.every((field) => {
         const value = normalizeText(fields[field.id]);
+        const english = root.UntilFridayI18n?.translate?.(field.expected, "en");
         return value === normalizeText(field.expected) ||
-          value === normalizeText(root.UntilFridayI18n?.translate?.(field.expected, "en"));
+          (typeof english === "string" && value === normalizeText(english));
       });
     }
 
