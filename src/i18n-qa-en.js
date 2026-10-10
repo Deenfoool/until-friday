@@ -1,4 +1,10 @@
 (function(root){"use strict";Object.assign(root.UntilFridayEnglish || (root.UntilFridayEnglish = {}), {
+  "Основные задачи": "Core Tasks",
+  "Завершение рабочего дня": "End Workday",
+  "Начать следующий день": "Start Next Day",
+  "Сохранение готово, рабочий сеанс следующего дня будет открыт после перезагрузки.": "Save ready. The next work session will open after a reload.",
+  "Не удалось завершить день": "Could not end the day",
+  "Невыполненные обязательства": "Unfinished obligations",
   "Основные задачи выполнены. После подтверждения начнётся следующий рабочий день.": "Core tasks are complete. Confirm to start the next workday.",
   "Часть основных задач ещё не завершена. День всё равно можно закончить, но это повлияет на итог недели.": "Some core tasks remain unfinished. You can still end the day, but it will affect the week's outcome.",
   "Рабочий день": "Workday",
