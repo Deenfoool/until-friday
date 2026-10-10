@@ -228,9 +228,11 @@
   }
 
   function cardByTitle(list, title) {
-    return Array.from(list.querySelectorAll(":scope > .task-card")).find((card) =>
-      card.querySelector("h3")?.textContent.trim() === title
-    );
+    const en = root.UntilFridayI18n?.translate?.(title, "en");
+    return Array.from(list.querySelectorAll(":scope > .task-card")).find((card) => {
+      const label = card.querySelector("h3")?.textContent.trim();
+      return label === title || label === en;
+    });
   }
 
   function taskCard(kind, title, description, buttonText, open) {
@@ -316,7 +318,7 @@
     const state = stateNow();
     if (!state || state.dayIndex !== 0) return;
     const view = element?.querySelector?.(".mail-view");
-    if (!view || view.querySelector(".mail-meta h2")?.textContent.trim() !== "Отчёт за июль") return;
+    if (!view || !["Отчёт за июль", "July Report"].includes(view.querySelector(".mail-meta h2")?.textContent.trim())) return;
     const selected = attachedReport(state);
     const existing = view.querySelector("[data-monday-mail]");
     const sent = reportDone(state);
