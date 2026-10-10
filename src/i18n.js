@@ -42,6 +42,13 @@
       [/^(.+)\s*·\s*(\d+)\s*мин\.$/, (_, a, n) => translate(a, "en") + " · " + n + " min"],
       [/^(\d+)\s*мин\.$/, (_, n) => n + " min"],
       [/^(.+):\s*(\d+)\s*мин\.$/, (_, a, n) => translate(a, "en") + ": " + n + " min"],
+      [/^(Пользователь|День|Время|Сеть|Аудит):\s*(.*)$/, (_, key, value) =>
+        ({ Пользователь: "User", День: "Day", Время: "Time", Сеть: "Network", Аудит: "Audit" })[key] +
+        ": " + (value === "включён" ? "enabled" : translate(value, "en"))],
+      [/^(\d+)\s+записей\s*·\s*часть системного журнала скрыта$/, (_, count) =>
+        count + " entries · part of the system log is hidden"],
+      [/^(.+)\s+—\s+([А-Яа-яЁё][^\n]+)$/, (_, id, label) =>
+        id + " — " + translate(label, "en")],
       [/^Вложение:\s*(.*)$/, (_, x) => "Attachment: " + x],
       [/^Письмо отправлено\. Вложение:\s*(.*)$/, (_, x) => "Email sent. Attachment: " + x],
       [/^Исходное сообщение:\s*(.*)$/, (_, x) => "Original message: " + x],
@@ -65,7 +72,7 @@
 
   function shouldSkip(element) {
     if (!element || typeof element.closest !== "function") return false;
-    return Boolean(element.closest("script,style,noscript,textarea,code,pre,[contenteditable],.terminal-output"));
+    return Boolean(element.closest("script,style,noscript,textarea,code,pre,[contenteditable]"));
   }
   function contextualTranslation(value, element) {
     const source = String(value ?? "").trim();
