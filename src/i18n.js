@@ -106,16 +106,29 @@
     return translate(value);
   }
 
+  function locationKey(element) {
+    if (element?.closest?.(".kp-app")) return "shop";
+    if (element?.closest?.(".office-sheet")) return "sheet";
+    return "other";
+  }
+
   function translateNode(node) {
     if (!node?.nodeValue || shouldSkip(node.parentElement)) return;
     const shown = node.nodeValue;
+    const context = locationKey(node.parentElement);
     let original = originals.get(node);
+    // The content has not changed since this locale was rendered: skip expensive
+    // dictionary lookups and pattern checks while traversing large chat windows.
+    if (original && shown === original.result && original.locale === language &&
+      original.context === context) return;
     if (!original || (shown !== original.source && shown !== original.result)) {
       original = { source: shown, result: shown };
     }
     const next = contextualTranslation(original.source, node.parentElement);
     if (shown !== next) node.nodeValue = next;
     original.result = next;
+    original.locale = language;
+    original.context = context;
     originals.set(node, original);
   }
   function translateAttributes(element) {
@@ -132,6 +145,9 @@
       }
       const displayed = element.getAttribute(attribute);
       let entry = originalsByAttribute[attribute];
+      const context = locationKey(element);
+      if (entry && displayed === entry.result && entry.locale === language &&
+        entry.context === context) continue;
       // An application may repurpose the same control without replacing it.
       // Preserve the new source caption rather than restoring stale UI text.
       if (!entry || (displayed !== entry.source && displayed !== entry.result)) {
@@ -140,6 +156,8 @@
       const translated = contextualTranslation(entry.source, element);
       if (displayed !== translated) element.setAttribute(attribute, translated);
       entry.result = translated;
+      entry.locale = language;
+      entry.context = context;
       originalsByAttribute[attribute] = entry;
     }
   }
