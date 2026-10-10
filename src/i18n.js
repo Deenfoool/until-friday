@@ -16,6 +16,7 @@
     } catch { return {}; }
   }
   let language = normalizeLanguage(readSettings().language);
+  let needsRussianRestore = language === "en";
   function currentLanguage() { return language; }
 
   function translate(value, locale = language) {
@@ -109,6 +110,7 @@
     if (!container || !root.document) return;
     root.document.documentElement.lang = language;
     root.document.title = language === "en" ? "Until Friday" : "До пятницы";
+    if (language === "ru" && !needsRussianRestore) return;
     if (container.nodeType === 3) return translateNode(container);
     if (container.nodeType !== 1 && container.nodeType !== 9) return;
     if (container.nodeType === 1) translateAttributes(container);
@@ -116,9 +118,10 @@
     const walker = root.document.createTreeWalker(container, root.NodeFilter?.SHOW_TEXT || 4);
     let node;
     while ((node = walker.nextNode())) translateNode(node);
+    if (language === "ru" && container === root.document.body) needsRussianRestore = false;
   }
   function queue() {
-    if (scheduled || !root.document) return;
+    if (scheduled || !root.document || (language === "ru" && !needsRussianRestore)) return;
     scheduled = true;
     // Other app decorators listen to the same lifecycle and must run before translation.
     const raf = root.requestAnimationFrame || ((callback) => root.setTimeout(callback, 0));
@@ -129,7 +132,9 @@
   }
 
   function setLanguage(nextLanguage) {
+    if (language === "en") needsRussianRestore = true;
     language = normalizeLanguage(nextLanguage);
+    if (language === "en") needsRussianRestore = true;
     const settings = readSettings();
     if (settings.language !== language) {
       try { root.localStorage?.setItem(SETTINGS_KEY, JSON.stringify({ ...settings, language })); }
