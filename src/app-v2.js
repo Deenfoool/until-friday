@@ -863,6 +863,7 @@
       div.textContent = line.text;
       output.appendChild(div);
     });
+    window.UntilFridayI18n?.apply?.(output);
     output.scrollTop = output.scrollHeight;
   }
 
