@@ -1004,8 +1004,17 @@
     if (saved.completed[task.id]) return { ok: false, message: "Задание уже выполнено." };
     if (before.dayIndex !== task.dayIndex || before.minute < task.unlockMinute) return { ok: false, message: "Задание сейчас недоступно." };
 
+    const remaining = (root.UntilFridayTimeBoundaryGuard?.WORKDAY_END_MINUTE || 18 * 60) -
+      Number(before.minute || 0);
+    if (remaining < task.minutes) {
+      return { ok: false, message: "До конца смены недостаточно времени для этого задания." };
+    }
     const timeResult = current.advanceTime(task.minutes);
     if (!timeResult?.ok || Number(timeResult.advancedMinutes) < task.minutes) {
+      if (timeResult?.ok) {
+        current.replaceState?.(before, "office-work-time-rollback");
+        Runtime?.persist?.(before);
+      }
       return { ok: false, message: "До конца смены недостаточно времени для этого задания." };
     }
 
@@ -1070,8 +1079,17 @@
     }
     const assessment = assessSubmission(task, input);
     const minutes = 6;
+    const remaining = (root.UntilFridayTimeBoundaryGuard?.WORKDAY_END_MINUTE || 18 * 60) -
+      Number(before.minute || 0);
+    if (remaining < minutes) {
+      return { ok: false, message: "До конца смены не хватает времени для исправления." };
+    }
     const time = current.advanceTime(minutes);
     if (!time?.ok || Number(time.advancedMinutes) < minutes) {
+      if (time?.ok) {
+        current.replaceState?.(before, "office-work-revision-time-rollback");
+        Runtime?.persist?.(before);
+      }
       return { ok: false, message: "До конца смены не хватает времени для исправления." };
     }
     const result = current.updateState((draft) => {
