@@ -76,7 +76,7 @@
   }
 
   function findCardByLabel(list, label) {
-    return Array.from(list.querySelectorAll(":scope > .task-card")).find((card) => textOf(card.querySelector("h3")) === label) || null;
+    return Array.from(list.querySelectorAll(":scope > .task-card")).find((card) => (root.UntilFridayI18n?.matchesLabel?.(textOf(card.querySelector("h3")), label) || textOf(card.querySelector("h3")) === label)) || null;
   }
 
   function queueDecorate() {
