@@ -200,7 +200,7 @@
 
   function cardByTitle(list, title) {
     return Array.from(list.querySelectorAll(":scope > .task-card")).find((card) =>
-      textOf(card.querySelector("h3")) === title
+      (root.UntilFridayI18n?.matchesLabel?.(textOf(card.querySelector("h3")), title) || textOf(card.querySelector("h3")) === title)
     ) || null;
   }
 
