@@ -82,12 +82,14 @@ assert.equal(pack.saveDraft(task.id, { values: { C6: "wrong" } }).ok, false,
   "A completed task must not recreate a draft");
 
 const letter = pack.TASK_BY_ID["office-mon-supplier-letter"];
+assert.ok(engine.advanceTime(Math.max(0, letter.unlockMinute - engine.getState().minute)).ok);
+const letterStartedAt = engine.getState().minute;
 assert.ok(pack.completeTask(letter, 0, { text: "Missing delivery details" }).ok);
 assert.equal(engine.getState().metadata.officeWork.completed[letter.id].quality, "needs-review");
 assert.ok(pack.saveDraft(letter.id, { text: "Please confirm receipt of 24 reels of KS-18 cable by 12:00. The courier has the documents." }, true).ok);
 assert.equal(pack.draftFor(letter.id, true).submission.text.includes("KS-18"), true);
 assert.equal(pack.draftFor(letter.id), null, "Correction draft must use a separate key");
-assert.equal(engine.getState().minute, before.minute + task.minutes + letter.minutes,
+assert.equal(engine.getState().minute, letterStartedAt + letter.minutes,
   "Work time is charged only for submissions");
 assert.ok(pack.reviseTask(letter.id, pack.draftFor(letter.id, true).submission).ok);
 assert.equal(pack.draftFor(letter.id, true), null, "Accepted correction must clear its pending draft");
@@ -97,4 +99,15 @@ const after = JSON.parse(memory.get("until-friday-save-v2"));
 assert.equal(after.metadata.officeWork.drafts[task.id], undefined);
 assert.equal(after.metadata.officeWork.drafts[letter.id + ":revision"], undefined);
 assert.equal(after.metadata.officeWork.completed[letter.id].history.length, 1);
+
+// Once fewer minutes remain than a task requires, submitting must not consume
+// the last minutes of the shift or discard a pending draft.
+const lastTask = pack.TASK_BY_ID["office-mon-memo-proof"];
+assert.ok(engine.advanceTime(1078 - engine.getState().minute).ok);
+const endMinute = engine.getState().minute;
+assert.ok(pack.saveDraft(lastTask.id, { text: "Unfinished memo" }).ok);
+assert.equal(pack.completeTask(lastTask, 0, { text: "Unfinished memo" }).ok, false);
+assert.equal(engine.getState().minute, endMinute);
+assert.equal(pack.draftFor(lastTask.id).submission.text, "Unfinished memo");
+assert.equal(pack.officeState(engine.getState()).completed[lastTask.id], undefined);
 console.log("Monday autosaves, idempotence, time cost, revision separation and cleanup passed.");
