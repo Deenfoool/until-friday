@@ -1,0 +1,110 @@
+"use strict";
+
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const vm = require("node:vm");
+const base = path.resolve(__dirname, "..");
+const read = (file) => fs.readFileSync(path.join(base, file), "utf8");
+const dictFiles = [
+  "src/i18n-en.js",
+  "src/i18n-office-en.js",
+  "src/i18n-interface-en.js",
+  "src/i18n-documents-en.js"
+];
+const storage = new Map();
+const shown = { nodeValue: "Новая игра", parentElement: { closest() { return null; } } };
+const parent = {
+  nodeType: 1,
+  hasAttribute() { return false; },
+  querySelectorAll() { return []; }
+};
+const context = {
+  console,
+  JSON, Map, WeakMap, Object,
+  CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options?.detail; } },
+  NodeFilter: { SHOW_TEXT: 4 },
+  localStorage: {
+    getItem: (key) => storage.get(key) || null,
+    setItem: (key, value) => storage.set(key, String(value))
+  },
+  document: {
+    title: "До пятницы",
+    documentElement: { lang: "ru" },
+    body: parent,
+    addEventListener() {},
+    createTreeWalker() {
+      let consumed = false;
+      return { nextNode() { if (consumed) return null; consumed = true; return shown; } };
+    }
+  },
+  addEventListener() {},
+  dispatchEvent() {},
+  requestAnimationFrame() {},
+  setTimeout() {}
+};
+context.window = context;
+context.globalThis = context;
+vm.createContext(context);
+for (const file of [...dictFiles, "src/i18n.js"]) {
+  assert.doesNotThrow(() => vm.runInContext(read(file), context, { filename: file }));
+}
+const api = context.UntilFridayI18n;
+assert.ok(api);
+assert.equal(api.currentLanguage(), "ru", "Russian must be the default");
+assert.equal(api.translate("Пятница"), "Пятница");
+assert.equal(api.translate("Пятница", "en"), "Friday");
+assert.equal(api.translate("Новая игра", "en"), "New Game");
+assert.equal(api.translate("Свести обращения за утро", "en"), "Summarize morning support requests");
+assert.equal(api.translate("До пятницы", "en"), "Until Friday");
+assert.equal(api.translate(""), "");
+assert.equal(api.setLanguage("en"), "en");
+assert.equal(context.document.documentElement.lang, "en");
+assert.equal(context.document.title, "Until Friday");
+assert.equal(shown.nodeValue, "New Game");
+assert.equal(JSON.parse(storage.get("until-friday-settings-v1")).language, "en");
+assert.equal(api.setLanguage("ru"), "ru");
+assert.equal(shown.nodeValue, "Новая игра", "Switching back must restore original Russian");
+assert.equal(api.setLanguage("bad"), "ru", "Unsupported locales must fall back to Russian");
+assert.equal(api.translate("ПН, 3 АВГ", "en"), "MON, Aug 3");
+
+const story = read("src/story-v2.js");
+const phrases = [...new Set([...story.matchAll(/"([^"\n]*[А-Яа-яЁё][^"\n]*)"/g)].map((match) => match[1]))];
+const ignored = new Set(["Приказ_кадры_черновик.doc", "Автоматизация_отчётов.zip"]);
+const missing = phrases.filter((phrase) => !ignored.has(phrase) && !context.UntilFridayEnglish[phrase]);
+assert.deepEqual(missing, [], "Core story dialogue and endings must have English entries");
+
+const onboarding = read("src/onboarding.js");
+assert.match(onboarding, /data-menu-language/, "Language chooser must be directly in main menu");
+assert.match(onboarding, /data-settings-language/, "Language chooser must also appear in Settings");
+assert.match(onboarding, /I18n\?\.setLanguage/, "The selector must save and apply language");
+assert.match(onboarding, /language: stage\.querySelector\("\[data-settings-language\]"\)\.value/,
+  "Settings should persist language alongside other preferences");
+const index = read("index.html");
+assert.ok(index.indexOf("src/i18n.js") < index.indexOf("src/engine.js"),
+  "Localization must load before the story and UI modules");
+assert.ok(index.includes("src/i18n-documents-en.js"));
+
+const officeRoot = {
+  UntilFridayI18n: api,
+  UntilFridayRuntimeEngine: { getEngine: () => null },
+  document: { querySelector() { return null; } },
+  addEventListener() {}
+};
+officeRoot.globalThis = officeRoot;
+vm.createContext(officeRoot);
+vm.runInContext(read("src/office-work-pack.js"), officeRoot);
+const pack = officeRoot.UntilFridayOfficeWorkPack;
+const sourceTask = pack.TASK_BY_ID["office-tue-client-letter"];
+assert.equal(pack.validateTask(sourceTask, { text: sourceTask.config.expectedText }), true);
+assert.equal(pack.validateTask(sourceTask, { text: api.translate(sourceTask.config.expectedText, "en") }), true);
+assert.equal(pack.validateTask(sourceTask, { text: "" }), false);
+const template = pack.TASK_BY_ID["office-tue-service-act"];
+const fields = Object.fromEntries(template.config.fields.map((field) => [field.id, api.translate(field.expected, "en")]));
+assert.equal(pack.validateTask(template, { fields }), true);
+assert.equal(pack.validateTask(template, { fields: {} }), false);
+assert.equal(pack.assessSubmission("office-mon-supplier-letter", {
+  text: "Please confirm 24 reels of KS-18 cable by 12:00. The courier has the documents."
+}).accepted, true);
+
+console.log("RU/EN locale switching, story coverage, office answer validation and menu selectors passed.");
