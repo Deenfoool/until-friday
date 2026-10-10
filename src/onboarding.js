@@ -1,6 +1,7 @@
 (function (root) {
   "use strict";
 
+  const I18n = root.UntilFridayI18n;
   const PROFILE_KEY = "until-friday-profile-v1";
   const SETTINGS_KEY = "until-friday-settings-v1";
   const WELCOME_KEY = "until-friday-return-welcome-v1";
@@ -11,7 +12,8 @@
 
   const defaultSettings = {
     textSpeed: "normal",
-    reducedMotion: false
+    reducedMotion: false,
+    language: I18n?.currentLanguage?.() || "ru"
   };
 
   function readJson(key, fallback) {
@@ -34,11 +36,13 @@
   function writeSettings(settings) {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     applySettings(settings);
+    I18n?.setLanguage?.(settings.language);
   }
 
   function applySettings(settings = readSettings()) {
     document.documentElement.dataset.textSpeed = settings.textSpeed;
     document.documentElement.classList.toggle("reduced-motion", Boolean(settings.reducedMotion));
+    document.documentElement.lang = settings.language === "en" ? "en" : "ru";
   }
 
   function hasSave() {
@@ -108,9 +112,21 @@
           <button type="button" class="opening-button" data-continue ${continueAvailable ? "" : "disabled"}>Продолжить</button>
           <button type="button" class="opening-button" data-settings>Настройки</button>
         </nav>
+        <label class="opening-menu__language">
+          <span>Язык / Language</span>
+          <select data-menu-language aria-label="Язык">
+            <option value="ru" ${readSettings().language !== "en" ? "selected" : ""}>Русский</option>
+            <option value="en" ${readSettings().language === "en" ? "selected" : ""}>English</option>
+          </select>
+        </label>
         <small class="opening-menu__save-note">${continueAvailable ? "Обнаружено локальное сохранение" : "Сохранение появится после начала игры"}</small>
       </section>`;
 
+    I18n?.apply?.(stage);
+    stage.querySelector("[data-menu-language]").addEventListener("change", (event) => {
+      I18n?.setLanguage?.(event.target.value);
+      renderMenu(stage, finish);
+    });
     stage.querySelector("[data-new-game]").addEventListener("click", () => {
       if (continueAvailable && !window.confirm("Начать новую игру и удалить текущее сохранение?")) return;
       clearGameState();
@@ -138,6 +154,13 @@
           <h2 id="settings-title">Настройки</h2>
         </header>
         <label class="opening-field">
+          <span>Язык / Language</span>
+          <select data-settings-language aria-label="Язык">
+            <option value="ru" ${settings.language !== "en" ? "selected" : ""}>Русский</option>
+            <option value="en" ${settings.language === "en" ? "selected" : ""}>English</option>
+          </select>
+        </label>
+        <label class="opening-field">
           <span>Скорость появления текста</span>
           <select data-text-speed>
             <option value="slow" ${settings.textSpeed === "slow" ? "selected" : ""}>Медленно</option>
@@ -156,10 +179,12 @@
         </footer>
       </section>`;
 
+    I18n?.apply?.(stage);
     stage.querySelector("[data-save-settings]").addEventListener("click", () => {
       writeSettings({
         textSpeed: stage.querySelector("[data-text-speed]").value,
-        reducedMotion: stage.querySelector("[data-reduced-motion]").checked
+        reducedMotion: stage.querySelector("[data-reduced-motion]").checked,
+        language: stage.querySelector("[data-settings-language]").value
       });
       renderMenu(stage, finish);
     });
@@ -187,6 +212,7 @@
       text.textContent = pages[index];
       requestAnimationFrame(() => text.classList.add("visible"));
       next.textContent = index === pages.length - 1 ? "Слушать" : "Продолжить";
+      I18n?.apply?.(stage);
     };
     show();
 
@@ -223,6 +249,7 @@
       requestAnimationFrame(() => line.classList.add("visible"));
       visible += 1;
       button.textContent = visible >= lines.length ? "Включить компьютер" : "Продолжить";
+      I18n?.apply?.(stage);
     };
     reveal();
 
@@ -254,6 +281,7 @@
         </form>
       </section>`;
 
+    I18n?.apply?.(stage);
     const form = stage.querySelector("[data-login-form]");
     const input = stage.querySelector("[data-player-name]");
     const submit = stage.querySelector("[data-login-submit]");
@@ -266,7 +294,7 @@
         ? "Используйте от 2 до 24 букв, цифр, пробелов или дефисов."
         : "";
     };
-    input.addEventListener("input", validate);
+    input.addEventListener("input", () => { validate(); I18n?.apply?.(error); });
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -299,6 +327,7 @@
     } else {
       row.textContent = "Вход в систему...";
     }
+    I18n?.apply?.(stage);
     window.setTimeout(() => finish("new-game"), readSettings().reducedMotion ? 100 : 780);
   }
 
