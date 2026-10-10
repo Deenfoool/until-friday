@@ -85,7 +85,7 @@
 
   function cardByTitle(list, title) {
     return Array.from(list.querySelectorAll(":scope > .task-card")).find((card) =>
-      card.querySelector("h3")?.textContent.trim() === title
+      (root.UntilFridayI18n?.matchesLabel?.(card.querySelector("h3")?.textContent, title) || card.querySelector("h3")?.textContent.trim() === title)
     ) || null;
   }
 
