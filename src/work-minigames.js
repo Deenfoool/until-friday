@@ -478,11 +478,14 @@
     root.requestAnimationFrame(() => {
       queued = false;
       const state = stateNow();
-      if (!state || state.dayIndex !== 0) return;
+      if (!state) return;
+      // Submitted Monday files can be corrected from Explorer on later days.
+      // Keep their content and revision actions updated after day transitions.
+      document.querySelectorAll(".app-window[data-window-id^='doc-office-output-']").forEach(decorateSubmittedWindow);
+      if (state.dayIndex !== 0) return;
       document.querySelectorAll(".app-window[data-window-id='tasks']").forEach(decorateTasks);
       document.querySelectorAll(".app-window[data-window-id='mail']").forEach(decorateMail);
       document.querySelectorAll(".app-window[data-window-id^='doc-report-']").forEach(decorateReportWindow);
-      document.querySelectorAll(".app-window[data-window-id^='doc-office-output-']").forEach(decorateSubmittedWindow);
       document.querySelectorAll(".app-window[data-window-id='doc-invoice']").forEach(decorateInvoiceWindow);
     });
   }
